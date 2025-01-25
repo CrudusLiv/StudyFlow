@@ -1,0 +1,40 @@
+.container {
+    padding: 1rem;
+    background-color: var(--color-primary-light);
+    min-height: 100vh;
+  }
+  
+  .title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--color-primary-dark);
+    margin-bottom: 1rem;
+  }
+  
+  .inputContainer {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+  
+  .input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid var(--color-dark-gray);
+    border-radius: 4px;
+    font-size: 1rem;
+  }
+  
+  .taskList {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .task {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    background-color: var(--color-white);
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
