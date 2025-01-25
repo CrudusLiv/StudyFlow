@@ -1,38 +1,52 @@
 import { useState } from 'react';
-import styles from './Planner.module.css';
 
 const Planner = () => {
-  const [tasks, setTasks] = useState<string[]>([]);
+  const [goals, setGoals] = useState<string[]>([]);
+  const [newGoal, setNewGoal] = useState('');
 
-  const addTask = (task: string) => {
-    if (task.trim()) {
-      setTasks((prev) => [...prev, task]);
+  const addGoal = () => {
+    if (newGoal.trim() !== '') {
+      setGoals((prev) => [...prev, newGoal]);
+      setNewGoal('');
     }
   };
 
   return (
-    <div className={styles.container}>
-      <h2 className={styles.title}>Your Tasks</h2>
-      <div className={styles.inputContainer}>
-        <input
-          type="text"
-          placeholder="Add a task"
-          className={styles.input}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              addTask(e.currentTarget.value);
-              e.currentTarget.value = '';
-            }
-          }}
-        />
+    <div className="min-h-screen bg-indigo-50 p-6">
+      <h2 className="text-3xl font-bold text-indigo-700 mb-6 text-center">Planner</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-indigo-700 mb-4">Add Your Goal</h3>
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={newGoal}
+              onChange={(e) => setNewGoal(e.target.value)}
+              placeholder="E.g., Finish math homework"
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring focus:ring-indigo-300"
+            />
+            <button
+              onClick={addGoal}
+              className="w-full py-2 px-4 bg-indigo-600 text-white font-semibold rounded-md hover:bg-indigo-500 transition"
+            >
+              Add Goal
+            </button>
+          </div>
+        </div>
+        <div className="bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-indigo-700 mb-4">Your Goals</h3>
+          <ul className="space-y-4">
+            {goals.map((goal, index) => (
+              <li
+                key={index}
+                className="p-3 bg-gray-100 rounded-md shadow-sm border border-gray-200"
+              >
+                {goal}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
-      <ul className={styles.taskList}>
-        {tasks.map((task, index) => (
-          <li key={index} className={styles.task}>
-            {task}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 };

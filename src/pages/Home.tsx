@@ -1,19 +1,21 @@
-import styles from './Home.module.css';
 import { Link } from 'react-router-dom';
 
 const Home = () => {
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>StudyFlow AI</h1>
-      <p className={styles.description}>
-        Plan smarter, study better. Your AI-based planner is here to help!
-      </p>
+    <div className="min-h-screen bg-indigo-100 flex flex-col items-center justify-center">
+      <h1 className="text-4xl font-bold text-indigo-700 mb-8">Welcome to StudyFlow</h1>
+      <div className="flex space-x-4">
         <Link to="/planner">
-            <button className={styles.button}>Planner</button>
+          <button className="py-3 px-6 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-500 transition">
+            Planner
+          </button>
         </Link>
         <Link to="/schedule">
-            <button className={styles.button}>Schedule</button>
+          <button className="py-3 px-6 bg-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:bg-indigo-500 transition">
+            Schedule
+          </button>
         </Link>
+      </div>
     </div>
   );
 };
