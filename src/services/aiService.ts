@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const GEMINI_AI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyBSmkqU2m8wtZ64HnNG5m12Z9Zr005sKFE'; // Replace with actual API URL
-const API_KEY = 'AIzaSyBSmkqU2m8wtZ64HnNG5m12Z9Zr005sKFE'; // Replace with your Gemini AI API Key
+const GEMINI_AI_BASE_URL = ''; // Replace with actual API URL
+const API_KEY = ''; // Replace with your Gemini AI API Key
 
 // Generate study plan
 export const generateStudyPlan = async (data: {
