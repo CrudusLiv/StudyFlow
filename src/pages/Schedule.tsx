@@ -69,7 +69,7 @@ const Schedule = () => {
         <h2 className="text-4xl font-bold text-indigo-700 mb-8">
           Personalized Schedule
         </h2>
-        <div className="space-y-6">
+        <div className="space-y-6 grid auto-cols-auto auto-rows-auto gap-6">
           <div className="flex flex-wrap gap-4">
             <input
               type="text"
@@ -97,14 +97,14 @@ const Schedule = () => {
             <input
               type="number"
               value={studyHours}
-              onChange={(e) => setStudyHours(Number(e.target.value))}
+              onChange={(e) => setStudyHours(Math.max(0, Math.min(24, Number(e.target.value))))} 
               className="px-4 py-2 border rounded-md"
             />
           </div>
 
           <button
             onClick={fetchAiPlan}
-            className="mt-6 px-8 py-4 bg-indigo-700 text-white font-semibold rounded-md hover:bg-indigo-600"
+            className="mt-6 px-8 py-4 bg-indigo-700 text-indigo-700 font-semibold rounded-md hover:bg-indigo-600"
           >
             {loading ? 'Generating Plan...' : 'Generate AI Plan'}
           </button>

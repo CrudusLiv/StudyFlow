@@ -8,7 +8,7 @@ import Tracker from './pages/Tracker';
 const App = () => {
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50 text-gray-800">
+      <div className="min-h-screen w-screen flex flex-col bg-gray-50 text-gray-800">
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8">
           <Routes>

@@ -64,7 +64,7 @@ const Tracker = () => {
         </p>
         <button
           onClick={handleDTR}
-          className={`w-full py-3 bg-indigo-700 text-white font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300 ${
+          className={`w-full py-3 bg-indigo-700 text-indigo-700 font-semibold rounded-lg hover:bg-indigo-600 transition-all duration-300 ${
             loading && "opacity-50 cursor-not-allowed"
           }`}
           disabled={loading}
