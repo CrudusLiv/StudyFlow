@@ -47,7 +47,7 @@ AI API: Gemini AI (Planned for future updates)
 
 1️⃣ Clone the Repository
 
-git clone https://github.com/yourusername/StudyFlow.git
+git clone https://github.com/CrudusLiv/StudyFlow.git
 cd StudyFlow
 
 2️⃣ Install Dependencies
