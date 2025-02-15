@@ -4,6 +4,9 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Schedule from './pages/Schedule';
 import Tracker from './pages/Tracker';
+import Planner from './pages/Planner';
+import Notifications from './pages/Notifications';
+import Pomodoro from './pages/Pomodoro';
 
 const App = () => {
   return (
@@ -15,6 +18,9 @@ const App = () => {
             <Route path="/" element={<Home />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/tracker" element={<Tracker />} />
+            <Route path="/planner" element={<Planner />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/pomodoro" element={<Pomodoro />} />
           </Routes>
         </main>
         <Footer />

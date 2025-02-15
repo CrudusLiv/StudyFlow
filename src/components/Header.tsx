@@ -15,6 +15,15 @@ const Header = () => {
           <Link to="/tracker" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3">
             Tracker
           </Link>
+          <Link to="/planner" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3">
+            Planner
+          </Link>
+          <Link to="/notifications" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3">
+          Notifications
+          </Link>
+          <Link to="/pomodoro" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3">
+          Pomodoro
+          </Link>
         </div>
       </nav>
     </header>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { generateStudyPlan } from '../services/aiService';
+import TimeDistribution from '../pages/TimeDistribution';
 
 // Define interfaces for AI response
 interface Task {
@@ -133,6 +134,7 @@ const Schedule = () => {
               </ul>
             </div>
           )}
+          <TimeDistribution studyHours={studyHours} />
         </div>
       </div>
     );
