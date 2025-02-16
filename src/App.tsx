@@ -7,6 +7,7 @@ import Tracker from './pages/Tracker';
 import Planner from './pages/Planner';
 import Notifications from './pages/Notifications';
 import Pomodoro from './pages/Pomodoro';
+import Access from './pages/Access';
 
 const App = () => {
   return (
@@ -21,6 +22,7 @@ const App = () => {
             <Route path="/planner" element={<Planner />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/pomodoro" element={<Pomodoro />} />
+            <Route path="/access" element={<Access />} />
           </Routes>
         </main>
         <Footer />
