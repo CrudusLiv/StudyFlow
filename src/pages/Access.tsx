@@ -1,6 +1,6 @@
 import { useState } from 'react';
-
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Access = () => {
   const [email, setEmail] = useState('');
@@ -10,15 +10,23 @@ const Access = () => {
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-  
-  };
-
-  const handleLogout = async () => {
     try {
-      
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
+      const url = isLogin ? '/login' : '/signup';
+      const response = await axios.post(`http://localhost:5000${url}`, { email, password });
+      if (isLogin) {
+        localStorage.setItem('token', response.data.token);
+        navigate('/');
+      } else {
+        alert('Signup successful! Please log in.');
+        setIsLogin(true);
+      }
+    } catch (error: unknown) {
+      console.error('Auth error:', error);
+      if (axios.isAxiosError(error) && error.response) {
+        alert(error.response.data.error || 'An error occurred');
+      } else {
+        alert('An error occurred');
+      }
     }
   };
 
@@ -68,13 +76,6 @@ const Access = () => {
             {isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'}
           </button>
         </div>
-
-        <button
-          onClick={handleLogout}
-          className="mt-4 w-full bg-red-500 text-black py-2 rounded hover:bg-red-600"
-        >
-          Logout
-        </button>
       </div>
     </div>
   );

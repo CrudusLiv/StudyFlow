@@ -1,4 +1,3 @@
-
 Here’s a README.md file for your StudyFlow app, optimized for GitHub:
 
 
@@ -25,6 +24,8 @@ StudyFlow is an AI-driven planner that helps students efficiently manage their s
 
 🔍 Upcoming AI Enhancements – Future integration with Gemini AI API for smarter scheduling.
 
+🔍 AI-Based Schedule Generation – Uses external AI API to generate optimized schedules.
+
 
 
 ---
@@ -35,9 +36,9 @@ Frontend: React, TypeScript, Vite
 
 UI Styling: Tailwind CSS (without Tailwind config file)
 
-Backend: (To be added later - MongoDB planned)
+Backend: Node.js, Express, MongoDB
 
-AI API: Gemini AI (Planned for future updates)
+AI API: External AI API for schedule generation
 
 
 
@@ -58,6 +59,10 @@ npm install
 
 npm run dev
 
+4️⃣ Start the Backend Server
+
+npm run start:server
+
 
 ---
 
@@ -71,6 +76,8 @@ StudyFlow/
 │   ├── App.tsx         # Main app component
 │   ├── main.tsx        # React entry point
 │── public/              # Static files
+│── server.js            # Backend server
+│── src/config/aiConfig.ts # AI API configuration
 │── package.json         # Project dependencies
 │── README.md            # Project documentation
 
@@ -91,8 +98,8 @@ Progress Tracker (/tracker) – AI-powered task scheduling & progress tracking.
 
 ✅ Improve UI Design (Done)
 ✅ Add Study Tracker (Done)
-🔜 Integrate AI for Smart Planning
-🔜 Backend Development with MongoDB
+✅ Integrate AI for Smart Planning (Done)
+✅ Backend Development with MongoDB (Done)
 🔜 More User-Customization Features
 
 

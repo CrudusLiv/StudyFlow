@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart } from 'react-icons/ai';
-import { BsClipboardCheck, BsBell, BsClock } from 'react-icons/bs';
+import { BsClipboardCheck, BsBell } from 'react-icons/bs';
 import { FiUser } from 'react-icons/fi';
 
 const Header = () => {
@@ -23,9 +23,6 @@ const Header = () => {
           </Link>
           <Link to="/notifications" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3 w-32 text-center flex items-center justify-center gap-2">
             <BsBell /> Notifications
-          </Link>
-          <Link to="/pomodoro" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3 w-32 text-center flex items-center justify-center gap-2">
-            <BsClock /> Pomodoro
           </Link>
           <Link to="/access" className="hover:text-indigo-300 text-lg rounded-2xl bg-white p-3 w-32 text-center flex items-center justify-center gap-2">
             <FiUser /> Log In / Sign Up
