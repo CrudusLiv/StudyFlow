@@ -19,7 +19,7 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const endpoint = isLogin ? "login" : "register";
+      const endpoint = isLogin ? "login" : "signup";
       const payload = isLogin ? { email, password } : { email, password, name };
       const response = await axios.post(`http://localhost:5000/${endpoint}`, payload);
       localStorage.setItem("token", response.data.token);

@@ -50,7 +50,6 @@ mongoose.connect(process.env.MONGODB_URI, {
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String },
-  googleId: { type: String, unique: true },
 });
 
 const User = mongoose.model('User', userSchema);
@@ -84,9 +83,9 @@ passport.use(new GoogleStrategy({
   callbackURL: 'http://localhost:5000/auth/google/callback/',
 }, async (accessToken, refreshToken, profile, done) => {
   try {
-    let user = await User.findOne({ googleId: profile.id });
+    let user = await User.findOne({ email: profile.emails[0].value });
     if (!user) {
-      user = new User({ googleId: profile.id, email: profile.emails[0].value });
+      user = new User({ email: profile.emails[0].value });
       await user.save();
     }
     done(null, user);
@@ -127,12 +126,20 @@ const authenticateJWT = (req, res, next) => {
 app.post('/signup', async (req, res) => {
   const { email, password } = req.body;
   try {
+    // Check if the email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      console.log('Email already exists:', email); // Debugging information
+      return res.status(400).json({ error: 'Email already exists' });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ email, password: hashedPassword });
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    res.status(400).json({ error: 'Email already exists' });
+    console.error('Error during signup:', error); // Debugging information
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
