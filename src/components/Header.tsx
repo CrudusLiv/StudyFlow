@@ -1,21 +1,18 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
 import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart, AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
 import { BsClipboardCheck, BsBell } from 'react-icons/bs';
 import { FiUser } from 'react-icons/fi';
 import { RiBookmarkLine } from 'react-icons/ri';
 
-const Header = () => {
-  const [isOpen, setIsOpen] = useState(true);
-
+const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
   return (
     <div className="flex bg-transparent">
       {/* Sidebar Navigation */}
-        <nav className={`fixed top-0 left-0 h-screen bg-white/95 backdrop-blur-sm shadow-lg transition-all duration-300 z-50 ${isOpen ? 'w-64' : 'w-16'}`}>
+      <nav className={`fixed top-0 left-0 h-screen bg-white/95 backdrop-blur-sm shadow-lg transition-all duration-300 z-50 ${isOpen ? 'w-64' : 'w-16'}`}>
         {/* Toggle Button */}
         <button 
           className="absolute top-4 right-4 z-50 p-2 rounded-lg text-indigo-600 hover:bg-indigo-50"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={toggleSidebar}
         >
           {isOpen ? <AiOutlineClose /> : <AiOutlineMenu />}
         </button>
