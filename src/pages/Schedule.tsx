@@ -137,98 +137,116 @@ const Schedule: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <h2 className="text-2xl font-bold text-gray-800">Your Study Schedule</h2>
-      {schedule && (
-        <div className="text-sm text-gray-600 mb-4">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Title</label>
-          <input
-            type="text"
-            name="title"
-            value={newTask.title}
-            onChange={handleInputChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Duration (minutes)</label>
-          <input
-            type="number"
-            name="duration"
-            value={newTask.duration}
-            onChange={handleInputChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Priority</label>
-          <select
-            name="priority"
-            value={newTask.priority}
-            onChange={handleInputChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            required
-          >
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Category</label>
-          <select
-            name="category"
-            value={newTask.category}
-            onChange={handleInputChange}
-            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-            required
-          >
-            <option value="study">Study</option>
-            <option value="break">Break</option>
-            <option value="exercise">Exercise</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md">
-          Add Task
-        </button>
-      </form>
-      {message && <div className="mt-4 text-sm text-gray-600">{message}</div>}
-
-      {schedule && (
-        <div className="space-y-3 mt-6">
-          <pre className="p-4 bg-gray-100 rounded-md whitespace-pre-wrap">{schedule}</pre>
-        </div>
-      )}
-
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-gray-700">Upload Assignment (PDF)</label>
-        <input
-          type="file"
-          accept="application/pdf"
-          onChange={handleFileChange}
-          className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm"
-        />
-        <button
-          onClick={handleGenerateSchedule}
-          className="mt-4 px-4 py-2 bg-green-500 text-white rounded-md"
-        >
-          Generate Schedule
-        </button>
+    <div className="p-6">
+      <div className="max-w-6xl">
+        <h2 className="text-3xl font-bold text-gray-800">Your Study Schedule</h2>
+        {schedule && (
+          <div className="text-md text-gray-600 mt-2">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </div>
+        )}
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">Add New Task</h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input
+                type="text"
+                name="title"
+                value={newTask.title}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+              <input
+                type="number"
+                name="duration"
+                value={newTask.duration}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+              <select
+                name="priority"
+                value={newTask.priority}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                required
+              >
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+              <select
+                name="category"
+                value={newTask.category}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                required
+              >
+                <option value="study">Study</option>
+                <option value="break">Break</option>
+                <option value="exercise">Exercise</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <button type="submit" className="w-full px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors">
+              Add Task
+            </button>
+          </form>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">Generate from PDF</h3>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Upload Assignment (PDF)</label>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handleFileChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+            <button
+              onClick={handleGenerateSchedule}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
+            >
+              Generate Schedule
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {message && (
+        <div className="mt-6 p-4 rounded-md bg-blue-50 text-blue-700">
+          {message}
+        </div>
+      )}
+
+      {schedule && (
+        <div className="mt-8 bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-xl font-semibold mb-4">Current Schedule</h3>
+          <pre className="p-4 bg-gray-50 rounded-md whitespace-pre-wrap text-gray-700">{schedule}</pre>
+        </div>
+      )}
     </div>
   );
 };

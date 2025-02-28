@@ -1,34 +1,97 @@
 import { Link } from 'react-router-dom';
-import { BsCalendarCheck, BsGraphUp } from 'react-icons/bs';
+import { BsCalendarCheck, BsGraphUp, BsClock, BsBook, BsFire, BsCheckCircle } from 'react-icons/bs';
 import { RiBookmarkLine } from 'react-icons/ri';
 
 const Home = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
-      <div className="text-center p-12 bg-white rounded-xl shadow-lg w-full max-w-3xl mx-4 transform hover:scale-[1.02] transition-transform duration-300">
-        <h2 className="text-7xl leading-normals font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent mb-8">
-          <span className="text-3xl">Welcome to </span><br />
-          <span className="text-7xl leading-normals font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent mb-8">
-            <RiBookmarkLine className="inline-block mb-2 mr-2" />
-            StudyFlow
-          </span>
-        </h2>
-        <p className="text-xl text-gray-600 mb-12 leading-relaxed">
-          An AI-powered app to help you manage and optimize your study plans effortlessly.
-        </p>
-        <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-          <Link to="/schedule">
-            <button className="w-full sm:w-auto px-10 py-4 bg-white text-indigo-600 border-2 border-indigo-600 text-lg font-semibold rounded-lg hover:bg-indigo-50 transform hover:-translate-y-0.5 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
-              <BsCalendarCheck className="mr-2 text-xl" />
-              Get Started
-            </button>
-          </Link>
-          <Link to="/tracker">
-            <button className="w-full sm:w-auto px-10 py-4 bg-white text-indigo-600 border-2 border-indigo-600 text-lg font-semibold rounded-lg hover:bg-indigo-50 transform hover:-translate-y-0.5 transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center">
-              <BsGraphUp className="mr-2 text-xl" />
-              View Progress
-            </button>
-          </Link>
+    <div className="min-h-screen bg-gray-50">
+      {/* Main Content */}
+      <div className="ml-64 p-8">
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">Welcome back, Student!</h1>
+            <p className="text-gray-600">Here's your study overview for today</p>
+          </div>
+          <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+            <BsCalendarCheck />
+            <span>New Session</span>
+          </button>
+        </div>
+
+        {/* Stats Overview */}
+        <div className="grid grid-cols-4 gap-6 mb-8">
+          {[
+            { label: 'Study Streak', value: '5 days', icon: BsFire, color: 'bg-red-100 text-red-600' },
+            { label: 'Hours Today', value: '2.5 hrs', icon: BsClock, color: 'bg-blue-100 text-blue-600' },
+            { label: 'Tasks Complete', value: '12/15', icon: BsCheckCircle, color: 'bg-green-100 text-green-600' },
+            { label: 'Focus Score', value: '85%', icon: BsGraphUp, color: 'bg-purple-100 text-purple-600' },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-white rounded-xl p-6 shadow-sm">
+              <div className={`w-12 h-12 ${stat.color} rounded-full flex items-center justify-center mb-4`}>
+                <stat.icon className="text-xl" />
+              </div>
+              <h3 className="text-gray-500 text-sm">{stat.label}</h3>
+              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          {/* Today's Schedule */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-4">Today's Schedule</h2>
+            <div className="space-y-4">
+              {[
+                { subject: 'Mathematics', time: '09:00 AM', status: 'Completed' },
+                { subject: 'Physics', time: '11:00 AM', status: 'In Progress' },
+                { subject: 'Chemistry', time: '02:00 PM', status: 'Upcoming' },
+              ].map((session, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className={`w-3 h-3 rounded-full ${
+                      session.status === 'Completed' ? 'bg-green-400' :
+                      session.status === 'In Progress' ? 'bg-yellow-400' : 'bg-gray-400'
+                    }`} />
+                    <div>
+                      <p className="font-medium">{session.subject}</p>
+                      <p className="text-sm text-gray-500">{session.time}</p>
+                    </div>
+                  </div>
+                  <span className={`text-sm px-3 py-1 rounded-full ${
+                    session.status === 'Completed' ? 'bg-green-100 text-green-600' :
+                    session.status === 'In Progress' ? 'bg-yellow-100 text-yellow-600' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {session.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Study Focus Areas */}
+          <div className="bg-white rounded-xl p-6 shadow-sm">
+            <h2 className="text-xl font-bold mb-4">Focus Areas</h2>
+            <div className="space-y-4">
+              {[
+                { subject: 'Mathematics', progress: 75 },
+                { subject: 'Physics', progress: 60 },
+                { subject: 'Chemistry', progress: 45 },
+              ].map((subject, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium">{subject.subject}</span>
+                    <span className="text-gray-500">{subject.progress}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full">
+                    <div 
+                      className="h-full bg-indigo-600 rounded-full"
+                      style={{ width: `${subject.progress}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
