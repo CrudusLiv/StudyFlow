@@ -4,18 +4,15 @@ import { RiBookmarkLine } from 'react-icons/ri';
 
 const Home = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex">
       {/* Main Content */}
-      <div className="ml-64 p-8">
+      <div className="flex-1 p-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Welcome back, Student!</h1>
             <p className="text-gray-600">Here's your study overview for today</p>
           </div>
-          <button className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center space-x-2">
-            <BsCalendarCheck />
-            <span>New Session</span>
-          </button>
+
         </div>
 
         {/* Stats Overview */}

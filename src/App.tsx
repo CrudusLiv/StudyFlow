@@ -19,7 +19,8 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
+      <div className="w-screen h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
+
         <Header isOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className={`flex-grow transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-16'}`}>
           <div className="w-full h-full px-4 py-8">

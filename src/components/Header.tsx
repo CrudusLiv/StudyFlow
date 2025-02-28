@@ -1,15 +1,24 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart, AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
 import { BsClipboardCheck, BsBell } from 'react-icons/bs';
 import { FiUser } from 'react-icons/fi';
 import { RiBookmarkLine } from 'react-icons/ri';
+import { BiLogOut } from 'react-icons/bi';
 
 const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
+  const navigate = useNavigate();
+  const isLoggedIn = localStorage.getItem('token');
+  const userName = localStorage.getItem('userName') || 'Student Name';
+  const userEmail = localStorage.getItem('userEmail') || 'student@email.com';
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/access');
+  };
+
   return (
     <div className="flex bg-transparent">
-      {/* Sidebar Navigation */}
       <nav className={`fixed top-0 left-0 h-screen bg-white/95 backdrop-blur-sm shadow-lg transition-all duration-300 z-50 ${isOpen ? 'w-64' : 'w-16'}`}>
-        {/* Toggle Button */}
         <button 
           className="absolute top-4 right-4 z-50 p-2 rounded-lg text-indigo-600 hover:bg-indigo-50"
           onClick={toggleSidebar}
@@ -18,13 +27,11 @@ const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () 
         </button>
 
         <div className="p-6">
-          {/* Logo Section */}
           <div className={`flex items-center space-x-2 mb-10 ${!isOpen && 'justify-center'}`}>
             <RiBookmarkLine className="text-3xl text-indigo-600" />
             {isOpen && <span className="text-2xl font-bold text-indigo-600">StudyFlow</span>}
           </div>
 
-          {/* Navigation Links */}
           <div className="space-y-2">
             <Link to="/" className={`flex items-center p-3 rounded-lg hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 transition-all ${!isOpen && 'justify-center'}`}>
               <AiOutlineHome className="text-xl" />
@@ -52,12 +59,39 @@ const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () 
             </Link>
           </div>
 
-          {/* User Section at Bottom */}
           <div className="absolute bottom-0 left-0 w-full p-6">
-            <Link to="/access" className={`flex items-center p-3 rounded-lg hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 transition-all ${!isOpen && 'justify-center'}`}>
-              <FiUser className="text-xl" />
-              {isOpen && <span className="ml-3">Log In / Sign Up</span>}
-            </Link>
+            {isLoggedIn ? (
+              <div className={`${!isOpen && 'justify-center'}`}>
+                <div className="mb-4 flex items-center space-x-3">
+                  {isOpen && (
+                    <>
+                      <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                        <FiUser className="text-xl text-indigo-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-800">{userName}</p>
+                        <p className="text-sm text-gray-500">{userEmail}</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <button 
+                  onClick={handleLogout}
+                  className={`flex items-center w-full p-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 transition-all ${!isOpen && 'justify-center'}`}
+                >
+                  <BiLogOut className="text-xl" />
+                  {isOpen && <span className="ml-3 font-medium">Logout</span>}
+                </button>
+              </div>
+            ) : (
+              <Link 
+                to="/access" 
+                className={`flex items-center p-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 transition-all ${!isOpen && 'justify-center'}`}
+              >
+                <FiUser className="text-xl" />
+                {isOpen && <span className="ml-3 font-medium">Log In / Sign Up</span>}
+              </Link>
+            )}
           </div>
         </div>
       </nav>

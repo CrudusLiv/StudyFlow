@@ -53,6 +53,7 @@ const Tracker = () => {
   };
 
   return (
+    
     <div className="p-8 bg-gradient-to-br from-indigo-100 to-indigo-300 min-h-screen flex flex-col items-center">
       <h2 className="text-4xl font-bold text-indigo-900 mb-6 text-center shadow-lg">
         Progress Tracker
