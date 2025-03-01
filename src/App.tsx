@@ -9,6 +9,7 @@ import Planner from './pages/Planner';
 import Tracker from './pages/Tracker';
 import Notifications from './pages/Notifications';
 import AiIntegration from './pages/AiIntegration';
+import Admin from './pages/Admin';
 
 const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -32,10 +33,13 @@ const App: React.FC = () => {
               <Route path="/tracker" element={<Tracker />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/ai" element={<AiIntegration />} />
+              <Route path="/admin" element={<Admin />} />
             </Routes>
           </div>
         </div>
-        <Footer className="w-full" />
+        <div className="w-full">
+          <Footer />
+        </div>
       </div>
     </Router>
   );

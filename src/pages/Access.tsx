@@ -10,7 +10,7 @@ import { GoogleLogin, googleLogout } from "@react-oauth/google";
 
 // Interface for Google OAuth response
 interface GoogleCredentialResponse {
-  credential: string;
+  credential?: string;
 }
 
 export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
@@ -63,8 +63,13 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
       }
       return true;
     };
+
   // Google authentication handler
   const handleGoogleAuth = async (credentialResponse: GoogleCredentialResponse) => {
+    if (credentialResponse.credential === undefined) {
+      setError("Google authentication failed. Please try again.");
+      return;
+    }
     setIsLoading(true);
     setError(null);
     try {
@@ -106,9 +111,13 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     setIsLoading(true);
     try {
       const endpoint = isLogin ? "login" : "signup";
-      const payload = isLogin ? { email, password } : { email, password, name };
+      const payload = isLogin 
+        ? { email, password } 
+        : { email, password, name, role: 'user' };
+
       const response = await axios.post(`http://localhost:5000/${endpoint}`, payload);
       localStorage.setItem("token", response.data.token);
+
       navigate("/");
     } catch (error: unknown) {
       if (axios.isAxiosError(error) && error.response) {

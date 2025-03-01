@@ -48,8 +48,10 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // User schema and model
 const userSchema = new mongoose.Schema({
+  name: { type: String },
   email: { type: String, required: true, unique: true },
   password: { type: String },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
 });
 
 const User = mongoose.model('User', userSchema);
@@ -124,26 +126,29 @@ const authenticateJWT = (req, res, next) => {
 
 // Signup route
 app.post('/signup', async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, name, role } = req.body;
   try {
-    // Check if the email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.log('Email already exists:', email); // Debugging information
       return res.status(400).json({ error: 'Email already exists' });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ email, password: hashedPassword });
+    const user = new User({ 
+      email, 
+      password: hashedPassword,
+      name,
+      role: role || 'user' // Default to 'user' if role not specified
+    });
     await user.save();
     res.status(201).json({ message: 'User created successfully' });
   } catch (error) {
-    console.error('Error during signup:', error); // Debugging information
+    console.error('Error during signup:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
 
-// Login route
+
 app.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -156,11 +161,20 @@ app.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email or password' });
     }
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
+    res.json({ 
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        name: user.name
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 // Google authentication routes
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], accessType: 'offline', prompt: 'consent' }));
@@ -201,6 +215,22 @@ app.get('/api/get-api-key', authenticateJWT, (req, res) => {
   }
   res.json({ apiKey });
 });
+
+
+// Get user data
+app.get('/api/user', authenticateJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    res.json({
+      name: user.name,
+      email: user.email,
+      role: user.role
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching user data' });
+  }
+});
+
 
 // Create a new task
 app.post('/tasks', authenticateJWT, upload.single('pdf'), async (req, res) => {

@@ -1,18 +1,43 @@
 import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart, AiOutlineMenu, AiOutlineClose } from 'react-icons/ai';
 import { BsClipboardCheck, BsBell } from 'react-icons/bs';
 import { FiUser } from 'react-icons/fi';
 import { RiBookmarkLine } from 'react-icons/ri';
 import { BiLogOut } from 'react-icons/bi';
+import { BsGear } from 'react-icons/bs';
 
 const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
   const navigate = useNavigate();
+  const [userData, setUserData] = useState({
+    name: '',
+    email: '',
+    role: ''
+  });
   const isLoggedIn = localStorage.getItem('token');
-  const userName = localStorage.getItem('userName') || 'Student Name';
-  const userEmail = localStorage.getItem('userEmail') || 'student@email.com';
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await axios.get('http://localhost:5000/api/user', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setUserData(response.data);
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+        }
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    setUserData({ name: '', email: '', role: '' });
     navigate('/access');
   };
 
@@ -57,6 +82,13 @@ const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () 
               <BsBell className="text-xl" />
               {isOpen && <span className="ml-3">Notifications</span>}
             </Link>
+
+            {isLoggedIn && userData.role === 'admin' && (
+              <Link to="/admin" className={`flex items-center p-3 rounded-lg hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 transition-all ${!isOpen && 'justify-center'}`}>
+                <BsGear className="text-xl" />
+                {isOpen && <span className="ml-3">Admin</span>}
+              </Link>
+            )}
           </div>
 
           <div className="absolute bottom-0 left-0 w-full p-6">
@@ -69,8 +101,8 @@ const Header = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () 
                         <FiUser className="text-xl text-indigo-600" />
                       </div>
                       <div className="text-left">
-                        <p className="font-medium text-gray-800">{userName}</p>
-                        <p className="text-sm text-gray-500">{userEmail}</p>
+                        <p className="font-medium text-gray-800">{userData.name}</p>
+                        <p className="text-sm text-gray-500">{userData.email}</p>
                       </div>
                     </>
                   )}
