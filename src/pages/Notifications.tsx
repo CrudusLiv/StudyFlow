@@ -8,7 +8,7 @@ interface Reminder {
   description: string;
 }
 
-const Notifications = () => {
+const Notifications: React.FC = () => {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [newReminder, setNewReminder] = useState<Reminder>({
     id: Date.now(),
@@ -35,73 +35,31 @@ const Notifications = () => {
   };
 
   return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8 text-gray-900 dark:text-white">
-          Notifications & Reminders
-        </h1>
-
-        <div className="grid gap-6 md:grid-cols-2">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Set New Reminder</h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Title"
-                value={newReminder.title}
-                onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-              <input
-                type="date"
-                value={newReminder.date}
-                onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-              <input
-                type="time"
-                value={newReminder.time}
-                onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })}
-                className="w-full p-2 border rounded-lg"
-              />
-              <textarea
-                placeholder="Description"
-                value={newReminder.description}
-                onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
-                className="w-full p-2 border rounded-lg h-24"
-              />
-              <button
-                onClick={handleAddReminder}
-                className="w-full bg-blue-600 text-black py-2 rounded-lg hover:bg-blue-700"
-              >
-                Set Reminder
-              </button>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Upcoming Reminders</h2>
-            <div className="space-y-4">
-              {reminders.map((reminder) => (
-                <div key={reminder.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <h3 className="font-semibold">{reminder.title}</h3>
-                    <button
-                      onClick={() => handleDeleteReminder(reminder.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                  <p className="text-gray-600">{reminder.description}</p>
-                  <div className="mt-2 text-sm text-gray-500">
-                    {reminder.date} at {reminder.time}
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div className="p-4 md:p-6 lg:p-8 bg-white dark:bg-gray-900">
+      <div className="max-w-4xl mx-auto">
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">Notifications</h2>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {reminders.map((reminder) => (
+              <div key={reminder.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{reminder.title}</h3>
+                <p className="text-gray-600 dark:text-gray-300 mt-1">{reminder.description}</p>
+                <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  {reminder.date} at {reminder.time}
+                </span>
+                <button
+                  onClick={() => handleDeleteReminder(reminder.id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
+    </div>
   );
 };
 

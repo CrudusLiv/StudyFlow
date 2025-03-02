@@ -57,6 +57,7 @@ a {
   font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
+  @apply text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300;
 }
 a:hover {
   color: #535bf2;
@@ -76,12 +77,15 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100;
 }
 
 .container {
   max-width: 100%;
   width: 100%;
   height: 100%;
+  @apply px-4 mx-auto;
+  @apply bg-white dark:bg-gray-900;
 }
 
 .flex-grow {
@@ -99,6 +103,18 @@ body {
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  @apply text-2xl md:text-3xl lg:text-4xl;
+  @apply text-gray-900 dark:text-white;
+}
+
+h2 {
+  @apply text-xl md:text-2xl lg:text-3xl;
+  @apply text-gray-900 dark:text-white;
+}
+
+h3 {
+  @apply text-lg md:text-xl lg:text-2xl;
+  @apply text-gray-900 dark:text-white;
 }
 
 button {
@@ -111,6 +127,7 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  @apply min-h-[44px] md:min-h-[36px];
 }
 button:hover {
   border-color: #646cff;
@@ -214,4 +231,73 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@media (min-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  .container {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  html {
+    font-size: 16px;
+  }
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+.table-responsive {
+  @apply overflow-x-auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.section {
+  @apply py-4 md:py-6 lg:py-8;
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100;
+}
+
+.section-sm {
+  @apply py-2 md:py-4 lg:py-6;
+}
+
+button, 
+.button,
+[role="button"],
+input,
+select,
+textarea {
+  @apply min-h-[44px] md:min-h-[36px];
+  @apply bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600;
+}
+
+h4, h5, h6 {
+  @apply text-gray-900 dark:text-white;
+}
+
+p, span, div {
+  @apply text-gray-700 dark:text-gray-300;
 }

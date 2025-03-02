@@ -1,4 +1,4 @@
-import { Task, Schedule } from '../types/types';
+import { Task } from '../types/types';
 import axios from 'axios';
 
 let apiKey: string | null = null;

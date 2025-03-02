@@ -1,288 +1,216 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import { BsPersonFill, BsBook, BsGear, BsGraphUp, BsSearch, BsFilter, BsBell } from "react-icons/bs";
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui/table';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts';
 
-// Initialize axios instance with base configuration for API calls
-const api = axios.create({
-  baseURL: 'http://localhost:5000',
-  headers: {
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  lastLogin: string;
 }
 
-});
+interface UserActivity {
+  _id: string;
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  lastLogin: string;
+  totalSessions: number;
+  averageSessionDuration: number;
+}
 
-const Admin = () => {
-    // Core state management
-    const navigate = useNavigate();
-    const [users, setUsers] = useState([]);          // Store user data
-    const [sessions, setSessions] = useState([]);    // Store session data
-    const [loading, setLoading] = useState(false);   // Loading state for async operations
-    const [selectedTab, setSelectedTab] = useState("users");  // Active tab tracker
-    const [searchQuery, setSearchQuery] = useState(""); // Search functionality
-    // Dashboard statistics state
-    const [stats, setStats] = useState({
-        totalUsers: 0,
-        activeSessions: 0,
-        totalModules: 0,
-        // Future metric: progressRate: 0,
-    });
+interface Analytics {
+  totalUsers: number;
+  activeToday: number;
+  averageSessionDuration: number;
+  userActivity: UserActivity[];
+}
 
-    // Fetch dashboard statistics on component mount
-    useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await api.get("/admin/stats");
-                setStats(response.data);
-            } catch (error) {
-                console.error("Error fetching stats:", error);
-            }
-        };
-        fetchStats();
-    }, []);
+const Admin: React.FC = () => {
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    // Fetch users data from API
-    const fetchUsers = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get("/admin/users");
-            setUsers(response.data);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        }
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.get('http://localhost:5000/api/admin/analytics', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setAnalytics(response.data);
+      } catch (error) {
+        setError('Failed to fetch analytics data');
+        console.error('Error fetching analytics:', error);
+      } finally {
         setLoading(false);
+      }
     };
 
-    // Fetch sessions data from API
-    const fetchSessions = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const response = await api.get("/admin/sessions");
-            setSessions(response.data);
-        } catch (error) {
-            console.error("Error fetching sessions:", error);
-        }
-        setLoading(false);
-    };
+    fetchAnalytics();
+  }, []);
 
-    // Handle user deletion
-    const handleDeleteUser = async (userId) => {
-        try {
-            await api.delete(`/admin/users/${userId}`);
-            fetchUsers(); // Refresh user list
-        } catch (error) {
-            console.error("Error deleting user:", error);
-        }
-    };
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!analytics) return <div>No data available</div>;
 
-    // Handle user status updates (active/inactive)
-    const handleUpdateUserStatus = async (userId, status) => {
-        try {
-            await api.patch(`/admin/users/${userId}`, { status });
-            fetchUsers(); // Refresh user list
-        } catch (error) {
-            console.error("Error updating user status:", error);
-        }
-    };
+  // Transform analytics data for the chart
+  const activityData = analytics?.userActivity.map(user => ({
+    name: user.name,
+    sessions: user.totalSessions,
+    average: Math.round(user.averageSessionDuration)
+  })) || [];
 
-    // Load data based on selected tab
-    useEffect(() => {
-        if (selectedTab === 'users') {
-            fetchUsers();
-        } else if (selectedTab === 'sessions') {
-            fetchSessions();
-        }
-    }, [selectedTab]);
+  const transformUserToActivity = (user: User): UserActivity => ({
+    _id: user._id,
+    id: user._id, // Add id field to match UserActivity interface
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    lastLogin: user.lastLogin,
+    totalSessions: 0, // Default values for new fields
+    averageSessionDuration: 0
+  });
+ 
+  return (
+    <div className="space-y-6 p-6">
+      <h1 className="text-3xl font-bold">Admin Dashboard</h1>
 
-    // Reusable StatCard component for dashboard metrics
-    const StatCard = ({ icon: Icon, title, value, trend }) => (
-        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                    <div className="p-3 bg-indigo-50 rounded-lg">
-                        <Icon className="text-indigo-600 text-xl" />
-                    </div>
-                    <div>
-                        <h3 className="text-gray-500 text-sm">{title}</h3>
-                        <p className="text-xl sm:text-2xl font-bold text-gray-800">{value}</p>
-                    </div>
-                </div>
-                {trend && (
-                    <span className={`text-sm ${trend >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {trend >= 0 ? '+' : ''}{trend}%
-                    </span>
-                )}
-            </div>
-        </div>
-    );
+      {/* Overview Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Total Users</CardTitle>
+            <CardDescription>Active accounts on the platform</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{analytics.totalUsers}</p>
+          </CardContent>
+        </Card>
 
-    return (
-        <div className="min-h-screen w-full bg-gray-50">
-            {/* Header with search and notifications */}
-            <div className="sticky top-0 z-10 bg-white border-b px-4 sm:px-8 py-4">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-800">StudyFlow Admin</h1>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                        <div className="relative w-full sm:w-auto">
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="w-full sm:w-auto pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                            <BsSearch className="absolute left-3 top-3 text-gray-400" />
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            <button className="p-2 relative">
-                                <BsBell className="text-gray-600 text-xl" />
-                                <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Today</CardTitle>
+            <CardDescription>Users active in the last 24 hours</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">{analytics.activeToday}</p>
+          </CardContent>
+        </Card>
 
-            {/* Main content area */}
-            <div className="p-4 sm:p-8">
-                {/* Statistics cards grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-                    <StatCard
-                        icon={BsPersonFill}
-                        title="Total Users"
-                        value={stats.totalUsers}
-                        trend={12}
-                    />
-                    <StatCard
-                        icon={BsBook}
-                        title="Active Sessions"
-                        value={stats.activeSessions}
-                        trend={-5}
-                    />
-                    <StatCard
-                        icon={BsBook}
-                        title="Total Modules"
-                        value={stats.totalModules}
-                        trend={15}
-                    />
-                </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Avg. Session Duration</CardTitle>
+            <CardDescription>In minutes per user</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold">
+              {Math.round(analytics.averageSessionDuration)}m
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-                {/* Content tabs and data display */}
-                <div className="bg-white rounded-xl shadow-sm min-h-[calc(100vh-300px)] p-4 sm:p-6">
-                    {/* Tab navigation */}
-                    <div className="flex flex-wrap items-center justify-between mb-6">
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                className={`px-4 py-2 rounded-lg ${selectedTab === 'users' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600'}`}
-                                onClick={() => setSelectedTab('users')}
-                            >
-                                Users
-                            </button>
-                            <button
-                                className={`px-4 py-2 rounded-lg ${selectedTab === 'sessions' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600'}`}
-                                onClick={() => setSelectedTab('sessions')}
-                            >
-                                Sessions
-                            </button>
-                            <button
-                                className={`px-4 py-2 rounded-lg ${selectedTab === 'settings' ? 'bg-indigo-50 text-indigo-600' : 'text-gray-600'}`}
-                                onClick={() => setSelectedTab('settings')}
-                            >
-                                Settings
-                            </button>
-                        </div>
-                    </div>
+      {/* Activity Chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>User Activity</CardTitle>
+          <CardDescription>Sessions and average duration by user</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={activityData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line 
+                  type="monotone" 
+                  dataKey="sessions" 
+                  stroke="#8884d8" 
+                  name="Total Sessions"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="average" 
+                  stroke="#82ca9d" 
+                  name="Avg Duration (min)"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
 
-                    {/* Tab content */}
-                    <div className="mt-4">
-                        {/* Users table */}
-                        {selectedTab === 'users' && (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Active</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {users.map((user) => (
-                                            <tr key={user.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">{user.name}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{user.email}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className={`px-2 py-1 rounded-full text-xs ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                        {user.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    {user.lastActive ? new Date(user.lastActive).toLocaleString() : 'Never'}
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    {/* existing action buttons */}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {/* Sessions table */}
-                        {selectedTab === 'sessions' && (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Module</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                        {sessions.map((session) => (
-                                            <tr key={session.id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">{session.userName}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{session.moduleName}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">{session.duration}</td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                                                        <div
-                                                            className="bg-indigo-600 h-2.5 rounded-full"
-                                                            style={{ width: `${session.progress}%` }}
-                                                        ></div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-
-                        {/* Settings panel */}
-                        {selectedTab === 'settings' && (
-                            <div className="space-y-6">
-                                <div className="bg-gray-50 p-6 rounded-lg">
-                                    <h3 className="text-lg font-medium text-gray-900 mb-4">Platform Settings</h3>
-                                    {/* Settings controls placeholder */}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+      {/* User Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>User Details</CardTitle>
+          <CardDescription>Detailed view of user activity</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow key="header">
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Last Active</TableHead>
+                  <TableHead>Total Sessions</TableHead>
+                  <TableHead>Avg. Duration</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {analytics?.userActivity.map((user: UserActivity) => (
+                  <TableRow key={user._id || user.id}>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.role}</TableCell>
+                    <TableCell>
+                      {new Date(user.lastLogin).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>{user.totalSessions}</TableCell>
+                    <TableCell>
+                      {Math.round(user.averageSessionDuration)}m
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 };
 
 export default Admin;

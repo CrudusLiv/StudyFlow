@@ -13,6 +13,17 @@ interface GoogleCredentialResponse {
   credential?: string;
 }
 
+interface UserResponse {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+    role: string;
+    name: string;
+    uniqueKey: string;  // Add this field
+  };
+}
+
 export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
@@ -73,11 +84,12 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.post('http://localhost:5000/auth/google/callback', {
+      const response = await axios.post<UserResponse>('http://localhost:5000/auth/google/callback', {
         credential: credentialResponse.credential
       });
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
+        localStorage.setItem('userKey', response.data.user.uniqueKey); // Store uniqueKey
         navigate("/");
       } else {
         throw new Error('No token received');
@@ -115,8 +127,9 @@ export function AuthForm({ className, ...props }: React.ComponentProps<"div">) {
         ? { email, password } 
         : { email, password, name, role: 'user' };
 
-      const response = await axios.post(`http://localhost:5000/${endpoint}`, payload);
+      const response = await axios.post<UserResponse>(`http://localhost:5000/${endpoint}`, payload);
       localStorage.setItem("token", response.data.token);
+      localStorage.setItem('userKey', response.data.user.uniqueKey); // Store uniqueKey
 
       navigate("/");
     } catch (error: unknown) {
