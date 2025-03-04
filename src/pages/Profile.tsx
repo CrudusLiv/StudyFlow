@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import '../styles/pages/Profile.css';
 
 interface UserProfile {
   name: string;
@@ -106,128 +107,113 @@ const Profile: React.FC = () => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-white dark:bg-gray-900">
-      <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Profile Settings</h1>
+    <div className="profile-container">
+      <div className="profile-wrapper">
+        <h1 className="profile-title">Profile Settings</h1>
 
-        {/* Profile Information */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Profile Information</h2>
+        <div className="profile-card">
+          <div className="card-header">
+            <h2 className="card-title">Profile Information</h2>
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+              className="edit-button"
             >
               {isEditing ? 'Cancel' : 'Edit'}
             </button>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
-              <input
-                type="text"
-                value={profile.name}
-                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-                disabled={!isEditing}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Username</label>
-              <input
-                type="text"
-                value={profile.username}
-                onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                disabled={!isEditing}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-              <input
-                type="email"
-                value={profile.email}
-                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-                disabled={!isEditing}
-                className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-
-            {isEditing && (
-              <button
-                onClick={handleProfileUpdate}
-                className="w-full py-2 px-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
-              >
-                Save Changes
-              </button>
-            )}
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input
+              type="text"
+              value={profile.name}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              disabled={!isEditing}
+              className="form-input"
+            />
           </div>
+
+          <div className="form-group">
+            <label className="form-label">Username</label>
+            <input
+              type="text"
+              value={profile.username}
+              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+              disabled={!isEditing}
+              className="form-input"
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              value={profile.email}
+              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              disabled={!isEditing}
+              className="form-input"
+            />
+          </div>
+
+          {isEditing && (
+            <button onClick={handleProfileUpdate} className="save-button">
+              Save Changes
+            </button>
+          )}
         </div>
 
-        {/* Password Change Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Change Password</h2>
+        <div className="profile-card">
+          <div className="card-header">
+            <h2 className="card-title">Change Password</h2>
             <button
               onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className="px-4 py-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
+              className="edit-button"
             >
               {isChangingPassword ? 'Cancel' : 'Change'}
             </button>
           </div>
 
           {isChangingPassword && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
+            <>
+              <div className="form-group">
+                <label className="form-label">Current Password</label>
                 <input
                   type="password"
                   value={passwordData.currentPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
+              <div className="form-group">
+                <label className="form-label">New Password</label>
                 <input
                   type="password"
                   value={passwordData.newPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="form-input"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
+              <div className="form-group">
+                <label className="form-label">Confirm New Password</label>
                 <input
                   type="password"
                   value={passwordData.confirmPassword}
                   onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                  className="w-full p-2 border rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  className="form-input"
                 />
               </div>
 
-              <button
-                onClick={handlePasswordChange}
-                className="w-full py-2 px-4 bg-indigo-600 dark:bg-indigo-500 text-white rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600"
-              >
+              <button onClick={handlePasswordChange} className="save-button">
                 Update Password
               </button>
-            </div>
+            </>
           )}
         </div>
 
-        {/* Message Display */}
         {message && (
-          <div className={`mt-6 p-4 rounded-md ${
-            message.type === 'success' 
-              ? 'bg-green-50 dark:bg-green-900/50 text-green-700 dark:text-green-300' 
-              : 'bg-red-50 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-          }`}>
+          <div className={`message ${message.type === 'success' ? 'message-success' : 'message-error'}`}>
             {message.text}
           </div>
         )}

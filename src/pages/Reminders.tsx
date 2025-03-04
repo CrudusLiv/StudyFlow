@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/pages/Reminders.css';
 
 interface Reminder {
   _id: string;
@@ -51,52 +52,42 @@ const Reminders: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-4">Loading...</div>;
+    return <div className="reminders-container">Loading...</div>;
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Reminders</h1>
+    <div className="reminders-container">
+      <h1 className="reminders-title">Reminders</h1>
       
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div className="reminders-list">
         {reminders.length > 0 ? (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {reminders.map(reminder => (
-              <div
-                key={reminder._id}
-                className={`p-4 transition-colors ${
-                  !reminder.isRead 
-                    ? 'bg-yellow-50 dark:bg-yellow-900/20' 
-                    : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-grow">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">
-                      {reminder.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      {reminder.message}
-                    </p>
-                    <div className="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400 space-x-4">
-                      <span>Due: {new Date(reminder.dueDate).toLocaleDateString()}</span>
-                      <span>Reminder: {new Date(reminder.reminderDate).toLocaleDateString()}</span>
-                    </div>
+          reminders.map(reminder => (
+            <div
+              key={reminder._id}
+              className={`reminder-item ${!reminder.isRead ? 'unread' : ''}`}
+            >
+              <div className="reminder-content">
+                <div className="reminder-info">
+                  <h3 className="reminder-title">{reminder.title}</h3>
+                  <p className="reminder-message">{reminder.message}</p>
+                  <div className="reminder-meta">
+                    <span>Due: {new Date(reminder.dueDate).toLocaleDateString()}</span>
+                    <span>Reminder: {new Date(reminder.reminderDate).toLocaleDateString()}</span>
                   </div>
-                  {!reminder.isRead && (
-                    <button
-                      onClick={() => markAsRead(reminder._id)}
-                      className="ml-4 px-3 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                    >
-                      Mark as read
-                    </button>
-                  )}
                 </div>
+                {!reminder.isRead && (
+                  <button
+                    onClick={() => markAsRead(reminder._id)}
+                    className="mark-read-button"
+                  >
+                    Mark as read
+                  </button>
+                )}
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         ) : (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="empty-state">
             No reminders available
           </div>
         )}

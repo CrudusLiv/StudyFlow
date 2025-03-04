@@ -1,0 +1,126 @@
+.reminders-container {
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.reminders-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.reminders-list {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.reminder-item {
+  padding: 1rem;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.reminder-item:last-child {
+  border-bottom: none;
+}
+
+.reminder-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.reminder-info {
+  flex-grow: 1;
+}
+
+.reminder-title {
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.reminder-message {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+
+.reminder-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.mark-read-button {
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  background-color: #d1fae5;
+  color: #047857;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.mark-read-button:hover {
+  background-color: #a7f3d0;
+}
+
+.unread {
+  background-color: #fef3c7;
+}
+
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .reminders-title {
+    color: white;
+  }
+
+  .reminders-list {
+    background: #1f2937;
+  }
+
+  .reminder-item {
+    border-color: #374151;
+  }
+
+  .reminder-title {
+    color: white;
+  }
+
+  .reminder-message {
+    color: #9ca3af;
+  }
+
+  .reminder-meta {
+    color: #d1d5db;
+  }
+
+  .unread {
+    background-color: rgba(234, 179, 8, 0.1);
+  }
+
+  .mark-read-button {
+    background-color: rgba(4, 120, 87, 0.2);
+    color: #34d399;
+  }
+
+  .mark-read-button:hover {
+    background-color: rgba(4, 120, 87, 0.3);
+  }
+
+  .empty-state {
+    color: #9ca3af;
+  }
+}

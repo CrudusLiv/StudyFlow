@@ -1,0 +1,232 @@
+.schedule-container {
+  padding: 20px;
+}
+
+.schedule-header {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #1f2937;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.import-label {
+  background: #4f46e5;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.import-label:hover {
+  background: #4338ca;
+}
+
+.add-class-button {
+  background: #10b981;
+  color: white;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-class-button:hover {
+  background: #059669;
+}
+
+.schedule-table-container {
+  overflow-x: auto;
+  margin: 0 -16px;
+}
+
+.schedule-table {
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.table-header {
+  background: #f9fafb;
+}
+
+.table-header th {
+  padding: 12px 24px;
+  text-align: left;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.time-cell {
+  padding: 16px 24px;
+  font-weight: 500;
+  color: #1f2937;
+  background: white;
+  position: sticky;
+  left: 0;
+  z-index: 10;
+}
+
+.schedule-cell {
+  padding: 16px 24px;
+  border: 1px solid #e5e7eb;
+  vertical-align: top;
+}
+
+.class-card {
+  background: #eef2ff;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.class-title {
+  font-weight: 600;
+  color: #4f46e5;
+  margin-bottom: 4px;
+}
+
+.class-details {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal-content {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 16px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-select,
+.form-input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.time-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.save-button {
+  padding: 8px 16px;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Dark mode styles */
+@media (prefers-color-scheme: dark) {
+  .schedule-container {
+    background: #111827;
+    color: white;
+  }
+
+  .page-title {
+    color: white;
+  }
+
+  .table-header {
+    background: #1f2937;
+  }
+
+  .table-header th {
+    color: #9ca3af;
+  }
+
+  .time-cell {
+    background: #111827;
+    color: white;
+  }
+
+  .schedule-cell {
+    border-color: #374151;
+  }
+
+  .class-card {
+    background: #1f2937;
+  }
+
+  .class-title {
+    color: #818cf8;
+  }
+
+  .class-details {
+    color: #9ca3af;
+  }
+
+  .modal-content {
+    background: #1f2937;
+  }
+
+  .form-select,
+  .form-input {
+    background: #374151;
+    border-color: #4b5563;
+    color: white;
+  }
+
+  .cancel-button {
+    background: #374151;
+    color: white;
+  }
+}

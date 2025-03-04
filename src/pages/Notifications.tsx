@@ -1,4 +1,5 @@
 import { useState } from "react";
+import '../styles/pages/Notifications.css';
 
 interface Reminder {
   id: number;
@@ -35,28 +36,26 @@ const Notifications: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 bg-white dark:bg-gray-900">
-      <div className="max-w-4xl mx-auto">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">Notifications</h2>
+    <div className="notifications-container">
+      <div className="notifications-wrapper">
+        <h2 className="notifications-title">Notifications</h2>
         
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {reminders.map((reminder) => (
-              <div key={reminder.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{reminder.title}</h3>
-                <p className="text-gray-600 dark:text-gray-300 mt-1">{reminder.description}</p>
-                <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  {reminder.date} at {reminder.time}
-                </span>
-                <button
-                  onClick={() => handleDeleteReminder(reminder.id)}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
+        <div className="notifications-list">
+          {reminders.map((reminder) => (
+            <div key={reminder.id} className="notification-item">
+              <h3 className="notification-title">{reminder.title}</h3>
+              <p className="notification-description">{reminder.description}</p>
+              <span className="notification-time">
+                {reminder.date} at {reminder.time}
+              </span>
+              <button
+                onClick={() => handleDeleteReminder(reminder.id)}
+                className="delete-button"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
         </div>
       </div>
     </div>

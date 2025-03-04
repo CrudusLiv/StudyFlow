@@ -9,6 +9,17 @@ export const ROUTES = {
   PROFILE: '/profile'
 } as const;
 
+export const PROTECTED_ROUTES = {
+  [ROUTES.HOME]: { protected: true },
+  [ROUTES.ACCESS]: { protected: false },
+  [ROUTES.SCHEDULE]: { protected: true },
+  [ROUTES.UNIVERSITY_SCHEDULE]: { protected: true },
+  [ROUTES.REMINDERS]: { protected: true },
+  [ROUTES.TRACKER]: { protected: true },
+  [ROUTES.ADMIN]: { protected: true, role: 'admin' },
+  [ROUTES.PROFILE]: { protected: true }
+} as const;
+
 export const getRouteTitle = (path: string): string => {
   switch (path) {
     case ROUTES.HOME:

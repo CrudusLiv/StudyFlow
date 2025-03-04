@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import '../styles/pages/UniversitySchedule.css';
 
 interface Class {
   courseName: string;
@@ -120,90 +121,77 @@ const UniversitySchedule: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-          University Schedule
-        </h1>
-        <div className="flex flex-col xs:flex-row gap-2 sm:gap-4 w-full sm:w-auto">
-          <label className="btn bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700 cursor-pointer text-sm sm:text-base">
+    <div className="schedule-container">
+      <div className="schedule-header">
+        <h1 className="page-title">University Schedule</h1>
+        <div className="action-buttons">
+          <label className="import-label">
             Import Schedule
             <input
               type="file"
               accept=".pdf,.csv,.xlsx"
               onChange={handleFileUpload}
-              className="hidden"
+              style={{ display: 'none' }}
             />
           </label>
           <button
             onClick={() => setShowAddModal(true)}
-            className="bg-green-600 text-white px-3 py-2 rounded-lg hover:bg-green-700 text-sm sm:text-base"
+            className="add-class-button"
           >
             Add Class
           </button>
         </div>
       </div>
 
-      {/* Schedule Table */}
-      <div className="overflow-x-auto -mx-4 sm:-mx-6 lg:-mx-8">
-        <div className="inline-block min-w-full align-middle">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Time
-                </th>
-                {DAYS.map(day => (
-                  <th key={day} className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    {day}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {TIME_SLOTS.map(timeSlot => (
-                <tr key={timeSlot} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                    {timeSlot}
-                  </td>
-                  {DAYS.map(day => {
-                    const daySchedule = schedule.find(d => d.day === day);
-                    const classAtTime = daySchedule?.classes.find(c => 
-                      timeSlot >= c.startTime && timeSlot < c.endTime
-                    );
-
-                    return (
-                      <td key={`${day}-${timeSlot}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {classAtTime && (
-                          <div className="bg-indigo-50 dark:bg-indigo-900/30 p-2 rounded">
-                            <div className="font-medium text-indigo-700 dark:text-indigo-300">{classAtTime.courseName}</div>
-                            <div className="text-xs">
-                              <div>{classAtTime.location}</div>
-                              <div>{classAtTime.professor}</div>
-                            </div>
-                          </div>
-                        )}
-                      </td>
-                    );
-                  })}
-                </tr>
+      <div className="schedule-table-container">
+        <table className="schedule-table">
+          <thead className="table-header">
+            <tr>
+              <th>Time</th>
+              {DAYS.map(day => (
+                <th key={day}>{day}</th>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </tr>
+          </thead>
+          <tbody>
+            {TIME_SLOTS.map(timeSlot => (
+              <tr key={timeSlot}>
+                <td className="time-cell">{timeSlot}</td>
+                {DAYS.map(day => {
+                  const daySchedule = schedule.find(d => d.day === day);
+                  const classAtTime = daySchedule?.classes.find(c => 
+                    timeSlot >= c.startTime && timeSlot < c.endTime
+                  );
+
+                  return (
+                    <td key={`${day}-${timeSlot}`} className="schedule-cell">
+                      {classAtTime && (
+                        <div className="class-card">
+                          <div className="class-title">{classAtTime.courseName}</div>
+                          <div className="class-details">
+                            <div>{classAtTime.location}</div>
+                            <div>{classAtTime.professor}</div>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* Add Class Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-lg mx-auto">
-            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Add New Class</h2>
-            <div className="space-y-4">
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">Add New Class</h2>
+            <div className="form-group">
               <select
                 value={selectedDay}
                 onChange={(e) => setSelectedDay(e.target.value)}
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                className="form-select"
               >
                 <option value="">Select Day</option>
                 {DAYS.map(day => (
@@ -215,20 +203,20 @@ const UniversitySchedule: React.FC = () => {
                 placeholder="Course Name"
                 value={newClass.courseName}
                 onChange={(e) => setNewClass({ ...newClass, courseName: e.target.value })}
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                className="form-input"
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="time-inputs">
                 <input
                   type="time"
                   value={newClass.startTime}
                   onChange={(e) => setNewClass({ ...newClass, startTime: e.target.value })}
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                  className="form-input"
                 />
                 <input
                   type="time"
                   value={newClass.endTime}
                   onChange={(e) => setNewClass({ ...newClass, endTime: e.target.value })}
-                  className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                  className="form-input"
                 />
               </div>
               <input
@@ -236,26 +224,26 @@ const UniversitySchedule: React.FC = () => {
                 placeholder="Location"
                 value={newClass.location}
                 onChange={(e) => setNewClass({ ...newClass, location: e.target.value })}
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                className="form-input"
               />
               <input
                 type="text"
                 placeholder="Professor"
                 value={newClass.professor}
                 onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
-                className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600"
+                className="form-input"
               />
             </div>
-            <div className="mt-6 flex justify-end space-x-4">
+            <div className="modal-buttons">
               <button
                 onClick={() => setShowAddModal(false)}
-                className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                className="cancel-button"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddClass}
-                className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                className="save-button"
               >
                 Add Class
               </button>

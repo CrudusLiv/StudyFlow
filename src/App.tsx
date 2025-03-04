@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { GoogleOAuthProvider } from '@react-oauth/google';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Access from './pages/Access';
 import Schedule from './pages/Schedule';
-import Planner from './pages/Planner';
 import Tracker from './pages/Tracker';
 import Notifications from './pages/Notifications';
 import UniversitySchedule from './pages/UniversitySchedule';
@@ -40,7 +39,6 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider>
       <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
         <Router>
           <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
@@ -52,17 +50,52 @@ const App: React.FC = () => {
             `}>
               <div className="max-w-7xl mx-auto w-full">
                 <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/home" element={<Home />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <Home />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/home" element={
+                    <ProtectedRoute>
+                      <Home />
+                    </ProtectedRoute>
+                  } />
                   <Route path="/access" element={<Access />} />
-                  <Route path="/schedule" element={<Schedule />} />
-                  <Route path="/planner" element={<Planner />} />
-                  <Route path="/tracker" element={<Tracker />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/university-schedule" element={<UniversitySchedule />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/reminders" element={<Reminders />} />
+                  <Route path="/schedule" element={
+                    <ProtectedRoute>
+                      <Schedule />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/tracker" element={
+                    <ProtectedRoute>
+                      <Tracker />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/notifications" element={
+                    <ProtectedRoute>
+                      <Notifications />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/university-schedule" element={
+                    <ProtectedRoute>
+                      <UniversitySchedule />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Admin />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <Profile />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reminders" element={
+                    <ProtectedRoute>
+                      <Reminders />
+                    </ProtectedRoute>
+                  } />
                 </Routes>
               </div>
             </main>
@@ -70,7 +103,6 @@ const App: React.FC = () => {
           </div>
         </Router>
       </GoogleOAuthProvider>
-    </ThemeProvider>
   );
 };
 

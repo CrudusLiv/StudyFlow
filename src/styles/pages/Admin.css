@@ -1,0 +1,133 @@
+.admin-container {
+  padding: 1.5rem;
+}
+
+.admin-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+}
+
+.stat-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.stat-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.chart-container {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.chart-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.chart-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.chart-description {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+}
+
+.chart-content {
+  height: 400px;
+  padding: 1rem;
+}
+
+.table-container {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.table-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table-head {
+  background: #f9fafb;
+  text-align: left;
+}
+
+.table-head th {
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  color: #4b5563;
+}
+
+.table-body td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Dark mode styles */
+.dark .stat-card,
+.dark .chart-container,
+.dark .table-container {
+  background: #1f2937;
+}
+
+.dark .stat-title,
+.dark .chart-title {
+  color: #f9fafb;
+}
+
+.dark .stat-description,
+.dark .chart-description {
+  color: #9ca3af;
+}
+
+.dark .table-head {
+  background: #374151;
+}
+
+.dark .table-body td {
+  border-color: #374151;
+}
+
+@media (max-width: 768px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
