@@ -119,13 +119,3 @@
   color: #a78bfa;
 }
 
-/* Responsive styles */
-@media (max-width: 640px) {
-  .main-title {
-    font-size: 2rem;
-  }
-
-  .features-grid {
-    grid-template-columns: 1fr;
-  }
-}

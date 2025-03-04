@@ -1,0 +1,37 @@
+:root {
+    /* Light theme variables (soft and balanced colors) */
+    --background: #fafafa;
+    --foreground: #333333;
+    --card: #ffffff;
+    --card-foreground: #333333;
+    --popover: #f1f1f1;
+    --popover-foreground: #333333;
+    --primary: #4a90e2;
+    --primary-foreground: #ffffff;
+    --secondary: #2c3e50;
+    --secondary-foreground: #ffffff;
+    --muted: #f9f9f9;
+    --muted-foreground: #6b7280;
+    --accent: #4a90e2;
+    --accent-foreground: #ffffff;
+    --destructive: #e3342f;
+    --destructive-foreground: #ffffff;
+    --border: #e2e8f0;
+    --input: #ffffff;
+    --ring: #a0aec0;
+    --chart-1: #1f77b4;
+    --chart-2: #ff7f0e;
+    --chart-3: #2ca02c;
+    --chart-4: #d62728;
+    --chart-5: #9467bd;
+    --radius: 0.625rem;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #333333;
+    --sidebar-primary: #4a90e2;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #2c3e50;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: #e2e8f0;
+    --sidebar-ring: #a0aec0;
+  }
+  

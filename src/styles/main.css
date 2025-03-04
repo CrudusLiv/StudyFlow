@@ -1,0 +1,70 @@
+:root {
+    /* Layout and common styling variables for components */
+    --header-height: 80px;
+    --container-width: 1200px;
+  }
+  
+  body {
+    font-family: 'Arial', sans-serif;
+    font-weight: 400;
+  }
+  
+  .container {
+    width: var(--container-width);
+    margin: 0 auto;
+    padding: 0 calc(var(--base-spacing));
+  }
+  
+  .header {
+    height: var(--header-height);
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    display: flex;
+    align-items: center;
+    padding: 0 calc(var(--base-spacing));
+  }
+  
+  .nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+  }
+  
+  .main-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;
+    gap: 1.875rem;
+    padding: calc(var(--base-spacing) * 2) 0;
+  }
+  
+  /* Improved card component styling */
+  .card {
+    background-color: var(--card);
+    color: var(--card-foreground);
+    border-radius: var(--base-radius);
+    padding: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+  }
+  
+  /* Styled button for consistency */
+  .button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary);
+    color: var(--primary-foreground);
+    border: none;
+    border-radius: var(--base-radius);
+    cursor: pointer;
+    transition: background-color 0.25s;
+  }
+  
+  .button:hover {
+    background-color: var(--secondary);
+  }
+  

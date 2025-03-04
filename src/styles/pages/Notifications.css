@@ -96,15 +96,3 @@
   color: #9ca3af;
 }
 
-/* Media queries */
-@media (min-width: 768px) {
-  .notifications-container {
-    padding: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .notifications-container {
-    padding: 2rem;
-  }
-}

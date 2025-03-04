@@ -146,19 +146,6 @@
   margin-bottom: 1rem;
 }
 
-@media (min-width: 768px) {
-  .card-content {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .info-column {
-    display: block;
-  }
-
-  .form-column {
-    padding: 2.5rem;
-  }
-}
 
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {

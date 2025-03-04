@@ -3,7 +3,6 @@ import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart } from 'react-icon
 import { BsGear } from 'react-icons/bs';
 import { ROUTES } from '../lib/routes';
 import '../styles/components/Navigation.css';
-import { useEffect, useState } from 'react';
 
 interface NavigationProps {
   isOpen: boolean;
@@ -14,16 +13,6 @@ interface NavigationProps {
 
 const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) => {
   const location = useLocation();
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   const navigationItems = [
     { 
@@ -53,26 +42,20 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
 
   return (
     <>
-      {isMobile && (
-        <div 
-          className={`nav-overlay ${isOpen ? 'active' : ''}`} 
-          onClick={onClose}
-        />
-      )}
-      <nav 
-        className={`nav-container ${isMobile ? (isOpen ? 'open' : '') : 'desktop'}`}
-        style={!isMobile ? { transform: 'none' } : undefined}
-      >
+      <div 
+        className={`nav-overlay ${isOpen ? 'active' : ''}`} 
+        onClick={onClose}
+      />
+      <nav className={`nav-container ${isOpen ? 'open' : ''}`}>
         <div className="nav-header">
           <span className="logo">StudyFlow</span>
         </div>
-        
         <div className="nav-items">
           {navigationItems.map(({ path, icon, label }) => (
             <Link
               key={path}
               to={path}
-              onClick={isMobile ? onClose : undefined}
+              onClick={onClose}
               className={`nav-item ${location.pathname === path ? 'active' : ''}`}
             >
               <span className="nav-icon">{icon}</span>

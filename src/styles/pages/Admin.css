@@ -126,8 +126,4 @@
   border-color: #374151;
 }
 
-@media (max-width: 768px) {
-  .overview-grid {
-    grid-template-columns: 1fr;
-  }
-}
+
