@@ -1,0 +1,126 @@
+.nav-container {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  width: 280px;
+  background: linear-gradient(135deg, #ffffff 0%, #f0f2ff 100%);
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.08);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.4s ease;
+}
+
+.nav-container.desktop {
+  transform: none !important;
+}
+
+.nav-header {
+  padding: 28px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.logo {
+  font-size: 26px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4f46e5, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.5px;
+}
+
+.nav-items {
+  padding: 20px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  border-radius: 14px;
+  color: #64748b;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  position: relative;
+  font-weight: 500;
+}
+
+.nav-item:before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 70%;
+  width: 4px;
+  background: linear-gradient(135deg, #4f46e5, #818cf8);
+  opacity: 0;
+  transition: all 0.3s ease;
+  transform: translateY(-50%);
+  border-radius: 0 4px 4px 0;
+}
+
+.nav-item:hover {
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+  transform: translateX(6px);
+}
+
+.nav-item.active {
+  background: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+  font-weight: 600;
+}
+
+.nav-item.active:before {
+  opacity: 1;
+}
+
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  margin-right: 14px;
+  transition: all 0.3s ease;
+}
+
+.nav-item:hover .nav-icon {
+  transform: scale(1.15) rotate(5deg);
+}
+
+.nav-label {
+  font-size: 15.5px;
+  letter-spacing: -0.3px;
+}
+
+@media (max-width: 768px) {
+  .nav-container {
+    transform: translateX(-100%);
+  }
+
+  .nav-container.open {
+    transform: translateX(0);
+  }
+
+  .nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.4s ease;
+  }
+
+  .nav-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
