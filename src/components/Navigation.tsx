@@ -1,5 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { AiOutlineHome, AiOutlineCalendar, AiOutlineLineChart } from 'react-icons/ai';
+import { 
+  AiOutlineHome, 
+  AiOutlineCalendar, 
+  AiOutlineLineChart, 
+  AiOutlineSchedule,
+  AiOutlineBell,
+  AiOutlineUser 
+} from 'react-icons/ai';
 import { BsGear } from 'react-icons/bs';
 import { ROUTES } from '../lib/routes';
 import '../styles/components/Navigation.css';
@@ -23,12 +30,27 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
     { 
       path: ROUTES.SCHEDULE, 
       icon: <AiOutlineCalendar size={22} />, 
-      label: 'Schedule' 
+      label: 'Study Schedule' 
+    },
+    { 
+      path: ROUTES.UNIVERSITY_SCHEDULE, 
+      icon: <AiOutlineSchedule size={22} />, 
+      label: 'University Schedule' 
+    },
+    { 
+      path: ROUTES.REMINDERS, 
+      icon: <AiOutlineBell size={22} />, 
+      label: 'Reminders' 
     },
     { 
       path: ROUTES.TRACKER, 
       icon: <AiOutlineLineChart size={22} />, 
       label: 'Progress Tracker' 
+    },
+    { 
+      path: ROUTES.PROFILE, 
+      icon: <AiOutlineUser size={22} />, 
+      label: 'Profile' 
     },
     ...(isLoggedIn && userRole === 'admin' 
       ? [{ 
