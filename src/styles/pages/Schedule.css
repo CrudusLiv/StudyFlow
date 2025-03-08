@@ -425,6 +425,37 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.improved-modal {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.modal-close-button {
+  background: transparent;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.modal-content-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
 }
 
 .form-group {
@@ -569,5 +600,101 @@
   .cancel-button {
     background: #374151;
     color: #ffffff;
+  }
+}
+
+.schedule-weeks {
+  overflow-x: hidden; /* remove horizontal scroll */
+  padding-bottom: 24px;
+}
+
+.week-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 10px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.current-week {
+  font-size: 18px;
+  font-weight: 600;
+  color: #4f46e5;
+}
+
+.nav-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  color: #4f46e5;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.nav-button:hover {
+  background: #e5e7eb;
+}
+
+.nav-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode adaptations for new elements */
+@media (prefers-color-scheme: dark) {
+  .week-navigation {
+    background: #1f2937;
+  }
+  
+  .current-week {
+    color: #818cf8;
+  }
+  
+  .nav-button {
+    background: #374151;
+    color: #818cf8;
+  }
+  
+  .nav-button:hover {
+    background: #4b5563;
+  }
+}
+
+/* Add a style for the no-schedule message */
+.no-schedule-message {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  margin: 20px 0;
+}
+
+.no-schedule-message p {
+  font-size: 18px;
+  color: #6b7280;
+}
+
+/* Dark mode adaptation */
+@media (prefers-color-scheme: dark) {
+  .no-schedule-message {
+    background: #1f2937;
+  }
+  
+  .no-schedule-message p {
+    color: #e5e7eb;
   }
 }

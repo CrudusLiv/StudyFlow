@@ -17,9 +17,9 @@ import Navigation from './components/Navigation';
 
 function App() {
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const handleClose = () => {
-  setIsOpen(false);
-};
+//   const handleClose = () => {
+//   setIsNavOpen(false);
+// };
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <Router>
