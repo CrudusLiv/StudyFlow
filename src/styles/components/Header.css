@@ -1,6 +1,23 @@
 .header {
   display: flex;
-  background: transparent;
+  align-items: center;
+  width: 100%;
+  padding: 10px 20px;
+  position: relative;
+}
+
+.menu-button {
+  position: absolute;
+  left: 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+}
+
+.menu-button:hover {
+  background-color: transparent;
+  border: #fff 1px solid ;
 }
 
 .mobile-overlay {
@@ -42,3 +59,11 @@
   transform: translateX(-100%);
 }
 
+h1 {
+  color: #fff;
+  font-size: 20px;
+  font-weight: 700;
+  width: 100%;
+  text-align: center;
+  margin: 0;
+}

@@ -47,30 +47,29 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
       icon: <AiOutlineLineChart size={22} />, 
       label: 'Progress Tracker' 
     },
+    ...isLoggedIn ? [] : [
     { 
       path: ROUTES.PROFILE, 
       icon: <AiOutlineUser size={22} />, 
       label: 'Profile' 
-    },
-    ...(isLoggedIn && userRole === 'admin' 
-      ? [{ 
-          path: ROUTES.ADMIN, 
-          icon: <BsGear size={22} />, 
-          label: 'Admin Dashboard' 
-        }] 
+    }],
+    ...(isLoggedIn && userRole === 'admin' ? [
+      { 
+        path: ROUTES.ADMIN, 
+        icon: <BsGear size={22} />, 
+        label: 'Admin Dashboard' 
+      }] 
       : []
     )
   ];
 
   return (
     <>
-      <div 
-        className={`nav-overlay ${isOpen ? 'active' : ''}`} 
-        onClick={onClose}
-      />
+      {isOpen && <div className="nav-backdrop" onClick={onClose}></div>}
       <nav className={`nav-container ${isOpen ? 'open' : ''}`}>
         <div className="nav-header">
           <span className="logo">StudyFlow</span>
+          <button className="close-button" onClick={onClose}></button>
         </div>
         <div className="nav-items">
           {navigationItems.map(({ path, icon, label }) => (
@@ -89,5 +88,4 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
     </>
   );
 };
-
 export default Navigation;

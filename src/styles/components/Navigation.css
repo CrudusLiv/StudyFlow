@@ -103,28 +103,83 @@
   letter-spacing: -0.3px;
 }
 
+.nav-footer {
+  margin-top: auto;
+  padding: 20px;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.logout {
+  color: #ff4444;
+  cursor: pointer;
+}
+
+.logout:hover {
+  background-color: rgba(255, 68, 68, 0.1);
+}
+
+.close-button {
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  margin-left: 60%;
+  align-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.close-button:hover {
+  background-color: rgba(79, 70, 229, 0.1);
+  box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.2);
+}
+
+.close-button::before,
+.close-button::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 2px;
+  background-color: #4f46e5;
+  top: 50%;
+  left: 50%;
+  transition: transform 0.2s ease;
+}
+
+.close-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.close-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+.close-button:hover::before,
+.close-button:hover::after {
+  background-color: #4f46e5;
+}
+
 @media (max-width: 768px) {
   .nav-container {
     transform: translateX(-100%);
+    z-index: 999;
   }
 
   .nav-container.open {
     transform: translateX(0);
   }
 
-  .nav-overlay {
+  .nav-backdrop {
     position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
-    z-index: 999;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 0.4s ease;
-  }
-
-  .nav-overlay.active {
-    opacity: 1;
-    pointer-events: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;
   }
 }

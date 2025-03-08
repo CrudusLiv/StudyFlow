@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { FaCalendarAlt, FaChartLine, FaArrowRight } from 'react-icons/fa';
 import '../styles/pages/Home.css';
 
 const Home: React.FC = () => {
@@ -14,6 +15,7 @@ const Home: React.FC = () => {
           
           <div className="features-grid">
             <div className="feature-card schedule-card">
+              <FaCalendarAlt className="feature-icon" />
               <h2 className="feature-title schedule-title">
                 Schedule Management
               </h2>
@@ -23,6 +25,7 @@ const Home: React.FC = () => {
             </div>
             
             <div className="feature-card progress-card">
+              <FaChartLine className="feature-icon" />
               <h2 className="feature-title progress-title">
                 Progress Tracking
               </h2>

@@ -88,12 +88,13 @@ export function AuthForm() {
 
               {!isLogin && (
                 <div className="input-group">
-                  <label className="input-label">Full Name</label>
+                  <label className="input-label">Username</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input-field"
+                    placeholder="Alice"
                     required
                   />
                 </div>
@@ -106,6 +107,7 @@ export function AuthForm() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="input-field"
+                  placeholder="user@gmail.com"
                   required
                 />
               </div>
@@ -118,15 +120,9 @@ export function AuthForm() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input-field"
+                    placeholder="••••••••••••"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="toggle-password"
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
                 </div>
               </div>
 
@@ -140,13 +136,12 @@ export function AuthForm() {
 
               <div className="divider">
                 <span>Or continue with</span>
+                <GoogleLogin
+                  onSuccess={handleGoogleAuth}
+                  onError={() => setError("Google login failed")}
+                  auto_select={true}
+                />
               </div>
-
-              <GoogleLogin
-                onSuccess={handleGoogleAuth}
-                onError={() => setError("Google login failed")}
-                auto_select={true}
-              />
 
               <button
                 type="button"

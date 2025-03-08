@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { FaCheckCircle, FaClock, FaChartLine, FaTasks } from 'react-icons/fa';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -21,6 +22,46 @@ interface ProgressStats {
   overallProgress: number;
   timeRemaining: number;
 }
+// Add this test data at the top of the file after the interfaces
+const testAssignments: Assignment[] = [
+  {
+    _id: '1',
+    title: 'Math Homework',
+    description: 'Calculus Chapter 5',
+    startDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    progress: 65,
+    completed: false
+  },
+  {
+    _id: '2',
+    title: 'Physics Lab Report',
+    description: 'Wave Motion Analysis',
+    startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    progress: 80,
+    completed: false
+  },
+  {
+    _id: '3',
+    title: 'History Essay',
+    description: 'World War II Impact',
+    startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    progress: 30,
+    completed: false
+  },
+  {
+    _id: '4',
+    title: 'Project Presentation',
+    description: 'Final Group Project',
+    startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    progress: 100,
+    completed: false
+  }
+];
+
 
 const Tracker: React.FC = () => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -61,18 +102,20 @@ const Tracker: React.FC = () => {
   }, [assignments, calculateProgress]);
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/assignments', {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
-        setAssignments(response.data);
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
-      }
-    };
+    // const fetchAssignments = async () => {
+    //   try {
+    //     const response = await axios.get('http://localhost:5000/assignments', {
+    //       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+    //     });
+    //     setAssignments(response.data);
+    //   } catch (error) {
+    //     console.error('Error fetching assignments:', error);
+    //   }
+    // };
 
-    fetchAssignments();
+    // fetchAssignments();
+    //test data
+    setAssignments(testAssignments);
   }, []);
 
   useEffect(() => {
@@ -84,80 +127,113 @@ const Tracker: React.FC = () => {
   return (
     <div className="tracker-container">
       <div className="tracker-wrapper">
-        <h2 className="tracker-title">Progress Tracker</h2>
+        <h2 className="tracker-title">Tracker</h2>
         
         <div className="chart-container">
-          <h3 className="chart-title">Assignment Progress</h3>
           <div className="chart-wrapper">
             <ResponsiveContainer>
-              <LineChart data={assignments}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="title" />
-                <YAxis domain={[0, 100]} unit="%" />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="progress" stroke="#818cf8" strokeWidth={2} />
-              </LineChart>
+             <LineChart data={assignments}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis 
+              dataKey="title" 
+              label={{ value: "Assignment Name", position: "bottom", offset: 5 }}
+            />
+            <YAxis 
+              domain={[0, 100]} 
+              unit="%" 
+              label={{ value: "Completion Progress", angle: -90, position: "insideLeft" }}
+            />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#ffffff',
+                borderRadius: '8px',
+                border: 'none',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }} 
+            />
+            <Legend />
+            <Line 
+              type="monotone" 
+              dataKey="progress" 
+              name="Progress" 
+              stroke="#818cf8" 
+              strokeWidth={2}
+              dot={{ stroke: '#6366f1', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: '#4f46e5' }}
+            />
+          </LineChart>
+
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="stats-grid">
           <div className="stat-card">
+            <FaChartLine className="stat-icon" />
             <h3 className="stat-title">Overall Progress</h3>
+            <div className="stat-value">{stats.overallProgress.toFixed(1)}%</div>
             <div className="progress-container">
-              <div className="progress-header">
-                <span className="progress-label">Progress</span>
-                <span className="progress-value">{stats.overallProgress.toFixed(1)}%</span>
-              </div>
               <div className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ width: `${stats.overallProgress}%` }}
-                />
+                <div className="progress-fill" style={{ width: `${stats.overallProgress}%` }} />
               </div>
             </div>
           </div>
 
           <div className="stat-card">
+            <FaTasks className="stat-icon" />
             <h3 className="stat-title">Assignments</h3>
             <div className="stat-value">
               {stats.completedAssignments}/{stats.totalAssignments}
             </div>
-            <p className="stat-label">Completed</p>
+            <p className="stat-label">Completed Tasks</p>
           </div>
 
           <div className="stat-card">
+            <FaClock className="stat-icon" />
             <h3 className="stat-title">Time Remaining</h3>
             <div className="stat-value">{stats.timeRemaining.toFixed(1)}</div>
             <p className="stat-label">Days Average</p>
           </div>
         </div>
-
-        <div className="assignments-list">
-          <h3 className="chart-title">Active Assignments</h3>
-          <div className="assignments-grid">
-            {assignments.map(assignment => (
-              <div key={assignment._id} className="assignment-item">
-                <div className="assignment-header">
-                  <h4 className="assignment-title">{assignment.title}</h4>
-                  <span className="assignment-date">
-                    Due: {new Date(assignment.dueDate).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="progress-container">
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill"
-                      style={{ width: `${calculateProgress(assignment)}%` }}
-                    />
+          <div className="assignments-list">
+            <h3 className="chart-title">
+              <FaTasks className="section-icon" /> Active Assignments
+            </h3>
+            <div className="assignments-grid">
+              {assignments
+                .filter(assignment => assignment.progress < 100)
+                .map(assignment => (
+                  <div key={assignment._id} className="assignment-item">
+                    <div className="assignment-header">
+                      <h4 className="assignment-title">{assignment.title}</h4>
+                      <div className="assignment-meta">
+                        <FaClock className="meta-icon" />
+                        <span className="assignment-date">
+                          Due: {new Date(assignment.dueDate).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="assignment-description">{assignment.description}</p>
+                    <div className="progress-container">
+                      <div className="progress-header">
+                        <span className="progress-value">{assignment.progress}%</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill"
+                          style={{ width: `${assignment.progress}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            ))}
+                ))}
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 };

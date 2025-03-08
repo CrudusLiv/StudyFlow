@@ -1,6 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { 
+  FiUpload, 
+  FiEdit2, 
+  FiRefreshCw, 
+  FiCalendar, 
+  FiClock,
+  FiCheckCircle, 
+  FiCircle, 
+  FiLoader,
+  FiSettings,
+  FiFilter,
+  FiDownload,
+  FiTrash2,
+  FiFile 
+} from 'react-icons/fi';
 import '../styles/pages/Schedule.css';
 
 interface BaseTask {
@@ -34,6 +49,23 @@ interface WeeklySchedule {
   weeklySchedule: DaySchedule[];
 }
 
+// Function to generate a unique color based on the task title
+const getTaskColor = (task: ScheduleTask): string => {
+  let hash = 0; // Initialize a hash value
+
+  // Loop through each character in the task title
+  for (let i = 0; i < task.title.length; i++) {
+    // Generate a hash by shifting bits left and adding the character's Unicode value
+    hash = task.title.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
+  // Convert the hash into a hue value (0-359 degrees for HSL color)
+  const hue = hash % 360;
+
+  // Return the HSL color string with fixed saturation (70%) and lightness (85%)
+  return `hsl(${hue}, 70%, 85%)`;
+};
+
 const Schedule: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [pdfFiles, setPdfFiles] = useState<File[]>([]);
@@ -45,6 +77,7 @@ const Schedule: React.FC = () => {
     taskIndex: number;
     task: ScheduleTask;
   } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -285,6 +318,24 @@ const Schedule: React.FC = () => {
     setEditingTask(null);
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files) {
+      setPdfFiles(Array.from(e.dataTransfer.files));
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -292,30 +343,88 @@ const Schedule: React.FC = () => {
   return (
     <div className="schedule-container">
       <div className="schedule-header">
-        <h2 className="schedule-title">Study Schedule</h2>
-        <div className="current-date">
-          {new Date().toLocaleDateString('en-US', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+        <div className="header-left">
+          <div className="title-group">
+            <FiCalendar className="header-icon" />
+            <div>
+              <h2 className="schedule-title">Study Schedule</h2>
+              <p className="current-date">
+                {new Date().toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="header-right">
+          <div className="header-actions">
+            <button className="header-button">
+              <FiFilter className="button-icon" />
+              Filter
+            </button>
+            <button className="header-button">
+              <FiDownload className="button-icon" />
+              Export
+            </button>
+            <button className="header-button">
+              <FiRefreshCw className="button-icon" />
+              Refresh
+            </button>
+            <button className="header-button settings-button">
+              <FiSettings className="button-icon" />
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="upload-section">
-        <div className="upload-controls">
-          <input
-            type="file"
-            accept="application/pdf"
-            multiple
-            onChange={handleFileChange}
-            className="file-input"
-          />
-          <button onClick={handleGenerateSchedule} className="generate-button">
-            Generate Schedule
-          </button>
+        <div className="upload-header">
+          <h3><FiUpload className="section-icon" /> Course Materials</h3>
+          <p className="upload-description">Upload your course syllabus and materials to generate a schedule</p>
         </div>
+        
+        <div 
+          className={`upload-area ${isDragging ? 'dragging' : ''}`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <FiFile className="upload-icon" />
+          <p className="upload-text">Drag and drop PDF files here or</p>
+          <label className="upload-button">
+            <input
+              type="file"
+              accept="application/pdf"
+              multiple
+              onChange={handleFileChange}
+              className="file-input"
+            />
+            Browse Files
+          </label>
+        </div>
+
+        {pdfFiles.length > 0 && (
+          <div className="file-list">
+            {pdfFiles.map((file, index) => (
+              <div key={index} className="file-item">
+                <FiFile className="file-icon" />
+                <span className="file-name">{file.name}</span>
+                <button 
+                  className="remove-file"
+                  onClick={() => setPdfFiles(files => files.filter((_, i) => i !== index))}
+                >
+                  <FiTrash2 />
+                </button>
+              </div>
+            ))}
+            <button onClick={handleGenerateSchedule} className="generate-button">
+              <FiClock className="button-icon" /> Generate Schedule
+            </button>
+          </div>
+        )}
       </div>
 
       {weeklySchedule && (
@@ -340,45 +449,39 @@ const Schedule: React.FC = () => {
                     return (
                       <td key={`${day.day}-${timeSlot}`} className="task-cell">
                         {task && (
-                          <div className="task-card">
+                          <div className="task-card" style={{ backgroundColor: getTaskColor(task) }}>
                             <div className="task-content">
-                              <h4 className="task-title">{task.title}</h4>
+                              <div className="task-header">
+                                <h4 className="task-title">{task.title}</h4>
+                                {task.priority && (
+                                  <span className={`priority-badge priority-${task.priority}`}>
+                                    {task.priority}
+                                  </span>
+                                )}
+                              </div>
                               {task.courseCode && (
                                 <span className="course-code">{task.courseCode}</span>
                               )}
                               <p className="task-details">{task.details}</p>
-                              {task.assignmentTitle && (
-                                <div className="assignment-info">
-                                  Assignment: {task.assignmentTitle}
-                                </div>
-                              )}
-                              {task.dueDate && (
-                                <div className="due-date">
-                                  Due: {new Date(task.dueDate).toLocaleDateString()}
-                                </div>
-                              )}
-                              {task.priority && (
-                                <span className={`priority-badge priority-${task.priority}`}>
-                                  {task.priority}
-                                </span>
-                              )}
-                              <select
-                                value={task.status}
-                                onChange={(e) => handleUpdateTask(dayIndex, taskIndex, {
-                                  status: e.target.value as ScheduleTask['status']
-                                })}
-                                className="status-select"
-                              >
-                                <option value="pending">Pending</option>
-                                <option value="in-progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                              </select>
-                              <button
-                                onClick={() => handleEditTask(dayIndex, taskIndex, task)}
-                                className="edit-button"
-                              >
-                                Edit
-                              </button>
+                              <div className="task-footer">
+                                <select
+                                  value={task.status}
+                                  onChange={(e) => handleUpdateTask(dayIndex, taskIndex, {
+                                    status: e.target.value as ScheduleTask['status']
+                                  })}
+                                  className="status-select"
+                                >
+                                  <option value="pending"><FiCircle /> Pending</option>
+                                  <option value="in-progress"><FiLoader /> In Progress</option>
+                                  <option value="completed"><FiCheckCircle /> Completed</option>
+                                </select>
+                                <button
+                                  onClick={() => handleEditTask(dayIndex, taskIndex, task)}
+                                  className="edit-button"
+                                >
+                                  <FiEdit2 className="button-icon" /> Edit
+                                </button>
+                              </div>
                             </div>
                           </div>
                         )}
