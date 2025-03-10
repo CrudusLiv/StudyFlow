@@ -11,23 +11,6 @@ export async function processPDF(buffer) {
     const loadingTask = getDocument({ data });
     const pdf = await loadingTask.promise;
     
-    const content = {
-      sections: [],
-      assignments: [],
-      metadata: { title: '' },
-      rawText: ''
-    };
-
-    // Extract metadata
-    const metadata = await pdf.getMetadata();
-    content.metadata = {
-      title: metadata.info?.Title || '',
-      author: metadata.info?.Author || '',
-      subject: metadata.info?.Subject || '',
-      keywords: metadata.info?.Keywords?.split(',').map(k => k.trim()) || []
-    };
-
-    // Process each page
     let fullText = '';
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
@@ -40,44 +23,15 @@ export async function processPDF(buffer) {
         bold: item.transform[0] > 12
       }));
 
-      let currentSection = '';
-      pageText.forEach((item, idx) => {
+      pageText.forEach(item => {
         const text = item.text.trim();
-        if (!text) return;
-
-        fullText += text + ' ';
-
-        if (item.bold || item.fontSize > 12) {
-          if (text.length > 3 && text.length < 100) {
-            content.sections.push({
-              title: text,
-              content: '',
-              level: item.fontSize > 14 ? 1 : 2,
-              pageNum: i
-            });
-            currentSection = text;
-          }
-        } 
-        else if (isAssignmentText(text)) {
-          const nextItems = pageText.slice(idx + 1, idx + 5);
-          const description = nextItems.map(i => i.text).join(' ');
-          const dueDateMatch = extractDueDate(description);
-          
-          content.assignments.push({
-            title: text,
-            description,
-            dueDate: dueDateMatch ? new Date(dueDateMatch[1]) : undefined,
-            estimatedHours: estimateWorkHours(description)
-          });
-        }
-        else if (currentSection && content.sections.length > 0) {
-          content.sections[content.sections.length - 1].content += text + ' ';
+        if (text) {
+          fullText += text + ' ';
         }
       });
     }
 
-    content.rawText = fullText.trim();
-    return content;
+    return { rawText: fullText.trim() };
   } catch (error) {
     console.error('Error processing PDF:', error);
     throw new Error(`Failed to process PDF: ${error.message}`);

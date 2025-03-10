@@ -17,7 +17,7 @@ import { google } from 'googleapis';
 import pdfParse from 'pdf-parse';
 import { Mistral } from '@mistralai/mistralai';
 import { fileURLToPath } from 'url';
-import { parseAIResponse } from './utils/aiResponseUtils.js';
+import { parseAIResponse, withRetry } from './utils/aiResponseUtils.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,6 +40,8 @@ const upload = multer({ storage });
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  useFindAndModify: false,  // Add this line
+  useCreateIndex: true      // Add this line for better index handling
 })
   .then(() => {
     console.log('Connected to MongoDB');
@@ -518,247 +520,91 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
 
     // Calculate current date and due date from PDF content
     const currentDate = new Date();
-    
-    // Try to extract due dates from the PDF content
-    const dueDateMatches = combinedPdfText.match(/due\s*(?:date|by)?[\s:]*([a-zA-Z]+\s+\d{1,2}(?:st|nd|rd|th)?[\s,]+\d{4}|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/gi);
-    let dueDate = null;
-    
-    if (dueDateMatches && dueDateMatches.length > 0) {
-      // Try to parse the first due date found
-      const dueDateStr = dueDateMatches[0].replace(/due\s*(?:date|by)?[\s:]*/i, '').trim();
-      dueDate = new Date(dueDateStr);
-      console.log(`Extracted due date: ${dueDateStr}, parsed as: ${dueDate}`);
-    }
-    
-    // If we couldn't parse a due date or it's invalid, set a default (4 weeks from now)
-    if (!dueDate || isNaN(dueDate.getTime())) {
-      dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 28); // 4 weeks from now
-      console.log(`Using default due date: ${dueDate}`);
-    }
-    
-    // Calculate the number of weeks available for the schedule
-    const timeDiff = dueDate.getTime() - currentDate.getTime();
-    const daysDiff = Math.max(7, Math.ceil(timeDiff / (1000 * 3600 * 24)));
-    const weeksAvailable = Math.max(2, Math.floor(daysDiff / 7));
-    
-    console.log(`Days until due date: ${daysDiff}, weeks available: ${weeksAvailable}`);
-    
+    const currentTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     const systemDate = currentDate.toLocaleDateString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric'
     });
-    
+
+    // Remove the direct parsing of due date from PDF
+
+    // Use a default guide for schedule length, falling back to 4 weeks if not provided
+    const weeksAvailable = preferences.weeksAvailable
+      ? parseInt(preferences.weeksAvailable, 10)
+      : 4;
+
     const daysBeforeDue = parseInt(preferences.daysBeforeDue || "2", 10);
 
     // Create a more detailed prompt for better schedule generation
     const prompt = `You are an expert educational scheduling assistant.
-Task: Create a comprehensive multi-week study schedule based on the provided PDF content and user preferences.
-
-Today's date is ${systemDate}.
-
+Task: Create a comprehensive multi-week study schedule based on the provided PDF content, user preferences, the current system date, and time.
+Today's date is ${systemDate}, and the current time is ${currentTime}.
 INSTRUCTIONS:
-1. First, carefully analyze the PDF content to identify all assignments, tasks, and requirements.
+1. Do not parse dates directly from the PDF. Instead, use a default guide for scheduling (${weeksAvailable} weeks).
+2. Incorporate user preferences (wake/sleep times, break frequency, etc.), and any relevant text from the PDF.
+3. For the first day (today), avoid scheduling tasks before ${currentTime}.
+4. For subsequent days, follow normal daily routines from preferences.
+5. Return only a JSON object with no additional text.
 
-2. CREATE A ${weeksAvailable}-WEEK SCHEDULE (THIS IS EXTREMELY IMPORTANT) that spreads tasks across ALL ${weeksAvailable} WEEKS.
-   - Tasks must be distributed across all ${weeksAvailable} weeks, not just one week
-   - Each week must have tasks on at least 5 different days
-   - Ensure each day has 2-4 tasks with different time slots
-   - Break large assignments into smaller daily tasks of 1-2 hours each
-   - Final work should be scheduled to complete ${daysBeforeDue} days before the deadline
-
-3. Use MULTIPLE TIME SLOTS PER DAY, such as:
-   - Morning: ${preferences.wakeTime || '07:00'} - 12:00
-   - Afternoon: 12:00 - 17:00
-   - Evening: 17:00 - ${preferences.sleepTime || '23:00'}
-   - Schedule at least 3-4 different time slots each day
-   - Each time slot should be 1-2 hours (e.g., "09:00 - 10:30", "14:00 - 15:30")
-   - Include short breaks between time slotsust be a valid JSON object with NO explanation text before or after the JSON.
-
-4. IMPORTANT: Your response must be a valid JSON object with NO explanation text before or after the JSON.
-   Your entire response should be exactly in this format:
-   {
-     "weeklySchedule": [
-       {
-         "week": "Week 1",
-         "days": [
-           {
-             "day": "Monday",
-             "date": "March 10, 2025",
-             "tasks": [
-               {
-                 "time": "09:00 - 10:30",
-                 "title": "Research for Assignment X",
-                 "details": "Find sources for the literature review section",
-                 "status": "pending"
-               },
-               {
-                 "time": "13:00 - 14:30",
-                 "title": "Outline Literature Review",
-                 "details": "Create structural outline with key points",
-                 "status": "pending"
-               }
-             ]
-           }
-         ]
-       }
-     ]
-   }
-
-5. Critical scheduling rules:
-   - Begin with easier tasks and gradually progress to more complex ones
-   - DISTRIBUTE TASKS ACROSS ALL ${weeksAvailable} WEEKS - DO NOT COMPRESS INTO ONE WEEK
-   - Schedule within user's wake (${preferences.wakeTime || '07:00'}) and sleep times (${preferences.sleepTime || '23:00'})
-   - Include breaks every ${preferences.breakFrequency || '120'} minutes
-   - Avoid scheduling during dinner time (${preferences.dinnerTime || '18:00'})
-   - Group related tasks on the same day when possible
-   - Ensure tasks are completed ${daysBeforeDue} days before deadlines
-   - Use descriptive, specific task titles and detailed descriptions
-
-RETURN ONLY THE JSON OBJECT WITH NO ADDITIONAL TEXT OR EXPLANATIONS.
-
-PDF CONTENT:
-${combinedPdfText}`;
+PDF CONTENT
+${combinedPdfText},
+RETURN ONLY THE JSON OBJECT WITH NO ADDITIONAL TEXT OR EXPLANATIONS.`;
 
     console.log('Sending enhanced prompt to AI...');
-    const chatResponse = await client.chat.complete({
-      model: 'mistral-large-latest',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 4000,
-      temperature: 0.7, // Adding some creativity while maintaining coherence
-    });
+    
+    const generateSchedule = async () => {
+      return await client.chat.complete({
+        model: 'mistral-large-latest',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 4000,
+        temperature: 0.7,
+      });
+    };
 
+    const chatResponse = await withRetry(generateSchedule);
+    
     try {
-      // Get raw content and log a sample
       const rawContent = chatResponse.choices[0].message.content;
       console.log('Raw AI response sample:', rawContent.substring(0, 300) + '...');
-      
-      // Use the utility function to parse the response
-      let jsonContent = rawContent;
-      
-      // Remove any markdown code block indicators
-      jsonContent = jsonContent.replace(/```json\s*/g, '').replace(/```\s*/g, '');
-      
-      // Try to find JSON between curly braces if there's text before/after
-      const jsonMatch = jsonContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        jsonContent = jsonMatch[0];
-      }
-      
-      console.log('Extracted JSON sample:', jsonContent.substring(0, 100) + '...');
-      
-      // Parse the cleaned content
-      const schedule = JSON.parse(jsonContent);
 
-      // Validate the schedule structure
-      if (!schedule.weeklySchedule || !Array.isArray(schedule.weeklySchedule)) {
-        throw new Error('Invalid schedule structure');
-      }
+      // Parse and normalize schedule
+      const schedule = parseAIResponse(rawContent);
       
-      // Verify we have multiple weeks as requested
-      if (schedule.weeklySchedule.length < Math.min(2, weeksAvailable)) {
-        console.warn('Warning: AI generated fewer weeks than requested. Adding empty weeks to compensate.');
-        
-        // Get the last week to use as a template
-        const lastWeek = schedule.weeklySchedule[schedule.weeklySchedule.length - 1];
-        
-        // Add additional weeks if needed
-        while (schedule.weeklySchedule.length < weeksAvailable) {
-          const newWeekNumber = schedule.weeklySchedule.length + 1;
-          const newWeek = {
-            week: `Week ${newWeekNumber}`,
-            days: lastWeek.days.map(day => ({
-              day: day.day,
-              date: '(Date to be determined)',
-              tasks: []
-            }))
-          };
-          schedule.weeklySchedule.push(newWeek);
-        }
+      // Validate basic structure
+      if (!schedule || !schedule.weeklySchedule || !Array.isArray(schedule.weeklySchedule)) {
+        throw new Error('Invalid schedule format received');
       }
-      
-      // Verify each week has reasonable number of tasks
-      schedule.weeklySchedule.forEach((week, weekIndex) => {
-        if (!week.days || !Array.isArray(week.days) || week.days.length < 7) {
-          console.warn(`Week ${weekIndex + 1} has missing days. Fixing...`);
-          const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-          week.days = weekDays.map((dayName, i) => {
-            const existingDay = week.days?.find(d => d.day === dayName);
-            return existingDay || { 
-              day: dayName, 
-              date: '(Date to be determined)',
-              tasks: [] 
-            };
-          });
-        }
-        
-        // Check if each day has enough tasks
-        week.days.forEach(day => {
-          if (!day.tasks || !Array.isArray(day.tasks) || day.tasks.length < 2) {
-            // For weekdays, ensure at least 2 tasks
-            if (day.day !== 'Saturday' && day.day !== 'Sunday' && (!day.tasks || day.tasks.length < 2)) {
-              console.warn(`Adding placeholder tasks to ${day.day} in Week ${weekIndex + 1}`);
-              day.tasks = day.tasks || [];
-              
-              // Add tasks if needed
-              const timeSlots = ['09:00 - 10:30', '13:00 - 14:30', '15:00 - 16:30'];
-              const taskTypes = ['Research', 'Draft', 'Review', 'Practice'];
-              
-              while (day.tasks.length < 2) {
-                const timeIndex = day.tasks.length % timeSlots.length;
-                const taskIndex = day.tasks.length % taskTypes.length;
-                
-                day.tasks.push({
-                  time: timeSlots[timeIndex],
-                  title: `${taskTypes[taskIndex]} Session ${day.tasks.length + 1}`,
-                  details: `Additional ${taskTypes[taskIndex].toLowerCase()} session based on course materials`,
-                  status: "pending"
-                });
-              }
-            }
-          }
+
+      // Add empty weeks if needed
+      while (schedule.weeklySchedule.length < weeksAvailable) {
+        const newWeekNum = schedule.weeklySchedule.length + 1;
+        schedule.weeklySchedule.push({
+          week: `week_${newWeekNum}`,
+          days: Array(7).fill(null).map((_, i) => ({
+            day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i],
+            date: new Date(currentDate.getTime() + (newWeekNum * 7 + i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            tasks: []
+          }))
         });
-      });
-      
-      // Normalize the schedule data to ensure consistent format
-      const normalizedSchedule = {
-        weeklySchedule: schedule.weeklySchedule.map(week => {
-          return {
-            week: week.week || "Unknown Week",
-            days: Array.isArray(week.days) ? week.days.map(day => ({
-              day: day.day || "Unknown Day",
-              date: day.date || new Date().toISOString().split('T')[0],
-              tasks: Array.isArray(day.tasks) ? day.tasks.map(task => ({
-                time: task.time || "09:00 - 10:30",
-                title: task.title || "Untitled Task",
-                details: task.details || "",
-                status: task.status?.toLowerCase() === "not started" ? "pending" : 
-                        (task.status?.toLowerCase() || "pending")
-              })) : []
-            })) : []
-          };
-        })
-      };
+      }
 
-      console.log('Schedule structure successfully normalized:', 
-        JSON.stringify({
-          weekCount: normalizedSchedule.weeklySchedule.length,
-          firstWeek: normalizedSchedule.weeklySchedule[0]?.week,
-          dayCount: normalizedSchedule.weeklySchedule[0]?.days.length,
-          totalTasks: normalizedSchedule.weeklySchedule.reduce((total, week) => 
-            total + week.days.reduce((dayTotal, day) => 
-              dayTotal + (day.tasks?.length || 0), 0), 0)
-        })
-      );
-
-      // Save the schedule
+      // Save the normalized schedule
       const aiSchedule = await AISchedule.findOneAndUpdate(
         { userId, userKey },
-        { weeklySchedule: normalizedSchedule.weeklySchedule },
+        { weeklySchedule: schedule.weeklySchedule },
         { new: true, upsert: true }
       );
 
-      res.json(normalizedSchedule);
+      res.json(schedule);
     } catch (error) {
+      if (error.message.includes('Rate limit exceeded')) {
+        return res.status(429).json({
+          error: 'Rate limit exceeded',
+          message: 'Please try again in a few moments'
+        });
+      }
       console.error('Error parsing AI response:', error);
       console.error('Raw AI response:', chatResponse.choices[0].message.content.substring(0, 500) + '...');
       

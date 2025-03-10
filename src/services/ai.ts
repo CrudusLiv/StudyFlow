@@ -77,10 +77,8 @@ export const generateScheduleFromPdf = async (pdfFile: File): Promise<string> =>
     const extractedText = response.data.pdfText;
     console.log('Extracted text from PDF:', extractedText); // Debugging information
 
-    const tasks = extractTasksFromText(extractedText);
-    console.log('Extracted tasks from text:', tasks); // Debugging information
-
-    return await generateSchedule(tasks, extractedText);
+    // Do not extract tasks; just pass raw text to the AI
+    return await generateSchedule([], extractedText);
   } catch (err) {
     if (axios.isAxiosError(err)) {
       console.error('Axios error generating schedule from PDF:', err.response?.data || err.message);
@@ -111,47 +109,4 @@ export const readPdf = async (pdfFile: File): Promise<string> => {
     }
     throw err;
   }
-};
-
-const extractTasksFromText = (text: string): Task[] => {
-  const taskLines = text.split('\n').filter(line => line.trim() !== '');
-  const tasks: Task[] = [];
-
-  // Improved task extraction logic
-  taskLines.forEach((line, index) => {
-    if (line.toLowerCase().includes('task')) {
-      const titleMatch = line.match(/Task \d+: (.+)/i);
-      const durationMatch = line.match(/(\d+) minutes/i);
-      const priorityMatch = line.match(/(high|medium|low) priority/i);
-
-      if (titleMatch && durationMatch && priorityMatch) {
-        const title = titleMatch[1].trim();
-        const duration = parseInt(durationMatch[1], 10);
-        const priority = priorityMatch[1].toLowerCase() as 'high' | 'medium' | 'low';
-
-        tasks.push({
-          id: (index + 1).toString(),
-          title,
-          duration,
-          priority,
-          category: 'study', // Default category, you can adjust based on your needs
-          completed: false,
-        });
-      }
-    }
-  });
-
-  // If no tasks are found, create a default task for testing
-  if (tasks.length === 0) {
-    tasks.push({
-      id: '1',
-      title: 'Default Task',
-      duration: 60,
-      priority: 'high',
-      category: 'study',
-      completed: false,
-    });
-  }
-
-  return tasks;
 };

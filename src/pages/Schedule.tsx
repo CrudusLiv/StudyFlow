@@ -84,7 +84,8 @@ const Schedule: React.FC = () => {
     wakeTime: '07:00',
     sleepTime: '23:00',
     dinnerTime: '18:00',
-    breakFrequency: '120'
+    breakFrequency: '120',
+    includeWeekend: true  // new preference option
   });
   const navigate = useNavigate();
 
@@ -780,6 +781,16 @@ const Schedule: React.FC = () => {
                   setPreferences({ ...preferences, breakFrequency: e.target.value })
                 }
               />
+              <label>
+                <input
+                  type="checkbox"
+                  checked={preferences.includeWeekend}
+                  onChange={(e) =>
+                    setPreferences({ ...preferences, includeWeekend: e.target.checked })
+                  }
+                />
+                Include Saturday and Sunday
+              </label>
               <div className="modal-actions">
                 <button onClick={() => handleGenerateSchedule()}>Generate</button>
                 <button onClick={() => setShowGenerateScheduleModal(false)}>Cancel</button>
