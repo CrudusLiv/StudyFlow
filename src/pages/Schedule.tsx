@@ -13,6 +13,15 @@ import {
   FiFile 
 } from 'react-icons/fi';
 import '../styles/pages/Schedule.css';
+import { 
+  Select, 
+  MenuItem, 
+  Switch,
+  FormControlLabel,
+  Slider,
+} from '@mui/material';
+import ReactDatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
 
 interface BaseTask {
   _id: string;
@@ -46,6 +55,20 @@ interface WeeklySchedule {
   week: string;
   days: DaySchedule[];
 }
+
+// Add helper functions here
+const parseTime = (timeString: string): Date => {
+  const [hours, minutes] = timeString.split(':').map(Number);
+  const date = new Date();
+  date.setHours(hours);
+  date.setMinutes(minutes);
+  return date;
+};
+
+const formatTime = (date: Date | null): string => {
+  if (!date) return '00:00';
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+};
 
 // Function to generate a unique color based on the task title
 const getTaskColor = (task: ScheduleTask): string => {
@@ -188,8 +211,12 @@ const Schedule: React.FC = () => {
   const saveScheduleChanges = async (updated: WeeklySchedule[]) => {
     const token = localStorage.getItem('token');
     if (!token) return;
-
+  
     try {
+      if (!updated[currentWeekIndex] || !updated[currentWeekIndex].days) {
+        throw new Error('Invalid schedule structure');
+      }
+  
       console.log('Saving schedule data:', updated[currentWeekIndex]);
       
       // Extract the correct data structure to save
@@ -731,74 +758,130 @@ const Schedule: React.FC = () => {
         </>
       )}
 
-      {showGenerateScheduleModal && (
-        <div className="modal-overlay">
-          <div className="modal improved-modal">
-            <button className="modal-close-button" onClick={() => setShowGenerateScheduleModal(false)}>
-              &times;
-            </button>
-            <div className="modal-content-container">
-              <h2>Schedule Preferences</h2>
-              <label>Preferred Time</label>
-              <input
-                value={preferences.preferredTime}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, preferredTime: e.target.value })
-                }
-              />
-              <label>Days Before Due</label>
-              <input
-                value={preferences.daysBeforeDue}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, daysBeforeDue: e.target.value })
-                }
-              />
-              <label>Wake Time</label>
-              <input
-                value={preferences.wakeTime}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, wakeTime: e.target.value })
-                }
-              />
-              <label>Sleep Time</label>
-              <input
-                value={preferences.sleepTime}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, sleepTime: e.target.value })
-                }
-              />
-              <label>Dinner Time</label>
-              <input
-                value={preferences.dinnerTime}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, dinnerTime: e.target.value })
-                }
-              />
-              <label>Break Frequency</label>
-              <input
-                value={preferences.breakFrequency}
-                onChange={(e) =>
-                  setPreferences({ ...preferences, breakFrequency: e.target.value })
-                }
-              />
-              <label>
-                <input
-                  type="checkbox"
+{showGenerateScheduleModal && (
+  <div className="modal-overlay">
+    <div className="modal improved-modal">
+      <div className="modal-content">
+        <h2>Schedule Preferences</h2>
+        
+        <div className="preferences-grid">
+          <div className="preference-item">
+            <label>Preferred Study Time</label>
+            <Select
+              value={preferences.preferredTime}
+              onChange={(e) => setPreferences({ 
+                ...preferences, 
+                preferredTime: e.target.value 
+              })}
+              fullWidth
+            >
+              <MenuItem value="morning">Morning (9:00 - 12:00)</MenuItem>
+              <MenuItem value="afternoon">Afternoon (13:00 - 17:00)</MenuItem>
+              <MenuItem value="evening">Evening (18:00 - 21:00)</MenuItem>
+            </Select>
+          </div>
+
+          <div className="preference-item">
+            <label>Wake Time</label>
+            <ReactDatePicker
+              selected={parseTime(preferences.wakeTime)}
+              onChange={(date) => setPreferences({
+                ...preferences,
+                wakeTime: formatTime(date)
+              })}
+              showTimeSelect
+              showTimeSelectOnly
+              timeIntervals={15}
+              dateFormat="HH:mm"
+              className="time-picker"
+            />
+          </div>
+
+          <div className="preference-item">
+            <label>Sleep Time</label>
+            <ReactDatePicker
+              selected={parseTime(preferences.sleepTime)}
+              onChange={(date) => setPreferences({
+                ...preferences,
+                sleepTime: formatTime(date)
+              })}
+              showTimeSelect
+              showTimeSelectOnly
+              timeIntervals={15}
+              dateFormat="HH:mm"
+              className="time-picker"
+            />
+          </div>
+
+          <div className="preference-item">
+            <label>Break Frequency</label>
+            <Select
+              value={preferences.breakFrequency}
+              onChange={(e) => setPreferences({
+                ...preferences,
+                breakFrequency: e.target.value
+              })}
+              fullWidth
+            >
+              <MenuItem value="15">Every 15 minutes</MenuItem>
+              <MenuItem value="30">Every 30 minutes</MenuItem>
+              <MenuItem value="45">Every 45 minutes</MenuItem>
+              <MenuItem value="60">Every hour</MenuItem>
+              <MenuItem value="90">Every 1.5 hours</MenuItem>
+              <MenuItem value="120">Every 2 hours</MenuItem>
+            </Select>
+          </div>
+
+          <div className="preference-item">
+            <label>Days Before Due</label>
+            <Slider
+              value={Number(preferences.daysBeforeDue)}
+              onChange={(_, value) => setPreferences({
+                ...preferences,
+                daysBeforeDue: String(value)
+              })}
+              min={1}
+              max={7}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </div>
+
+          <div className="preference-item weekend-toggle">
+            <FormControlLabel
+              control={
+                <Switch
                   checked={preferences.includeWeekend}
-                  onChange={(e) =>
-                    setPreferences({ ...preferences, includeWeekend: e.target.checked })
-                  }
+                  onChange={(e) => setPreferences({
+                    ...preferences,
+                    includeWeekend: e.target.checked
+                  })}
+                  color="primary"
                 />
-                Include Saturday and Sunday
-              </label>
-              <div className="modal-actions">
-                <button onClick={() => handleGenerateSchedule()}>Generate</button>
-                <button onClick={() => setShowGenerateScheduleModal(false)}>Cancel</button>
-              </div>
-            </div>
+              }
+              label="Include Weekends"
+            />
           </div>
         </div>
-      )}
+
+        <div className="modal-actions">
+          <button 
+            className="primary-button"
+            onClick={handleGenerateSchedule}
+          >
+            Generate Schedule
+          </button>
+          <button 
+            className="secondary-button"
+            onClick={() => setShowGenerateScheduleModal(false)}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 };

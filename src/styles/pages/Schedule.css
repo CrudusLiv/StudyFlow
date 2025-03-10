@@ -454,8 +454,8 @@
 
 .modal-actions {
   display: flex;
-  gap: 0.5rem;
   justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .form-group {
@@ -754,4 +754,119 @@
   font-size: 14px;
   color: #6b7280;
   margin-top: 4px;
+}
+
+
+.modal-content-container {
+  padding: 24px;
+  width: 500px;
+  max-width: 90vw;
+}
+
+.time-pickers {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.break-settings,
+.days-before-due {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-actions button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.modal-actions button:first-child {
+  background: #4f46e5;
+  color: white;
+}
+
+.modal-actions button:last-child {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.preferences-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.preference-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.preference-item label {
+  font-weight: 500;
+  color: #374151;
+}
+
+.time-picker {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.weekend-toggle {
+  margin-top: 16px;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.primary-button {
+  background: #4f46e5;
+  color: white;
+  border: none;
+}
+
+.secondary-button {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.preference-item .MuiSelect-root {
+  height: 40px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+}
+
+.preference-item .MuiSelect-root:hover {
+  border-color: #6366f1;
+}
+
+.preference-item .MuiSelect-root.Mui-focused {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }

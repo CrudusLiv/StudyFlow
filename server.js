@@ -18,6 +18,7 @@ import pdfParse from 'pdf-parse';
 import { Mistral } from '@mistralai/mistralai';
 import { fileURLToPath } from 'url';
 import { parseAIResponse, withRetry } from './utils/aiResponseUtils.js';
+import { buildEnhancedPrompt } from './utils/promptBuilder.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,7 +26,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const apiKey = process.env.MISTRAL_API_KEY;
-const client = new Mistral({ apiKey: apiKey });
+const client = new Mistral({ 
+  apiKey: apiKey,
+  timeout: 30000, // 30 second timeout
+  maxRetries: 3   // Allow 3 retries
+});
 
 app.use(cors());
 app.use(express.json());
@@ -538,19 +543,14 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
     const daysBeforeDue = parseInt(preferences.daysBeforeDue || "2", 10);
 
     // Create a more detailed prompt for better schedule generation
-    const prompt = `You are an expert educational scheduling assistant.
-Task: Create a comprehensive multi-week study schedule based on the provided PDF content, user preferences, the current system date, and time.
-Today's date is ${systemDate}, and the current time is ${currentTime}.
-INSTRUCTIONS:
-1. Do not parse dates directly from the PDF. Instead, use a default guide for scheduling (${weeksAvailable} weeks).
-2. Incorporate user preferences (wake/sleep times, break frequency, etc.), and any relevant text from the PDF.
-3. For the first day (today), avoid scheduling tasks before ${currentTime}.
-4. For subsequent days, follow normal daily routines from preferences.
-5. Return only a JSON object with no additional text.
-
-PDF CONTENT
-${combinedPdfText},
-RETURN ONLY THE JSON OBJECT WITH NO ADDITIONAL TEXT OR EXPLANATIONS.`;
+    const prompt = buildEnhancedPrompt(
+      combinedPdfText,
+      req.body.preferences ? JSON.parse(req.body.preferences) : {},
+      {
+        currentDate: systemDate,
+        currentTime: currentTime
+      }
+    );
 
     console.log('Sending enhanced prompt to AI...');
     
@@ -560,17 +560,23 @@ RETURN ONLY THE JSON OBJECT WITH NO ADDITIONAL TEXT OR EXPLANATIONS.`;
         messages: [{ role: 'user', content: prompt }],
         max_tokens: 4000,
         temperature: 0.7,
+        request_timeout: 60000, // 60 second timeout
+        stream: false // Disable streaming to avoid timeout issues
       });
     };
 
-    const chatResponse = await withRetry(generateSchedule);
+    const chatResponse = await withRetry(generateSchedule, {
+      maxAttempts: 5,
+      baseDelay: 2000,
+      maxDelay: 10000
+    });
     
     try {
       const rawContent = chatResponse.choices[0].message.content;
       console.log('Raw AI response sample:', rawContent.substring(0, 300) + '...');
 
-      // Parse and normalize schedule
-      const schedule = parseAIResponse(rawContent);
+      // Pass preferences to parser
+      const schedule = parseAIResponse(rawContent, JSON.parse(req.body.preferences) || {});
       
       // Validate basic structure
       if (!schedule || !schedule.weeklySchedule || !Array.isArray(schedule.weeklySchedule)) {
@@ -616,11 +622,25 @@ RETURN ONLY THE JSON OBJECT WITH NO ADDITIONAL TEXT OR EXPLANATIONS.`;
       });
     }
   } catch (error) {
-    console.error('Error generating schedule:', error);
-    res.status(500).json({ 
-      error: 'Unexpected error occurred', 
-      details: error.message 
+    const errorResponse = {
+      error: 'Error generating schedule',
+      details: error.message,
+      code: error.code || 'UNKNOWN_ERROR'
+    };
+
+    if (error.cause?.code === 'UND_ERR_HEADERS_TIMEOUT') {
+      errorResponse.code = 'TIMEOUT_ERROR';
+      errorResponse.message = 'Request timed out. Please try again.';
+      return res.status(504).json(errorResponse);
+    }
+
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      cause: error.cause
     });
+
+    res.status(500).json(errorResponse);
   }
 });
 
