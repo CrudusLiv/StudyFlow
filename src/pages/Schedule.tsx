@@ -441,11 +441,13 @@ const Schedule: React.FC = () => {
     }
   };
 
-  // Add this function to check if we have valid schedule data
+  // Replace existing hasValidScheduleData function with:
   const hasValidScheduleData = () => {
     return (
+      Array.isArray(multiWeekSchedule) &&
       multiWeekSchedule.length > 0 &&
-      multiWeekSchedule[currentWeekIndex]?.days &&
+      currentWeekIndex >= 0 &&
+      currentWeekIndex < multiWeekSchedule.length &&
       Array.isArray(multiWeekSchedule[currentWeekIndex].days) &&
       multiWeekSchedule[currentWeekIndex].days.length > 0
     );
@@ -453,6 +455,15 @@ const Schedule: React.FC = () => {
 
   if (loading) {
     return <div>Loading...</div>;
+  }
+
+  // Before rendering the schedule, add an early return:
+  if (!hasValidScheduleData()) {
+    return (
+      <div className="no-schedule-message">
+        <p>No valid schedule data available. Please generate a schedule or upload course materials.</p>
+      </div>
+    );
   }
 
   // Determine current week's days (if the schedule structure uses "days" instead of "weeklySchedule")
