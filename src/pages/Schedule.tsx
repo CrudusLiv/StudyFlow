@@ -43,6 +43,11 @@ interface ScheduleTask {
   courseCode?: string;
   priority?: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
+  category?: string;  // Add category
+  pdfReference?: {    // Add pdfReference
+    page?: string;
+    quote?: string;
+  };
 }
 
 interface DaySchedule {
@@ -186,7 +191,9 @@ const Schedule: React.FC = () => {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setPdfFiles(Array.from(e.target.files));
+      const files = Array.from(e.target.files);
+      setPdfFiles(files);
+      setMessage(`Selected ${files.length} file(s): ${files.map(f => f.name).join(', ')}`);
     }
   };
 
@@ -213,45 +220,49 @@ const Schedule: React.FC = () => {
     if (!token) return;
   
     try {
-      if (!updated[currentWeekIndex] || !updated[currentWeekIndex].days) {
-        throw new Error('Invalid schedule structure');
-      }
-  
-      console.log('Saving schedule data:', updated[currentWeekIndex]);
-      
-      // Extract the correct data structure to save
-      const dayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-      
-      const dataToSave = {
-        weeklySchedule: updated[currentWeekIndex].days.map((day, index) => ({
-          day: day.day || dayNames[index % 7],
-          date: day.date || new Date().toISOString().split('T')[0],
-          tasks: Array.isArray(day.tasks) ? day.tasks : []
+      // Clean and validate schedule data
+      const cleanedSchedule = {
+        weeklySchedule: updated.map(week => ({
+          week: week.week,
+          days: week.days.map(day => ({
+            day: day.day,
+            date: day.date,
+            tasks: (Array.isArray(day.tasks) ? day.tasks : [])
+              .filter(task => task && task.title && task.time)
+              .map(task => ({
+                time: task.time || '09:00 - 10:00',
+                title: task.title,
+                details: task.details || '',
+                status: task.status || 'pending',
+                priority: task.priority || 'medium',
+                category: task.category || 'study',
+                pdfReference: {
+                  page: task.pdfReference?.page || '',
+                  quote: task.pdfReference?.quote || ''
+                }
+              }))
+          }))
         }))
       };
-      
+  
       const response = await axios.post(
         'http://localhost:5000/ai/save-schedule',
-        dataToSave,
+        cleanedSchedule,
         {
           headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
           },
         }
       );
-      console.log('Schedule save response:', response.data);
-      
-      // Process the response data to ensure it's in the correct format for our UI
-      if (response.data && response.data.weeklySchedule) {
-        setMultiWeekSchedule(
-          response.data.weeklySchedule[0]?.week
-            ? response.data.weeklySchedule
-            : [{ week: 'Week 1', days: response.data.weeklySchedule }]
-        );
+  
+      if (response.data?.weeklySchedule) {
+        setMultiWeekSchedule(response.data.weeklySchedule);
       }
     } catch (error) {
       console.error('Error saving schedule:', error);
-      setMessage('Error saving schedule changes');
+      // Don't throw the error, just log it
+      setMessage('Failed to save schedule changes. Your changes may not be persisted.');
     }
   };
 
@@ -260,88 +271,73 @@ const Schedule: React.FC = () => {
       setShowGenerateScheduleModal(true);
       return;
     }
-    setMessage(null);
+    
+    setMessage('Generating schedule...');
     const token = localStorage.getItem('token');
     if (!token) {
       setMessage('No token found. Please log in.');
       navigate('/access');
       return;
     }
-    if (pdfFiles.length === 0) {
-      setMessage('Please upload PDF files.');
-      return;
-    }
+  
     try {
       const formData = new FormData();
-      pdfFiles.forEach(file => formData.append('pdfFiles', file));
-      formData.append('preferences', JSON.stringify(preferences));
+      pdfFiles.forEach(file => {
+        console.log('Appending file:', file.name);
+        formData.append('pdfFiles', file);
+      });
+      formData.append('preferences', JSON.stringify({
+        ...preferences,
+        weeksAvailable: 4 // Explicitly set number of weeks
+      }));
       
-      console.log('Sending request to generate schedule...');
       const response = await axios.post('http://localhost:5000/ai/generate-schedule', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',
         },
       });
-
-      debugSchedule(response.data, 'Generate Response');
-
-      if (!response.data?.weeklySchedule?.length) {
+  
+      console.log('Raw AI response:', response.data);
+  
+      if (!response.data?.weeklySchedule) {
         throw new Error('Invalid schedule format received');
       }
-
-      // --- CHANGES BEGIN: Preserve multi-week structure ---
-      const scheduleData = response.data.weeklySchedule.map((week: any) => {
-        if (week.week && Array.isArray(week.days)) {
+  
+      const normalizedSchedule = response.data.weeklySchedule.map((week: any, weekIndex: number) => ({
+        week: `Week ${weekIndex + 1}`,
+        days: Array(7).fill(null).map((_, dayIndex) => {
+          const existingDay = week.days?.[dayIndex] || {};
           return {
-            week: week.week,
-            days: week.days.map((d: any) => ({
-              day: d.day || 'Unknown Day',
-              date: d.date || new Date().toISOString().split('T')[0],
-              tasks: Array.isArray(d.tasks)
-                ? d.tasks.map((task: any) => ({
-                    time: task.time || '09:00',
-                    title: task.title || 'Untitled Task',
-                    details: task.details || '',
-                    status: task.status || 'pending'
-                  }))
-                : []
-            }))
+            day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
+            date: existingDay.date || new Date(Date.now() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
+              .toISOString().split('T')[0],
+            tasks: Array.isArray(existingDay.tasks) ? existingDay.tasks.map((task: any) => ({
+              time: task.time || '09:00 - 10:00',
+              title: task.title || 'Untitled Task',
+              details: task.details || '',
+              status: task.status || 'pending',
+              priority: task.priority || 'medium',
+              category: task.category || 'study',
+              pdfReference: task.pdfReference || null
+            })).filter(task => task.title && task.time) : []
           };
-        } else {
-          return {
-            week: 'Week 1',
-            days: [{
-              day: week.day || 'Unknown Day',
-              date: week.date || new Date().toISOString().split('T')[0],
-              tasks: Array.isArray(week.tasks)
-                ? week.tasks.map((task: any) => ({
-                    time: task.time || '09:00',
-                    title: task.title || 'Untitled Task',
-                    details: task.details || '',
-                    status: task.status || 'pending'
-                  }))
-                : []
-            }]
-          };
-        }
-      });
-      // --- CHANGES END ---
-      
-      debugSchedule({ days: scheduleData }, 'Processed Generate Data');
-      
-      setMultiWeekSchedule(scheduleData);
+        })
+      }));
+  
+      console.log('Normalized schedule:', normalizedSchedule);
+  
+      setMultiWeekSchedule(normalizedSchedule);
       setShowGenerateScheduleModal(false);
-      
-      // Save immediately after setting state
-      await saveScheduleChanges([{ weeklySchedule: scheduleData }]);
+  
+      await saveScheduleChanges(normalizedSchedule);
       setMessage('Schedule generated and saved successfully!');
     } catch (error) {
       console.error('Error generating schedule:', error);
-      setMessage('Error generating schedule. Please try again.');
+      setMessage(error.response?.data?.error || 'Error generating schedule. Please try again.');
     }
   };
-
+  
   const handleUpdateTask = async (dayIndex: number, taskIndex: number, updates: Partial<ScheduleTask>) => {
     if (!multiWeekSchedule.length) return;
     
@@ -469,16 +465,19 @@ const Schedule: React.FC = () => {
     }
   };
 
-  // Replace existing hasValidScheduleData function with:
   const hasValidScheduleData = () => {
-    return (
-      Array.isArray(multiWeekSchedule) &&
-      multiWeekSchedule.length > 0 &&
-      currentWeekIndex >= 0 &&
-      currentWeekIndex < multiWeekSchedule.length &&
-      Array.isArray(multiWeekSchedule[currentWeekIndex].days) &&
-      multiWeekSchedule[currentWeekIndex].days.length > 0
-    );
+    if (!Array.isArray(multiWeekSchedule) || multiWeekSchedule.length === 0) {
+      console.log('Invalid schedule: empty or not an array');
+      return false;
+    }
+  
+    const totalTasks = multiWeekSchedule.reduce((weekAcc, week) => 
+      weekAcc + week.days.reduce((dayAcc, day) => 
+        dayAcc + (Array.isArray(day?.tasks) ? day.tasks.length : 0), 0), 0);
+  
+    console.log('Total tasks in schedule:', totalTasks);
+  
+    return multiWeekSchedule.length > 0 && totalTasks > 0;
   };
 
   if (loading) {
@@ -488,14 +487,69 @@ const Schedule: React.FC = () => {
   // Before rendering the schedule, add an early return:
   if (!hasValidScheduleData()) {
     return (
-      <div className="no-schedule-message">
-        <p>No valid schedule data available. Please generate a schedule or upload course materials.</p>
+      <div className="schedule-container improved-schedule">
+        <header className="schedule-header-bar">
+          <h1>My Schedule</h1>
+        </header>
+        {message && <div className="message">{message}</div>}
+        
+        <div className="upload-section improved-upload-section">
+          <h2>Upload PDF Files</h2>
+          {/* Keep the file upload section from the original return statement */}
+          <div className="upload-section">
+            <div className="upload-header">
+              <h3><FiUpload className="section-icon" /> Course Materials</h3>
+              <p className="upload-description">Upload your course syllabus and materials to generate a schedule</p>
+            </div>
+            
+            <div 
+              className={`upload-area ${isDragging ? 'dragging' : ''}`}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <FiFile className="upload-icon" />
+              <p className="upload-text">Drag and drop PDF files here or</p>
+              <label className="upload-button">
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  multiple
+                  onChange={handleFileChange}
+                  className="file-input"
+                />
+                Browse Files
+              </label>
+            </div>
+
+            {pdfFiles.length > 0 && (
+              <div className="file-list">
+                {pdfFiles.map((file, index) => (
+                  <div key={index} className="file-item">
+                    <FiFile className="file-icon" />
+                    <span className="file-name">{file.name}</span>
+                    <button 
+                      className="remove-file"
+                      onClick={() => setPdfFiles(files => files.filter((_, i) => i !== index))}
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </div>
+                ))}
+                <button onClick={handleGenerateSchedule} className="generate-button">
+                  <FiClock className="button-icon" /> Generate Schedule
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="no-schedule-message">
+          <p>No valid schedule data available. Please generate a schedule or upload course materials.</p>
+        </div>
       </div>
     );
   }
-
-  // Determine current week's days (if the schedule structure uses "days" instead of "weeklySchedule")
-  const currentWeekDays = multiWeekSchedule[currentWeekIndex].days || multiWeekSchedule[currentWeekIndex].weeklySchedule;
 
   return (
     <div className="schedule-container improved-schedule">
@@ -645,32 +699,12 @@ const Schedule: React.FC = () => {
                       return (
                         <td key={`${dayIndex}-${timeSlot}`} className="task-cell">
                           {task && (
-                            <div className="task-card" style={{ backgroundColor: getTaskColor(task) }}>
-                              <div className="task-content">
-                                <div className="task-header">
-                                  <h4 className="task-title">{task.title}</h4>
-                                  {task.priority && (
-                                    <span className={`priority-badge priority-${task.priority}`}>
-                                      {task.priority}
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="task-details">{task.details || 'No details provided'}</p>
-                                <div className="task-footer">
-                                  <select
-                                    value={task.status}
-                                    onChange={(e) => handleUpdateTask(dayIndex, day.tasks.indexOf(task), {
-                                      status: e.target.value as ScheduleTask['status']
-                                    })}
-                                    className="status-select"
-                                  >
-                                    <option value="pending">Pending</option>
-                                    <option value="in-progress">In Progress</option>
-                                    <option value="completed">Completed</option>
-                                  </select>
-                                </div>
-                              </div>
-                            </div>
+                            <TaskCard
+                              task={task}
+                              onEdit={() => handleEditTask(dayIndex, day.tasks.indexOf(task), task)}
+                              onDelete={() => handleDeleteTask(dayIndex, day.tasks.indexOf(task))}
+                              onStatusChange={(status) => handleUpdateTask(dayIndex, day.tasks.indexOf(task), { status })}
+                            />
                           )}
                         </td>
                       );
@@ -900,5 +934,42 @@ const generateTimeSlots = (days: DaySchedule[]): string[] => {
   });
   return Array.from(timeSlots).sort();
 };
+
+// Add task action buttons to the task card
+const TaskCard: React.FC<{
+  task: ScheduleTask;
+  onEdit: () => void;
+  onDelete: () => void;
+  onStatusChange: (status: ScheduleTask['status']) => void;
+}> = ({ task, onEdit, onDelete, onStatusChange }) => (
+  <div className="task-card" style={{ backgroundColor: getTaskColor(task) }}>
+    <div className="task-content">
+      <div className="task-header">
+        <h4 className="task-title">{task.title}</h4>
+        <div className="task-actions">
+          <button onClick={onEdit} className="edit-button">Edit</button>
+          <button onClick={onDelete} className="delete-button">Delete</button>
+        </div>
+        {task.priority && (
+          <span className={`priority-badge priority-${task.priority}`}>
+            {task.priority}
+          </span>
+        )}
+      </div>
+      <p className="task-details">{task.details || 'No details provided'}</p>
+      <div className="task-footer">
+        <select
+          value={task.status}
+          onChange={(e) => onStatusChange(e.target.value as ScheduleTask['status'])}
+          className="status-select"
+        >
+          <option value="pending">Pending</option>
+          <option value="in-progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+    </div>
+  </div>
+);
 
 export default Schedule;

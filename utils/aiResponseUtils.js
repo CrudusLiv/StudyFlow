@@ -118,69 +118,53 @@ function repairArrayStructure(jsonString) {
 
 function cleanupJson(jsonString) {
   try {
-    // First, clean up markdown and code block artifacts
-    let cleaned = jsonString
-      .replace(/```json\s*,?/g, '') // Remove ```json and any trailing comma
-      .replace(/```\s*/g, '')
-      .replace(/^[,\s]+/, '') // Remove leading commas and whitespace
-      .trim();
+    // First, find any JSON-like structure
+    const jsonMatches = jsonString.match(/(\{[\s\S]*\}|\[[\s\S]*\])/g) || [];
+    let cleaned = '';
 
-    // If we have multiple JSON objects (due to markdown blocks), take the first valid one
-    const jsonMatches = cleaned.match(/({[\s\S]*?})/g);
-    if (jsonMatches) {
-      // Try each potential JSON block
-      for (const match of jsonMatches) {
-        try {
-          JSON.parse(match);
-          cleaned = match;
-          break;
-        } catch (e) {
-          continue;
+    // Try each potential JSON block
+    for (const match of jsonMatches) {
+      try {
+        // Basic cleanup
+        cleaned = match
+          .replace(/```json\s*,?/g, '')
+          .replace(/```\s*/g, '')
+          .replace(/^[,\s]+/, '')
+          .trim();
+
+        // Fix common structural issues
+        cleaned = cleaned
+          .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
+          .replace(/"days":\s*,\s*\[/, '"days": [') // Fix "days":, [ issue
+          .replace(/([{,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
+          .replace(/:\s*'([^']*)'/g, ':"$1"')
+          .replace(/,(\s*[}\]])/g, '$1')
+          .replace(/([{\[,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
+          .replace(/"\s*,\s*([}\]])/g, '"$1') // Fix trailing commas
+          .replace(/,\s*,/g, ',null,')
+          .replace(/([{\[,]\s*)(```\s*)/g, '$1')
+          .replace(/(\{|\[)\s*,\s*/g, '$1') // Remove commas after opening brackets
+          .replace(/\s*,\s*(\}|\])/g, '$1'); // Remove commas before closing brackets
+
+        // Ensure proper structure
+        if (!cleaned.includes('"weeklySchedule"')) {
+          if (cleaned.startsWith('[')) {
+            cleaned = `{"weeklySchedule":${cleaned}}`;
+          } else if (!cleaned.startsWith('{')) {
+            cleaned = `{${cleaned}}`;
+          }
         }
-      }
-    }
 
-    // Extract the JSON content between outermost braces
-    const startBrace = cleaned.indexOf('{');
-    const endBrace = cleaned.lastIndexOf('}');
-    
-    if (startBrace === -1 || endBrace === -1) {
-      cleaned = reconstructMalformedJson(cleaned);
-    } else {
-      cleaned = cleaned.slice(startBrace, endBrace + 1);
-    }
-
-    // Enhanced cleanup process
-    cleaned = cleaned
-      .replace(/,(\s*[}\]])/g, '$1')
-      .replace(/([{,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
-      .replace(/:\s*'([^']*)'/g, ':"$1"')
-      .replace(/\s+/g, ' ')
-      .replace(/\.{3,}|…/g, '')
-      .replace(/,\s*([}\]])/g, '$1')
-      .replace(/([{\[,])\s*([}\]])/g, '$1null$2')
-      .replace(/,\s*,/g, ',null,')
-      .replace(/\n|\r/g, '')
-      .replace(/\\\\/g, '\\')
-      .replace(/\\""/g, '\\"')
-      .replace(/([{\[,]\s*)(```\s*)/g, '$1') // Remove any remaining code block markers
-      .replace(/,+\s*([}\]])/g, '$1'); // Remove multiple trailing commas
-      
-    // Apply array-specific repairs
-    cleaned = repairArrayStructure(cleaned);
-    
-    try {
-      JSON.parse(cleaned);
-      return cleaned;
-    } catch (e) {
-      if (e.message.includes('after array element')) {
-        // Try one more time with aggressive array repair
-        cleaned = cleaned.replace(/}(?!\s*[},\]])/g, '},');
-        cleaned = cleaned.replace(/\](?!\s*[},\]])/g, '],');
+        // Test if valid JSON
+        JSON.parse(cleaned);
         return cleaned;
+      } catch (e) {
+        console.log('Failed to parse block, trying next...');
+        continue;
       }
-      throw e;
     }
+
+    throw new Error('No valid JSON structure found');
   } catch (error) {
     console.log('Initial cleanup failed, attempting deep recovery...', error);
     return attemptDeepRecovery(jsonString);
@@ -188,62 +172,52 @@ function cleanupJson(jsonString) {
 }
 
 function attemptDeepRecovery(jsonString) {
-  // New function to handle severely malformed JSON
   try {
-    // First attempt: Fix missing quotes around property names
-    let fixed = jsonString.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+    // Extract schedule structure, handle both array and object formats
+    const scheduleMatch = jsonString.match(/weeklySchedule"?\s*:?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})/i);
     
-    // Second attempt: Fix unmatched brackets
-    let openBraces = 0, openBrackets = 0;
-    let chars = fixed.split('');
-    
-    for (let i = 0; i < chars.length; i++) {
-      if (chars[i] === '{') openBraces++;
-      if (chars[i] === '}') openBraces--;
-      if (chars[i] === '[') openBrackets++;
-      if (chars[i] === ']') openBrackets--;
-      
-      // Fix negative counts (too many closing brackets)
-      if (openBraces < 0) {
-        chars.splice(i, 1); // Remove extra closing brace
-        openBraces++;
-        i--;
+    if (!scheduleMatch) {
+      console.log('No schedule structure found, attempting to extract any array');
+      // Try to find any array structure
+      const arrayMatch = jsonString.match(/\[([\s\S]*?)\]/);
+      if (arrayMatch) {
+        let content = arrayMatch[1].trim();
+        content = repairArrayStructure(`[${content}]`);
+        return `{"weeklySchedule":${content}}`;
       }
-      if (openBrackets < 0) {
-        chars.splice(i, 1); // Remove extra closing bracket
-        openBrackets++;
-        i--;
-      }
+      return JSON.stringify(createDefaultScheduleStructure());
     }
+
+    let content = scheduleMatch[1].trim();
     
-    // Add missing closing brackets
-    while (openBraces > 0) {
-      chars.push('}');
-      openBraces--;
-    }
-    while (openBrackets > 0) {
-      chars.push(']');
-      openBrackets--;
-    }
-    
-    fixed = chars.join('');
-    
-    // Third attempt: Fix trailing commas and missing values
-    fixed = fixed
-      .replace(/,\s*([}\]])/g, '$1')
-      .replace(/([{\[,])\s*([}\]])/g, '$1null$2');
-    
-    // Validate the fixed JSON
+    // Fix common JSON issues
+    content = content
+      .replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3')
+      .replace(/:\s*'([^']*)'/g, ':"$1"')
+      .replace(/,(\s*[}\]])/g, '$1')
+      .replace(/([{\[,])\s*([}\]])/g, '$1null$2')
+      .replace(/"\s*,\s*([}\]])/g, '"$1')
+      .replace(/(\{|\[)\s*,\s*/g, '$1')
+      .replace(/\s*,\s*(\}|\])/g, '$1');
+
+    // Ensure we have a complete array
+    if (!content.startsWith('[')) content = '[' + content;
+    if (!content.endsWith(']')) content += ']';
+
+    // Try to parse the repaired content
     try {
-      JSON.parse(fixed);
-      return fixed;
+      const structure = `{"weeklySchedule":${content}}`;
+      JSON.parse(structure); // Validate
+      return structure;
     } catch (e) {
-      // If still invalid, try one last time with a more aggressive approach
-      return reconstructMalformedJson(fixed);
+      console.log('Deep recovery failed, attempting final repairs');
+      // One last attempt with array repair
+      const repaired = repairArrayStructure(content);
+      return `{"weeklySchedule":${repaired}}`;
     }
   } catch (error) {
-    console.error('Deep recovery failed:', error);
-    throw new Error('Unable to recover malformed JSON');
+    console.error('Deep recovery failed completely:', error);
+    return JSON.stringify(createDefaultScheduleStructure());
   }
 }
 
@@ -272,12 +246,17 @@ function trimIncompleteArrays(jsonString) {
 }
 
 function createDefaultScheduleStructure(weeks = 4) {
+  // Start date is tomorrow
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+
   return {
     weeklySchedule: Array(weeks).fill(null).map((_, weekIndex) => ({
       week: `Week ${weekIndex + 1}`,
       days: Array(7).fill(null).map((_, dayIndex) => ({
         day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
-        date: new Date(Date.now() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
+        date: new Date(tomorrow.getTime() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
           .toISOString().split('T')[0],
         tasks: []
       }))
@@ -394,19 +373,85 @@ export function extractJsonFromResponse(rawResponse) {
  * @param {string} rawResponse - The raw response from the AI
  * @returns {object} - Parsed JSON object
  */
-export function parseAIResponse(rawResponse, preferences = {}) {
-  if (!rawResponse) {
-    return createDefaultScheduleStructure(preferences.weeksAvailable || 4);
-  }
-  
+export function parseAIResponse(rawResponse, preferences) {
   try {
+    console.log('Parsing AI response, length:', rawResponse?.length);
     const extractedJson = extractJsonFromResponse(rawResponse);
     const parsed = JSON.parse(extractedJson);
-    return validateScheduleStructure(parsed, preferences);
+    
+    if (!parsed.weeklySchedule || !Array.isArray(parsed.weeklySchedule)) {
+      console.warn('No weeklySchedule array found, creating default schedule');
+      return createDefaultScheduleStructure(preferences.weeksAvailable || 4);
+    }
+
+    // Normalize and validate the schedule
+    const normalizedSchedule = {
+      weeklySchedule: parsed.weeklySchedule.map((week, weekIndex) => {
+        if (!week || !week.days || !Array.isArray(week.days)) {
+          console.warn(`Invalid week at index ${weekIndex}, creating default week`);
+          return createDefaultWeek(weekIndex);
+        }
+
+        return {
+          week: `Week ${weekIndex + 1}`,
+          days: week.days.map((day, dayIndex) => {
+            const tasks = Array.isArray(day?.tasks) ? day.tasks : [];
+            console.log(`Week ${weekIndex + 1}, Day ${dayIndex + 1}: ${tasks.length} tasks found`);
+            
+            return {
+              day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
+              date: normalizeDate(day.date) || getDateForWeekDay(weekIndex, dayIndex),
+              tasks: tasks
+                .filter(task => task && typeof task === 'object')
+                .map(task => ({
+                  time: task.time || '09:00 - 10:00',
+                  title: task.title || task.name || 'Untitled Task',
+                  details: task.details || '',
+                  status: task.status || 'pending',
+                  priority: task.priority || 'medium',
+                  category: task.category || 'study',
+                  pdfReference: task.pdfReference || null
+                }))
+                .filter(task => task.title && task.title !== 'Untitled Task')
+            };
+          })
+        };
+      })
+    };
+
+    // Count total tasks
+    const totalTasks = normalizedSchedule.weeklySchedule.reduce((acc, week) => 
+      acc + week.days.reduce((dayAcc, day) => 
+        dayAcc + (day.tasks ? day.tasks.length : 0), 0), 0);
+
+    console.log(`Total tasks in normalized schedule: ${totalTasks}`);
+    
+    if (totalTasks === 0) {
+      throw new Error('No valid tasks found in schedule');
+    }
+
+    return normalizedSchedule;
   } catch (error) {
-    console.error('All parsing methods failed:', error);
-    return createDefaultScheduleStructure(preferences.weeksAvailable || 4);
+    console.error('Error parsing AI response:', error);
+    throw error;
   }
+}
+
+function getDateForWeekDay(weekIndex, dayIndex) {
+  const date = new Date();
+  date.setDate(date.getDate() + (weekIndex * 7) + dayIndex);
+  return date.toISOString().split('T')[0];
+}
+
+function createDefaultWeek(weekIndex, preferences) {
+  return {
+    week: `Week ${weekIndex + 1}`,
+    days: Array(7).fill(null).map((_, dayIndex) => ({
+      day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
+      date: getDateForWeekDay(weekIndex, dayIndex),
+      tasks: []
+    }))
+  };
 }
 
 /**
@@ -486,8 +531,8 @@ async function withRetry(apiCall, options = {
   maxDelay: 4000
 }) {
   let lastError;
+  
   const shouldRetry = (error) => {
-    // Check specific error codes and types
     const retryableErrors = [
       'UND_ERR_HEADERS_TIMEOUT',
       'ETIMEDOUT',
@@ -519,7 +564,7 @@ async function withRetry(apiCall, options = {
       
       if (attempt < options.maxAttempts && shouldRetry(error)) {
         const delay = Math.min(
-          options.baseDelay * Math.pow(2, attempt - 1) * (1 + Math.random() * 0.1), // Add jitter
+          options.baseDelay * Math.pow(2, attempt - 1) * (1 + Math.random() * 0.1),
           options.maxDelay
         );
         
@@ -537,25 +582,44 @@ async function withRetry(apiCall, options = {
 
 function normalizeTask(task) {
   if (!task || typeof task !== 'object') {
-    return {
-      time: '09:00 - 10:00',
-      title: 'Untitled Task',
-      details: '',
-      status: 'pending',
-      priority: 'medium',
-      duration: 60
-    };
+    return null; // Return null instead of default task to be filtered out later
   }
 
+  // Only create a task if we have at least a title or time
+  if (!task.title && !task.time) {
+    return null;
+  }
+
+  // Keep original values when available, only fill in missing ones
   return {
     time: task.time || '09:00 - 10:00',
-    title: task.title || 'Untitled Task',
-    details: task.details || '',
+    title: task.title || task.name || task.description || null, // Try multiple possible title fields
+    details: task.details || task.description || task.pdfReference?.quote || '',
     status: task.status || 'pending',
     priority: task.priority || 'medium',
     duration: task.duration || 60,
-    ...(task.pdfReference && { pdfReference: task.pdfReference })
+    category: task.category || 'study',
+    ...(task.pdfReference && { pdfReference: task.pdfReference }),
+    source: task.source || task.pdfReference?.page || ''
   };
+}
+
+function normalizeDate(dateStr) {
+  if (!dateStr) return null;
+  try {
+    // Handle different date formats
+    const date = dateStr.includes(',') 
+      ? new Date(dateStr) // Handle "March 11, 2025" format
+      : new Date(dateStr); // Handle ISO format
+    
+    if (isNaN(date.getTime())) {
+      return null;
+    }
+    
+    return date.toISOString().split('T')[0];
+  } catch (error) {
+    return null;
+  }
 }
 
 function validateScheduleStructure(schedule, preferences) {
@@ -566,57 +630,42 @@ function validateScheduleStructure(schedule, preferences) {
 
   try {
     // Handle both single week and multi-week formats
-    if (!Array.isArray(schedule.weeklySchedule)) {
-      if (Array.isArray(schedule.days)) {
-        schedule = {
-          weeklySchedule: [{
-            week: 'Week 1',
-            days: schedule.days
-          }]
-        };
-      } else {
-        schedule = createDefaultScheduleStructure(preferences.weeksAvailable || 4);
-      }
+    if (!schedule.weeklySchedule) {
+      schedule = {
+        weeklySchedule: Array.isArray(schedule) ? schedule : [schedule]
+      };
     }
 
     const requiredWeeks = preferences.weeksAvailable || 4;
-    const startDate = new Date();
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+
+    // Ensure weeklySchedule is an array
+    if (!Array.isArray(schedule.weeklySchedule)) {
+      schedule.weeklySchedule = [schedule.weeklySchedule];
+    }
 
     // Normalize and validate the schedule structure
-    schedule.weeklySchedule = schedule.weeklySchedule.map((week, weekIndex) => {
-      // Ensure week has proper structure
-      if (!week || !Array.isArray(week.days)) {
-        week = {
-          week: `Week ${weekIndex + 1}`,
-          days: []
-        };
-      }
-
-      // Normalize each day's data
-      const normalizedDays = Array(7).fill(null).map((_, dayIndex) => {
-        const existingDay = week.days[dayIndex] || {};
-        return {
-          day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
-          date: existingDay.date || new Date(startDate.getTime() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
-            .toISOString().split('T')[0],
-          tasks: Array.isArray(existingDay.tasks) 
-            ? existingDay.tasks
-                .filter(task => task && (task.time || task.title)) // Filter out empty tasks
-                .map(normalizeTask)
-                .filter(task => {
-                  const [startTime] = (task.time || '').split(' - ');
-                  return startTime >= (preferences.wakeTime || '07:00') && 
-                         startTime <= (preferences.sleepTime || '23:00');
-                })
-            : []
-        };
-      });
-
-      return {
-        week: week.week || `Week ${weekIndex + 1}`,
-        days: normalizedDays
-      };
-    });
+    schedule.weeklySchedule = schedule.weeklySchedule
+      .filter(week => week && typeof week === 'object')
+      .map((week, weekIndex) => ({
+        week: `Week ${weekIndex + 1}`,
+        days: Array(7).fill(null).map((_, dayIndex) => {
+          const existingDay = week.days?.[dayIndex] || {};
+          return {
+            day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
+            date: normalizeDate(existingDay.date) || 
+                  new Date(tomorrow.getTime() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
+                    .toISOString().split('T')[0],
+            tasks: Array.isArray(existingDay.tasks) 
+              ? existingDay.tasks
+                  .map(normalizeTask)
+                  .filter(task => task !== null && task.title && task.time)
+              : []
+          };
+        })
+      }));
 
     // Ensure we have the correct number of weeks
     while (schedule.weeklySchedule.length < requiredWeeks) {
@@ -625,7 +674,7 @@ function validateScheduleStructure(schedule, preferences) {
         week: `Week ${weekIndex + 1}`,
         days: Array(7).fill(null).map((_, dayIndex) => ({
           day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
-          date: new Date(startDate.getTime() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
+          date: new Date(tomorrow.getTime() + ((weekIndex * 7) + dayIndex) * 24 * 60 * 60 * 1000)
             .toISOString().split('T')[0],
           tasks: []
         }))

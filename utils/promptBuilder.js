@@ -1,38 +1,11 @@
 export function buildEnhancedPrompt(pdfContent, preferences, systemInfo) {
-  return `You are an expert educational scheduling AI assistant specializing in creating personalized study schedules.
-
-CONTEXT:
-Current Date: ${systemInfo.currentDate}
-Current Time: ${systemInfo.currentTime}
-Schedule Duration: ${preferences.weeksAvailable || 4} weeks (MUST create exactly this many weeks)
-Days Before Due: ${preferences.daysBeforeDue} days
-
-STRICT TIME CONSTRAINTS (DO NOT SCHEDULE OUTSIDE THESE TIMES):
-- Daily Start Time: ${preferences.wakeTime}
-- Daily End Time: ${preferences.sleepTime}
-- Dinner Break: ${preferences.dinnerTime} (1 hour duration)
-- Mandatory Break: Every ${preferences.breakFrequency} minutes
-- Weekend Scheduling: ${preferences.includeWeekend ? 'Allowed' : 'Not Allowed'}
-- Preferred Study Time: ${preferences.preferredTime}
-
-PDF CONTENT RULES:
-1. ONLY use tasks and materials explicitly mentioned in the PDF
-2. Each task MUST reference specific PDF content (page/section)
-3. NO generic tasks or placeholders allowed
-4. Include exact quotes or page numbers in task details
-
-STRICT SCHEDULING RULES:
-1. Must generate exactly ${preferences.weeksAvailable || 4} weeks of schedule
-2. Each day must start no earlier than ${preferences.wakeTime}
-3. Each day must end no later than ${preferences.sleepTime}
-4. Include ${preferences.breakFrequency}-minute breaks between tasks
-5. Schedule dinner break at ${preferences.dinnerTime}
-6. Tasks during ${preferences.preferredTime} should be higher complexity
+  return `Analyze the following PDF content and create a detailed study schedule. 
+Extract specific tasks, deadlines, and requirements from the PDF content.
 
 PDF CONTENT TO ANALYZE:
 ${pdfContent}
 
-RESPONSE FORMAT:
+REQUIRED OUTPUT FORMAT:
 {
   "weeklySchedule": [
     {
@@ -44,24 +17,15 @@ RESPONSE FORMAT:
           "tasks": [
             {
               "time": "HH:MM - HH:MM",
-              "title": "EXACT TASK FROM PDF",
-              "details": "QUOTE OR REFERENCE FROM PDF",
+              "title": "SPECIFIC TASK FROM PDF",
+              "details": "DETAILS FROM PDF",
               "status": "pending",
-              "duration": MINUTES,
               "priority": "high|medium|low",
-              "complexity": "high|medium|low",
-              "category": "reading|assignment|project|review",
-              "source": "PDF PAGE/SECTION REFERENCE",
+              "category": "study",
               "pdfReference": {
-                "page": "PAGE NUMBER",
-                "quote": "EXACT TEXT FROM PDF"
-              },
-              "breaks": [
-                {
-                  "time": "HH:MM",
-                  "duration": ${preferences.breakFrequency}
-                }
-              ]
+                "page": "PAGE NUMBER IF AVAILABLE",
+                "quote": "RELEVANT QUOTE FROM PDF"
+              }
             }
           ]
         }
@@ -70,10 +34,13 @@ RESPONSE FORMAT:
   ]
 }
 
-VALIDATION REQUIREMENTS:
-- Must include ${preferences.weeksAvailable || 4} complete weeks
-- Every task must have a PDF reference
-- No scheduling outside time constraints
-- Include regular breaks
-- Tasks must match PDF content`;
+STRICT REQUIREMENTS:
+1. Create exactly ${preferences.weeksAvailable || 4} weeks
+2. Each task must be from the PDF content
+3. Include specific details and quotes
+4. Schedule between ${preferences.wakeTime} and ${preferences.sleepTime}
+5. Break every ${preferences.breakFrequency} minutes
+6. Prefer ${preferences.preferredTime} for complex tasks
+
+Extract and schedule EVERY task mentioned in the PDF.`;
 }

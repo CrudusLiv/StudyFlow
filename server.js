@@ -109,21 +109,37 @@ const aiScheduleSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userKey: { type: String, required: true, index: true },
   weeklySchedule: [{
-    day: String,
-    date: String, // Add date property
-    tasks: [{
-      time: String,
-      title: String,
-      details: String,
-      status: {
-        type: String,
-        enum: ['pending', 'in-progress', 'completed'],
-        default: 'pending'
-      }
+    week: { type: String, required: true },
+    days: [{
+      day: { type: String, required: true },
+      date: { type: String, required: true },
+      tasks: [{
+        time: { type: String, required: true },
+        title: { type: String, required: true },
+        details: { type: String, default: '' },
+        status: {
+          type: String,
+          enum: ['pending', 'in-progress', 'completed'],
+          default: 'pending'
+        },
+        priority: {
+          type: String,
+          enum: ['high', 'medium', 'low'],
+          default: 'medium'
+        },
+        category: {
+          type: String,
+          default: 'study'
+        },
+        pdfReference: {
+          page: { type: String, default: '' },
+          quote: { type: String, default: '' }
+        }
+      }]
     }]
   }],
   createdAt: { type: Date, default: Date.now }
-});
+}, { strict: false }); // Add strict: false to prevent validation errors on extra fields
 
 const AISchedule = mongoose.model('AISchedule', aiScheduleSchema);
 
@@ -507,140 +523,90 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
   const userKey = req.user.userKey;
   
   try {
-    // Get university schedule
-    const universitySchedule = await UniversitySchedule.findOne({ userId });
-
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'PDF files are required' });
     }
 
+    // Improved PDF text extraction
     let combinedPdfText = '';
     for (const file of req.files) {
-      const pdfData = await pdfParse(file.buffer);
-      combinedPdfText += `--- PDF: ${file.originalname} ---\n${pdfData.text}\n\n`;
+      try {
+        const pdfData = await pdfParse(file.buffer);
+        const cleanedText = pdfData.text
+          .replace(/\r\n/g, '\n')
+          .replace(/\n\s*\n/g, '\n')
+          .trim();
+        
+        combinedPdfText += `=== File: ${file.originalname} ===\n${cleanedText}\n\n`;
+        console.log('Extracted text from:', file.originalname, '\nLength:', cleanedText.length);
+      } catch (error) {
+        console.error('Error parsing PDF:', file.originalname, error);
+        return res.status(400).json({ error: `Error reading PDF: ${file.originalname}` });
+      }
+    }
+
+    if (!combinedPdfText.trim()) {
+      return res.status(400).json({ error: 'No valid text content found in PDFs' });
     }
 
     const preferences = req.body.preferences ? JSON.parse(req.body.preferences) : {};
-    console.log('User preferences:', preferences);
+    console.log('Using preferences:', preferences);
 
-    // Calculate current date and due date from PDF content
-    const currentDate = new Date();
-    const currentTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    const systemDate = currentDate.toLocaleDateString('en-US', {
-      weekday: 'long', 
-      month: 'long', 
-      day: 'numeric', 
-      year: 'numeric'
-    });
-
-    // Remove the direct parsing of due date from PDF
-
-    // Use a default guide for schedule length, falling back to 4 weeks if not provided
-    const weeksAvailable = preferences.weeksAvailable
-      ? parseInt(preferences.weeksAvailable, 10)
-      : 4;
-
-    const daysBeforeDue = parseInt(preferences.daysBeforeDue || "2", 10);
-
-    // Create a more detailed prompt for better schedule generation
+    // Enhanced prompt with specific instructions
     const prompt = buildEnhancedPrompt(
       combinedPdfText,
-      req.body.preferences ? JSON.parse(req.body.preferences) : {},
+      preferences,
       {
-        currentDate: systemDate,
-        currentTime: currentTime
+        currentDate: new Date().toISOString(),
+        currentDay: new Date().toLocaleDateString('en-US', { weekday: 'long' })
       }
     );
 
-    console.log('Sending enhanced prompt to AI...');
+    console.log('Sending prompt to AI...');
     
-    const generateSchedule = async () => {
+    const chatResponse = await withRetry(async () => {
       return await client.chat.complete({
         model: 'mistral-large-latest',
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a scheduling assistant. Create detailed study schedules with specific tasks from the provided PDF content.'
+          },
+          { 
+            role: 'user', 
+            content: prompt 
+          }
+        ],
         max_tokens: 4000,
         temperature: 0.7,
-        request_timeout: 60000, // 60 second timeout
-        stream: false // Disable streaming to avoid timeout issues
+        request_timeout: 60000
       });
-    };
-
-    const chatResponse = await withRetry(generateSchedule, {
-      maxAttempts: 5,
-      baseDelay: 2000,
-      maxDelay: 10000
     });
+
+    const rawContent = chatResponse.choices[0].message.content;
+    console.log('Raw AI response received, length:', rawContent.length);
+
+    // Parse and validate the schedule
+    const schedule = parseAIResponse(rawContent, preferences);
     
-    try {
-      const rawContent = chatResponse.choices[0].message.content;
-      console.log('Raw AI response sample:', rawContent.substring(0, 300) + '...');
-
-      // Pass preferences to parser
-      const schedule = parseAIResponse(rawContent, JSON.parse(req.body.preferences) || {});
-      
-      // Validate basic structure
-      if (!schedule || !schedule.weeklySchedule || !Array.isArray(schedule.weeklySchedule)) {
-        throw new Error('Invalid schedule format received');
-      }
-
-      // Add empty weeks if needed
-      while (schedule.weeklySchedule.length < weeksAvailable) {
-        const newWeekNum = schedule.weeklySchedule.length + 1;
-        schedule.weeklySchedule.push({
-          week: `week_${newWeekNum}`,
-          days: Array(7).fill(null).map((_, i) => ({
-            day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][i],
-            date: new Date(currentDate.getTime() + (newWeekNum * 7 + i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            tasks: []
-          }))
-        });
-      }
-
-      // Save the normalized schedule
-      const aiSchedule = await AISchedule.findOneAndUpdate(
-        { userId, userKey },
-        { weeklySchedule: schedule.weeklySchedule },
-        { new: true, upsert: true }
-      );
-
-      res.json(schedule);
-    } catch (error) {
-      if (error.message.includes('Rate limit exceeded')) {
-        return res.status(429).json({
-          error: 'Rate limit exceeded',
-          message: 'Please try again in a few moments'
-        });
-      }
-      console.error('Error parsing AI response:', error);
-      console.error('Raw AI response:', chatResponse.choices[0].message.content.substring(0, 500) + '...');
-      
-      // Return a more detailed error response
-      res.status(500).json({ 
-        error: 'Error parsing schedule', 
-        details: error.message,
-        rawResponsePreview: chatResponse.choices[0].message.content.substring(0, 1000) + '...'
-      });
+    if (!schedule?.weeklySchedule?.length) {
+      throw new Error('Invalid schedule structure received from AI');
     }
+
+    // Save the schedule
+    const result = await AISchedule.findOneAndUpdate(
+      { userId, userKey },
+      { weeklySchedule: schedule.weeklySchedule },
+      { new: true, upsert: true }
+    );
+
+    res.json({ weeklySchedule: result.weeklySchedule });
   } catch (error) {
-    const errorResponse = {
+    console.error('Schedule generation error:', error);
+    res.status(500).json({
       error: 'Error generating schedule',
-      details: error.message,
-      code: error.code || 'UNKNOWN_ERROR'
-    };
-
-    if (error.cause?.code === 'UND_ERR_HEADERS_TIMEOUT') {
-      errorResponse.code = 'TIMEOUT_ERROR';
-      errorResponse.message = 'Request timed out. Please try again.';
-      return res.status(504).json(errorResponse);
-    }
-
-    console.error('Error details:', {
-      message: error.message,
-      code: error.code,
-      cause: error.cause
+      details: error.message
     });
-
-    res.status(500).json(errorResponse);
   }
 });
 
@@ -651,36 +617,64 @@ app.post('/ai/save-schedule', authenticateJWT, async (req, res) => {
   const scheduleData = req.body;
 
   try {
-    console.log('Saving schedule for user:', userId);
-    console.log('Schedule data received:', JSON.stringify(scheduleData, null, 2));
-
-    // Handle the nested days array if it exists
-    let weeklySchedule;
-    if (scheduleData.weeklySchedule) {
-      // Standard format with simple weeklySchedule array
-      weeklySchedule = scheduleData.weeklySchedule;
-    } else if (scheduleData.weeks) {
-      // Format with weeks array containing days arrays
-      weeklySchedule = [];
-      scheduleData.weeks.forEach(week => {
-        if (week.days && Array.isArray(week.days)) {
-          weeklySchedule = weeklySchedule.concat(week.days);
-        }
-      });
+    if (!scheduleData?.weeklySchedule || !Array.isArray(scheduleData.weeklySchedule)) {
+      throw new Error('Invalid schedule format');
     }
 
-    // Save the schedule with proper structure
+    // Transform and validate schedule data
+    const weeklySchedule = scheduleData.weeklySchedule.map((week, weekIndex) => {
+      const cleanWeek = {
+        week: week.week || `Week ${weekIndex + 1}`,
+        days: Array(7).fill(null).map((_, dayIndex) => {
+          const existingDay = week.days?.[dayIndex] || {};
+          const cleanDay = {
+            day: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][dayIndex],
+            date: existingDay.date || new Date(Date.now() + dayIndex * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            tasks: []
+          };
+
+          if (Array.isArray(existingDay.tasks)) {
+            cleanDay.tasks = existingDay.tasks
+              .filter(task => task && task.title && task.time)
+              .map(task => ({
+                time: task.time || '09:00 - 10:00',
+                title: task.title || 'Untitled Task',
+                details: task.details || '',
+                status: task.status || 'pending',
+                priority: task.priority || 'medium',
+                category: task.category || 'study',
+                pdfReference: {
+                  page: task.pdfReference?.page || '',
+                  quote: task.pdfReference?.quote || ''
+                }
+              }));
+          }
+
+          return cleanDay;
+        })
+      };
+      return cleanWeek;
+    });
+
+    // Use findOneAndUpdate with clean data
     const result = await AISchedule.findOneAndUpdate(
       { userId, userKey },
-      { weeklySchedule },
-      { new: true, upsert: true }
+      { $set: { weeklySchedule } },
+      { 
+        new: true, 
+        upsert: true,
+        setDefaultsOnInsert: true
+      }
     );
 
-    console.log('Saved schedule:', result);
-    res.json(result);
+    res.json({ weeklySchedule: result.weeklySchedule });
   } catch (error) {
     console.error('Error saving AI schedule:', error);
-    res.status(500).json({ error: 'Error saving schedule', details: error.message });
+    res.status(500).json({ 
+      error: 'Error saving schedule', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
