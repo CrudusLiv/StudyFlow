@@ -1,12 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { GoogleLogin } from "@react-oauth/google";
 import '../styles/pages/Access.css';
-
-interface GoogleCredentialResponse {
-  credential?: string;
-}
+import { AccessGoogleButton } from '../components/AccessGoogleButton';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserResponse {
   token: string;
@@ -26,29 +23,59 @@ export function AuthForm() {
   const [name, setName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleGoogleAuth = async (credentialResponse: GoogleCredentialResponse) => {
-    if (!credentialResponse.credential) {
-      setError("Google authentication failed");
-      return;
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userKey = params.get('userKey');
+    const userRole = params.get('userRole');
+    
+    if (token && userKey) {
+      console.log("Access page: Found token in URL");
+      try {
+        // Log the user in through the auth context
+        login(token, userKey, userRole || 'user');
+        
+        // Clear URL params
+        window.history.replaceState({}, document.title, window.location.pathname);
+        
+        // Navigate after a small delay to ensure state updates
+        setTimeout(() => {
+          navigate('/', { replace: true });
+        }, 100);
+      } catch (error) {
+        console.error('Error processing authentication:', error);
+        setError('Failed to process authentication');
+      }
     }
-    setIsLoading(true);
+  }, [navigate, login]);
+
+  const handleGoogleAuth = useCallback(() => {
     try {
-      const response = await axios.post<UserResponse>(
-        'http://localhost:5000/auth/google/callback',
-        { credential: credentialResponse.credential }
-      );
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem('userKey', response.data.user.uniqueKey);
-      navigate("/");
-    } catch (error) {
-      setError("Authentication failed");
-    } finally {
-      setIsLoading(false);
+      window.location.href = 'http://localhost:5000/auth/google';
+    } catch (err) {
+      console.error('Google auth error:', err);
+      setError("Authentication failed. Please try again.");
     }
+  }, []);
+
+  const handleGoogleCalendarAccess = async (accessToken: string) => {
+    try {
+      // Store the access token
+      localStorage.setItem('googleAccessToken', accessToken);
+      setMessage('Google Calendar connected successfully');
+    } catch (err) {
+      setError('Failed to connect Google Calendar');
+    }
+  };
+
+  const togglePassword = () => {
+    setShowPassword(prev => !prev);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,7 +94,7 @@ export function AuthForm() {
       localStorage.setItem("token", response.data.token);
       localStorage.setItem('userKey', response.data.user.uniqueKey);
       navigate("/");
-    } catch (error) {
+    } catch (err) {
       setError("Authentication failed");
     } finally {
       setIsLoading(false);
@@ -85,6 +112,7 @@ export function AuthForm() {
               </h1>
 
               {error && <div className="error-message">{error}</div>}
+              {message && <div className="success-message">{message}</div>}
 
               {!isLogin && (
                 <div className="input-group">
@@ -123,6 +151,13 @@ export function AuthForm() {
                     placeholder="••••••••••••"
                     required
                   />
+                  <button 
+                    type="button" 
+                    onClick={togglePassword}
+                    className="toggle-password"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                 </div>
               </div>
 
@@ -136,12 +171,18 @@ export function AuthForm() {
 
               <div className="divider">
                 <span>Or continue with</span>
-                <GoogleLogin
-                  onSuccess={handleGoogleAuth}
-                  onError={() => setError("Google login failed")}
-                  auto_select={true}
-                />
+                <button 
+                  onClick={handleGoogleAuth}
+                  className="google-auth-button"
+                >
+                  Sign in with Google
+                </button>
               </div>
+
+              <AccessGoogleButton
+                onSuccess={handleGoogleCalendarAccess}
+                onError={() => setError('Failed to connect Google Calendar')}
+              />
 
               <button
                 type="button"

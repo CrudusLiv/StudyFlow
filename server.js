@@ -19,6 +19,7 @@ import { Mistral } from '@mistralai/mistralai';
 import { fileURLToPath } from 'url';
 import { parseAIResponse, withRetry } from './utils/aiResponseUtils.js';
 import { buildEnhancedPrompt } from './utils/promptBuilder.js';
+import { tokenToString } from 'typescript';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -32,9 +33,20 @@ const client = new Mistral({
   maxRetries: 3   // Allow 3 retries
 });
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
-app.use(session({ secret: 'your_session_secret', resave: false, saveUninitialized: true }));
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -190,27 +202,36 @@ const Reminder = mongoose.model('Reminder', reminderSchema);
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
-  callbackURL: 'http://localhost:5000/auth/google/callback/',
-}, async (accessToken, refreshToken, profile, done) => {
+  callbackURL: process.env.GOOGLE_REDIRECT_URI,
+  passReqToCallback: true
+}, async (request, accessToken, refreshToken, profile, done) => {
   try {
     let user = await User.findOne({ email: profile.emails[0].value });
     if (!user) {
-      user = new User({ email: profile.emails[0].value });
+      user = new User({
+        email: profile.emails[0].value,
+        name: profile.displayName,
+        uniqueKey: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      });
       await user.save();
     }
-    done(null, user);
+    // Return the Mongoose document directly
+    return done(null, user);
   } catch (error) {
-    done(error, null);
+    return done(error, null);
   }
 }));
 
 passport.serializeUser((user, done) => {
-  done(null, user.id);
+  done(null, user._id);
 });
 
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
+    if (!user) {
+      return done(null, false);
+    }
     done(null, user);
   } catch (error) {
     done(error, null);
@@ -346,29 +367,167 @@ app.post('/login', async (req, res) => {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], accessType: 'offline', prompt: 'consent' }));
 
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
-  // Include userKey in the token payload so later routes can find it
-  const token = jwt.sign({ userId: req.user._id, userKey: req.user.uniqueKey }, JWT_SECRET, { expiresIn: '1h' });
-
-  // Get the authorization code from the query parameters
-  const authorizationCode = req.query.code;
-
-  // Exchange the authorization code for tokens
-  const oAuth2Client = new google.auth.OAuth2(
-    GOOGLE_CLIENT_ID,
-    GOOGLE_CLIENT_SECRET,
-    'http://localhost:5000/auth/google/callback/'
-  );
   try {
-    const { tokens } = await oAuth2Client.getToken(authorizationCode);
-    const refreshToken = tokens.refresh_token;
-    console.log('Authorization Code:', authorizationCode);
-    console.log('Refresh Token:', refreshToken);
-    res.redirect(`http://localhost:5173?token=${token}`);
+    // Get or create the user
+    let user = await User.findOne({ email: req.user.email });
+    if (!user) {
+      user = new User({
+        email: req.user.email,
+        name: req.user._json.name,
+        uniqueKey: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      });
+      await user.save();
+    }
+
+    // Generate JWT token with user info
+    const token = jwt.sign(
+      { 
+        userId: user._id, 
+        userKey: user.uniqueKey,
+        email: user.email,
+        role: user.role 
+      }, 
+      JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
+
+    console.log(token)
+    // Set tokens in redirect URL
+    const redirectUrl = new URL('http://localhost:5173/');
+    redirectUrl.searchParams.set('token', token);
+    redirectUrl.searchParams.set('userKey', user.uniqueKey);
+
+    res.redirect(redirectUrl.toString());
   } catch (error) {
-    console.error('Error exchanging authorization code for tokens:', error);
-    res.status(500).json({ error: 'Failed to exchange authorization code for tokens' });
+    console.error('Auth callback error:', error);
+    res.redirect('http://localhost:5173/access?error=auth_failed');
   }
 });
+
+// Update Google auth routes
+app.get('/auth/google',
+  passport.authenticate('google', { 
+    scope: ['profile', 'email'],
+    accessType: 'offline',
+    prompt: 'consent'
+  })
+);
+
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
+  async (req, res) => {
+    try {
+      const user = req.user;
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          userId: user._id, 
+          userKey: user.uniqueKey,
+          email: user.email,
+          role: user.role 
+        }, 
+        JWT_SECRET, 
+        { expiresIn: '1h' }
+      );
+
+      // Store user role in token
+      const redirectUrl = new URL(process.env.CORS_ORIGIN);
+      redirectUrl.pathname = '/access'; // explicitly set the path
+      redirectUrl.searchParams.set('token', token);
+      redirectUrl.searchParams.set('userKey', user.uniqueKey);
+      redirectUrl.searchParams.set('userRole', user.role);
+      
+      console.log('Redirecting to:', redirectUrl.toString());
+      res.redirect(redirectUrl.toString());
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      res.redirect(`${process.env.CORS_ORIGIN}/access?error=auth_failed`);
+    }
+  }
+);
+
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
+  async (req, res) => {
+    try {
+      if (!req.user) {
+        throw new Error('No user data received');
+      }
+
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        throw new Error('User not found in database');
+      }
+
+      // Generate JWT token with complete user info
+      const token = jwt.sign(
+        { 
+          userId: user._id,
+          userKey: user.uniqueKey,
+          email: user.email,
+          role: user.role || 'user'
+        }, 
+        JWT_SECRET, 
+        { expiresIn: '1h' }
+      );
+
+      // Use environment variable for redirect
+      const clientUrl = new URL('/access', process.env.CORS_ORIGIN);
+      clientUrl.searchParams.set('token', token);
+      clientUrl.searchParams.set('userKey', user.uniqueKey);
+      clientUrl.searchParams.set('userRole', user.role || 'user');
+
+      console.log('Redirecting to:', clientUrl.toString());
+      res.redirect(303, clientUrl.toString());
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      const errorUrl = new URL('/access', process.env.CORS_ORIGIN);
+      errorUrl.searchParams.set('error', 'auth_failed');
+      res.redirect(303, errorUrl.toString());
+    }
+  }
+);
+
+// Fix Google callback route to use HTTP status 302 for redirect
+app.get('/auth/google/callback', 
+  passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
+  async (req, res) => {
+    try {
+      if (!req.user) {
+        throw new Error('No user data received');
+      }
+      
+      // Get user data
+      const user = req.user;
+      
+      // Generate JWT token
+      const token = jwt.sign(
+        { 
+          userId: user._id,
+          userKey: user.uniqueKey,
+          email: user.email,
+          role: user.role || 'user'
+        }, 
+        JWT_SECRET,
+        { expiresIn: '24h' } // Extend token expiration
+      );
+      
+      // Create redirect URL with auth data
+      const redirectUrl = new URL('/access', process.env.CORS_ORIGIN);
+      redirectUrl.searchParams.append('token', token);
+      redirectUrl.searchParams.append('userKey', user.uniqueKey);
+      redirectUrl.searchParams.append('userRole', user.role || 'user');
+      
+      console.log('Redirecting to:', redirectUrl.toString());
+      
+      // Use 302 Found for better redirect behavior
+      res.redirect(302, redirectUrl.toString());
+    } catch (error) {
+      console.error('Auth callback error:', error);
+      res.redirect(302, `${process.env.CORS_ORIGIN}/access?error=auth_failed`);
+    }
+  }
+);
 
 // Endpoint to fetch the MISTRAL_API_KEY
 app.get('/api/get-api-key', authenticateJWT, (req, res) => {

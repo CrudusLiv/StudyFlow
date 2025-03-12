@@ -118,55 +118,46 @@ function repairArrayStructure(jsonString) {
 
 function cleanupJson(jsonString) {
   try {
-    // First, find any JSON-like structure
-    const jsonMatches = jsonString.match(/(\{[\s\S]*\}|\[[\s\S]*\])/g) || [];
-    let cleaned = '';
-
-    // Try each potential JSON block
-    for (const match of jsonMatches) {
-      try {
-        // Basic cleanup
-        cleaned = match
-          .replace(/```json\s*,?/g, '')
-          .replace(/```\s*/g, '')
-          .replace(/^[,\s]+/, '')
-          .trim();
-
-        // Fix common structural issues
-        cleaned = cleaned
-          .replace(/,\s*([}\]])/g, '$1') // Remove trailing commas
-          .replace(/"days":\s*,\s*\[/, '"days": [') // Fix "days":, [ issue
-          .replace(/([{,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
-          .replace(/:\s*'([^']*)'/g, ':"$1"')
-          .replace(/,(\s*[}\]])/g, '$1')
-          .replace(/([{\[,]\s*)(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '$1"$3":')
-          .replace(/"\s*,\s*([}\]])/g, '"$1') // Fix trailing commas
-          .replace(/,\s*,/g, ',null,')
-          .replace(/([{\[,]\s*)(```\s*)/g, '$1')
-          .replace(/(\{|\[)\s*,\s*/g, '$1') // Remove commas after opening brackets
-          .replace(/\s*,\s*(\}|\])/g, '$1'); // Remove commas before closing brackets
-
-        // Ensure proper structure
-        if (!cleaned.includes('"weeklySchedule"')) {
-          if (cleaned.startsWith('[')) {
-            cleaned = `{"weeklySchedule":${cleaned}}`;
-          } else if (!cleaned.startsWith('{')) {
-            cleaned = `{${cleaned}}`;
-          }
+    // First attempt: Find content between curly braces
+    let matches = jsonString.match(/\{[\s\S]*\}/g);
+    if (matches) {
+      for (const match of matches) {
+        try {
+          JSON.parse(match);
+          return match;
+        } catch (e) {
+          console.log('Failed to parse JSON match, continuing...');
         }
-
-        // Test if valid JSON
-        JSON.parse(cleaned);
-        return cleaned;
-      } catch (e) {
-        console.log('Failed to parse block, trying next...');
-        continue;
       }
+    }
+
+    // Second attempt: Look for specific schedule structure
+    const scheduleMatch = jsonString.match(/("weeklySchedule"|weeklySchedule)\s*:\s*(\[[\s\S]*\])/);
+    if (scheduleMatch) {
+      const content = `{"weeklySchedule":${scheduleMatch[2]}}`;
+      try {
+        JSON.parse(content);
+        return content;
+      } catch (e) {
+        console.log('Failed to parse schedule structure, attempting repair...');
+      }
+    }
+
+    // Third attempt: Extract and repair JSON-like content
+    const jsonLike = jsonString.replace(/```json\s*|\s*```/g, '')
+                              .replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3')
+                              .replace(/:\s*'([^']*)'/g, ':"$1"');
+
+    try {
+      JSON.parse(jsonLike);
+      return jsonLike;
+    } catch (e) {
+      console.log('Failed to repair JSON-like content');
     }
 
     throw new Error('No valid JSON structure found');
   } catch (error) {
-    console.log('Initial cleanup failed, attempting deep recovery...', error);
+    console.error('Initial cleanup failed:', error);
     return attemptDeepRecovery(jsonString);
   }
 }

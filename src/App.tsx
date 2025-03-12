@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { GoogleOAuthProvider } from '@react-oauth/google';
+import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -17,22 +17,16 @@ import Navigation from './components/Navigation';
 
 function App() {
   const [isNavOpen, setIsNavOpen] = useState(false);
-//   const handleClose = () => {
-//   setIsNavOpen(false);
-// };
+
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <AuthProvider>
       <Router>
         <div className="min-h-screen flex flex-col bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-          <Header />
-
+          <Header onNavToggle={() => setIsNavOpen(!isNavOpen)} />
           <Navigation 
             isOpen={isNavOpen}
             onClose={() => setIsNavOpen(false)}
-            isLoggedIn={true} // Set based on your auth state
-            userRole="user" // Set based on your user role
           />
-
           <main className="flex-grow transition-all duration-300 px-4 py-4 sm:px-6 sm:py-6 lg:px-8 lg:py-8">
             <div className="max-w-7xl mx-auto w-full">
               <Routes>
@@ -88,7 +82,7 @@ function App() {
           <Footer className="w-full" />
         </div>
       </Router>
-    </GoogleOAuthProvider>
+    </AuthProvider>
   );
 }
 
