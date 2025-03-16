@@ -1,20 +1,24 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiUpload, 
-  FiCalendar, 
+import {
+  FiUpload,
+  FiCalendar,
   FiClock,
   FiSettings,
   FiFile,
-  FiTrash2
+  FiTrash2,
+  FiEdit,
+  FiX,
+  FiTrash
 } from 'react-icons/fi';
 import '../styles/pages/Schedule.css';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
+import { Calendar, momentLocalizer, NavigateAction, View } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useAuth } from '../contexts/AuthContext';
 import type { CalendarEvent, ScheduleTask } from '../types/types';
+import { googleCalendarService } from '../services/googleCalendar';
 
 interface BaseTask {
   _id: string;
@@ -54,6 +58,14 @@ interface WeeklySchedule {
   days: DaySchedule[];
 }
 
+interface SchedulePreferences {
+  startTime: string;
+  endTime: string;
+  breakDuration: number;
+  daysBeforeDue: number;
+  includeWeekends: boolean;
+}
+
 // Function to generate a unique color based on the task title
 const getTaskColor = (task: ScheduleTask): string => {
   let hash = 0; // Initialize a hash value
@@ -75,7 +87,7 @@ const getTaskColor = (task: ScheduleTask): string => {
 const TaskEventComponent = ({ event }: { event: any }) => {
   const task = event.resource || {};
   const priorityClass = task.priority ? `priority-${task.priority}` : 'priority-medium';
-  
+
   return (
     <div className={`task-event ${priorityClass}`}>
       <div className="task-event-title">{event.title}</div>
@@ -99,16 +111,16 @@ const Schedule: React.FC = () => {
   } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showGenerateScheduleModal, setShowGenerateScheduleModal] = useState(false);
-  const [preferences, setPreferences] = useState({
-    preferredTime: 'morning',
-    daysBeforeDue: '2',
-    wakeTime: '07:00',
-    sleepTime: '23:00',
-    dinnerTime: '18:00',
-    breakFrequency: '120',
-    includeWeekend: true
+  const [preferences, setPreferences] = useState<SchedulePreferences>({
+    startTime: '09:00',
+    endTime: '17:00',
+    breakDuration: 15,
+    daysBeforeDue: 7,
+    includeWeekends: false
   });
   const [calendarView, setCalendarView] = useState<'month' | 'week' | 'day'>('week');
+  const [selectedTask, setSelectedTask] = useState<ScheduleTask | null>(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
 
   // Remove unused context hooks
   const navigate = useNavigate();
@@ -130,8 +142,8 @@ const Schedule: React.FC = () => {
     if (dayIndex < 0 || !multiWeekSchedule || !multiWeekSchedule.length) return -1;
     const week = multiWeekSchedule[currentWeekIndex];
     const day = week.days[dayIndex];
-    return day.tasks.findIndex(t => 
-      t.title === event.title && 
+    return day.tasks.findIndex(t =>
+      t.title === event.title &&
       event.start.toTimeString().includes(t.time.split('-')[0].trim())
     );
   }, [multiWeekSchedule, currentWeekIndex]);
@@ -141,45 +153,45 @@ const Schedule: React.FC = () => {
       console.log('No schedule data available');
       return [];
     }
-    
+
     const events: CalendarEvent[] = [];
-    
+
     try {
       // Loop through all weeks instead of just current week
       multiWeekSchedule.forEach((week, weekIndex) => {
         if (!week.days || !Array.isArray(week.days)) return;
-        
+
         week.days.forEach(day => {
           if (!day.tasks || !Array.isArray(day.tasks) || !day.date) return;
-          
+
           // Process each task in this day
           day.tasks.forEach(task => {
             try {
               if (!task.title || !task.time) return;
-              
+
               // Normalize the time format (remove spaces, ensure proper format)
               const timeRange = task.time.replace(/\s+/g, '');
               const [startTimeStr, endTimeStr] = timeRange.split('-');
-              
+
               if (!startTimeStr || !endTimeStr) {
                 console.log(`Task has invalid time format: ${task.time}`);
                 return;
               }
-              
+
               // Format the times properly with padding and colons
               const formattedStartTime = startTimeStr.includes(':') ? startTimeStr : `${startTimeStr.padStart(2, '0')}:00`;
               const formattedEndTime = endTimeStr.includes(':') ? endTimeStr : `${endTimeStr.padStart(2, '0')}:00`;
-              
+
               // Create the complete date strings
               const startDate = new Date(`${day.date}T${formattedStartTime}`);
               const endDate = new Date(`${day.date}T${formattedEndTime}`);
-              
+
               // Skip invalid dates
               if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
                 console.log(`Invalid date/time for task: ${task.title}, ${task.time}, ${day.date}`);
                 return;
               }
-              
+
               events.push({
                 id: `${day.date}-${task.time}-${Math.random().toString(36).substring(2, 7)}`,
                 title: task.title,
@@ -195,7 +207,7 @@ const Schedule: React.FC = () => {
           });
         });
       });
-      
+
       console.log(`Created ${events.length} calendar events`);
       return events;
     } catch (error) {
@@ -206,7 +218,7 @@ const Schedule: React.FC = () => {
 
   const eventStyleGetter = useCallback((event: any) => {
     const backgroundColor = getTaskColor(event.resource || { title: event.title, status: 'pending' });
-    
+
     return {
       style: {
         backgroundColor,
@@ -224,7 +236,7 @@ const Schedule: React.FC = () => {
       console.log('No schedule data to debug');
       return;
     }
-    
+
     const summary = {
       weeks: multiWeekSchedule.length,
       days: 0,
@@ -232,38 +244,38 @@ const Schedule: React.FC = () => {
       daysWithDates: 0,
       tasksWithValidTimes: 0
     };
-    
+
     multiWeekSchedule.forEach((week, weekIdx) => {
       if (!week.days || !Array.isArray(week.days)) {
         console.log(`Week ${weekIdx + 1} has no valid days array`);
         return;
       }
-      
+
       summary.days += week.days.length;
-      
+
       week.days.forEach((day, dayIdx) => {
         if (day.date) summary.daysWithDates++;
-        
+
         if (!day.tasks || !Array.isArray(day.tasks)) {
           console.log(`Week ${weekIdx + 1}, Day ${dayIdx + 1} (${day.day}) has no tasks array`);
           return;
         }
-        
+
         summary.tasks += day.tasks.length;
-        
+
         day.tasks.forEach((task, taskIdx) => {
           const hasValidTime = task.time && task.time.includes('-');
           if (hasValidTime) summary.tasksWithValidTimes++;
-          
+
           if (!hasValidTime) {
             console.log(`Invalid time format for task: Week ${weekIdx + 1}, Day ${dayIdx + 1}, Task ${taskIdx + 1}: ${task.title} - ${task.time}`);
           }
         });
       });
     });
-    
+
     console.log('Schedule summary:', summary);
-    
+
     if (summary.tasks > 0 && summary.tasksWithValidTimes === 0) {
       console.warn('ALERT: No tasks have properly formatted time ranges!');
     }
@@ -594,28 +606,24 @@ const Schedule: React.FC = () => {
     }
   };
 
-  const handleNextWeek = () => {
-    if (currentWeekIndex < multiWeekSchedule.length - 1) {
-      setCurrentWeekIndex(currentWeekIndex + 1);
-    }
-  };
+  const handleNextWeek = useCallback(() => {
+    setCurrentWeekIndex(prev => Math.min(prev + 1, multiWeekSchedule.length - 1));
+  }, [multiWeekSchedule.length]);
 
-  const handlePrevWeek = () => {
-    if (currentWeekIndex > 0) {
-      setCurrentWeekIndex(currentWeekIndex - 1);
-    }
-  };
+  const handlePrevWeek = useCallback(() => {
+    setCurrentWeekIndex(prev => Math.max(0, prev - 1));
+  }, []);
 
   const hasValidScheduleData = () => {
     if (!Array.isArray(multiWeekSchedule) || multiWeekSchedule.length === 0) {
       console.log('Invalid schedule: empty or not an array');
       return false;
     }
-  
-    const totalTasks = multiWeekSchedule.reduce((weekAcc, week) => 
-      weekAcc + week.days.reduce((dayAcc, day) => 
+
+    const totalTasks = multiWeekSchedule.reduce((weekAcc, week) =>
+      weekAcc + week.days.reduce((dayAcc, day) =>
         dayAcc + (Array.isArray(day?.tasks) ? day.tasks.length : 0), 0), 0);
-  
+
     console.log('Total tasks in schedule:', totalTasks);
     return multiWeekSchedule.length > 0 && totalTasks > 0;
   };
@@ -631,7 +639,7 @@ const Schedule: React.FC = () => {
       const startDate = new Date();
       const [hours, minutes] = startTime.split(':').map(Number);
       startDate.setHours(hours, minutes, 0);
-      
+
       const endDate = new Date(startDate);
       endDate.setHours(endDate.getHours() + 1);
 
@@ -659,14 +667,13 @@ const Schedule: React.FC = () => {
   // Function to convert tasks to calendar events - clean with proper types
   const findDayIndexByDate = (date: string): number => {
     if (!multiWeekSchedule || !multiWeekSchedule.length) return -1;
-    
+
     const week = multiWeekSchedule[currentWeekIndex];
     return week.days.findIndex(d => d.date === date);
   };
 
   // Add missing toolbar handlers
-  const handleNavigate = useCallback((action: 'PREV' | 'NEXT' | 'TODAY') => {
-    const newDate = new Date();
+  const handleNavigate = useCallback((newDate: Date, view: View, action: NavigateAction) => {
     switch (action) {
       case 'PREV':
         handlePrevWeek();
@@ -677,8 +684,42 @@ const Schedule: React.FC = () => {
       case 'TODAY':
         setCurrentWeekIndex(0);
         break;
+      default:
+        break;
     }
   }, [handlePrevWeek, handleNextWeek]);
+
+  // Add task click handler
+  const handleTaskClick = useCallback((event: any) => {
+    setSelectedTask(event.resource);
+    setShowTaskModal(true);
+  }, []);
+
+  // Add task update handler
+  const handleTaskUpdate = async (updatedTask: ScheduleTask) => {
+    if (!selectedTask) return;
+    
+    const dayIndex = findDayIndexByDate(new Date(updatedTask.time.split('-')[0]).toISOString().split('T')[0]);
+    const taskIndex = multiWeekSchedule[currentWeekIndex].days[dayIndex].tasks
+      .findIndex(t => t.title === selectedTask.title && t.time === selectedTask.time);
+    
+    await handleUpdateTask(dayIndex, taskIndex, updatedTask);
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  };
+
+  // Add task delete handler
+  const handleTaskDelete = async () => {
+    if (!selectedTask) return;
+    
+    const dayIndex = findDayIndexByDate(new Date(selectedTask.time.split('-')[0]).toISOString().split('T')[0]);
+    const taskIndex = multiWeekSchedule[currentWeekIndex].days[dayIndex].tasks
+      .findIndex(t => t.title === selectedTask.title && t.time === selectedTask.time);
+    
+    await handleDeleteTask(dayIndex, taskIndex);
+    setShowTaskModal(false);
+    setSelectedTask(null);
+  };
 
   if (loading) {
     return <div>Loading...</div>;
@@ -704,29 +745,29 @@ const Schedule: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="header-actions">
           <div className="view-selector">
-            <button 
+            <button
               className={`view-button ${calendarView === 'month' ? 'active' : ''}`}
               onClick={() => setCalendarView('month')}
             >
               Month
             </button>
-            <button 
+            <button
               className={`view-button ${calendarView === 'week' ? 'active' : ''}`}
               onClick={() => setCalendarView('week')}
             >
               Week
             </button>
-            <button 
+            <button
               className={`view-button ${calendarView === 'day' ? 'active' : ''}`}
               onClick={() => setCalendarView('day')}
             >
               Day
             </button>
           </div>
-          <button 
+          <button
             className="settings-button"
             onClick={() => setShowGenerateScheduleModal(true)}
           >
@@ -742,7 +783,7 @@ const Schedule: React.FC = () => {
           <h3><FiUpload className="section-icon" /> Upload Course Materials</h3>
           <p className="upload-description">Upload your course syllabus and materials to generate a schedule</p>
         </div>
-        <div 
+        <div
           className={`upload-area ${isDragging ? 'dragging' : ''}`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -768,7 +809,7 @@ const Schedule: React.FC = () => {
               <div key={index} className="file-item">
                 <FiFile className="file-icon" />
                 <span className="file-name">{file.name}</span>
-                <button 
+                <button
                   className="remove-file"
                   onClick={() => setPdfFiles(files => files.filter((_, i) => i !== index))}
                 >
@@ -787,7 +828,7 @@ const Schedule: React.FC = () => {
       <div className="calendar-container">
         {message && <div className="message">{message}</div>}
         
-        {/* <div className="week-navigation">
+        <div className="week-navigation">
           <button 
             className="nav-button"
             onClick={() => handleNavigate('PREV')}
@@ -803,7 +844,7 @@ const Schedule: React.FC = () => {
           >
             Next Week
           </button>
-        </div> */}
+        </div>
 
         {convertTasksToEvents().length === 0 ? (
           <div className="empty-calendar-message">
@@ -819,41 +860,120 @@ const Schedule: React.FC = () => {
             defaultView={calendarView}
             view={calendarView}
             onView={(newView) => setCalendarView(newView as 'month' | 'week' | 'day')}
-            onNavigate={handleNavigate}
+            onNavigate={(newDate: Date, view: View, action: NavigateAction) => handleNavigate(newDate, view, action)}
+            onSelectEvent={handleTaskClick}
             step={15}
             timeslots={4}
             toolbar={true}
             eventPropGetter={eventStyleGetter}
             components={{
-              event: TaskEventComponent,
-              toolbar: CustomToolbar // You can add a custom toolbar component if needed
+              event: TaskEventComponent
             }}
             min={new Date(0, 0, 0, 7, 0, 0)}
             max={new Date(0, 0, 0, 23, 0, 0)}
           />
         )}
-      </div>
 
-      {/* ...existing modals code... */}
+        {/* Task Modal */}
+        {showTaskModal && selectedTask && (
+          <div className="modal-overlay" onClick={() => setShowTaskModal(false)}>
+            <div className="task-modal" onClick={e => e.stopPropagation()}>
+              <div className="modal-header">
+                <h3>Task Details</h3>
+                <button 
+                  className="close-button"
+                  onClick={() => setShowTaskModal(false)}
+                >
+                  <FiX />
+                </button>
+              </div>
+              
+              <div className="modal-content">
+                <div className="task-info">
+                  <div className="info-row">
+                    <FiClock className="info-icon" />
+                    <span>{selectedTask.time}</span>
+                  </div>
+                  <div className="info-row">
+                    <FiCalendar className="info-icon" />
+                    <span>{selectedTask.dueDate || 'No due date'}</span>
+                  </div>
+                  <div className={`priority-badge priority-${selectedTask.priority || 'medium'}`}>
+                    {selectedTask.priority || 'medium'} priority
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Title</label>
+                  <input
+                    type="text"
+                    value={selectedTask.title}
+                    onChange={e => setSelectedTask({
+                      ...selectedTask,
+                      title: e.target.value
+                    })}
+                    className="form-input"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Details</label>
+                  <textarea
+                    value={selectedTask.details}
+                    onChange={e => setSelectedTask({
+                      ...selectedTask,
+                      details: e.target.value
+                    })}
+                    className="form-input"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Status</label>
+                  <select
+                    value={selectedTask.status}
+                    onChange={e => setSelectedTask({
+                      ...selectedTask,
+                      status: e.target.value as ScheduleTask['status']
+                    })}
+                    className="form-input"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  className="delete-button"
+                  onClick={handleTaskDelete}
+                >
+                  <FiTrash /> Delete
+                </button>
+                <div className="right-buttons">
+                  <button 
+                    className="cancel-button"
+                    onClick={() => setShowTaskModal(false)}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    className="save-button"
+                    onClick={() => handleTaskUpdate(selectedTask)}
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
-
-// Optional: Add a custom toolbar component for more control
-interface CustomToolbarProps {
-  onNavigate: (action: 'PREV' | 'NEXT' | 'TODAY') => void;
-  label: string;
-}
-
-const CustomToolbar: React.FC<CustomToolbarProps> = ({ onNavigate, label }) => (
-  <div className="calendar-toolbar">
-    <div className="toolbar-nav">
-      <button onClick={() => onNavigate('PREV')}>Previous</button>
-      <button onClick={() => onNavigate('TODAY')}>Today</button>
-      <button onClick={() => onNavigate('NEXT')}>Next</button>
-    </div>
-    <span className="toolbar-label">{label}</span>
-  </div>
-);
 
 export default Schedule;

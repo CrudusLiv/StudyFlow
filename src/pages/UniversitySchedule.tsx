@@ -3,7 +3,6 @@ import axios from 'axios';
 import '../styles/pages/UniversitySchedule.css';
 import {
   FiCalendar,
-  FiUpload,
   FiPlusCircle,
   FiClock,
   FiMapPin,
@@ -28,6 +27,19 @@ interface DaySchedule {
   classes: Class[];
 }
 
+interface APIResponse {
+  weeklySchedule: {
+    day: string;
+    classes: Class[];
+  }[];
+}
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
+  const hour = i + 8; // Start from 8 AM
+  return `${hour.toString().padStart(2, '0')}:00`;
+});
+
 const getClassColor = (courseName: string) => {
   const colors = [
     { bg: '#EEF2FF', border: '#4F46E5', text: '#4F46E5' }, // Indigo
@@ -45,87 +57,12 @@ const getClassColor = (courseName: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
-const SAMPLE_SCHEDULE: DaySchedule[] = [
-  {
-    day: 'Monday',
-    classes: [
-      {
-        courseName: 'Advanced Mathematics',
-        startTime: '09:00',
-        endTime: '10:30',
-        location: 'Room 301',
-        professor: 'Dr. Smith'
-      },
-      {
-        courseName: 'Physics Lab',
-        startTime: '11:00',
-        endTime: '13:00',
-        location: 'Lab Building B',
-        professor: 'Prof. Johnson'
-      }
-    ]
-  },
-  {
-    day: 'Tuesday',
-    classes: [
-      {
-        courseName: 'Computer Science',
-        startTime: '10:00',
-        endTime: '12:00',
-        location: 'Tech Hub 201',
-        professor: 'Dr. Williams'
-      }
-    ]
-  },
-  {
-    day: 'Wednesday',
-    classes: [
-      {
-        courseName: 'Data Structures',
-        startTime: '13:00',
-        endTime: '15:00',
-        location: 'Room 405',
-        professor: 'Prof. Davis'
-      }
-    ]
-  },
-  {
-    day: 'Thursday',
-    classes: [
-      {
-        courseName: 'Software Engineering',
-        startTime: '09:00',
-        endTime: '11:00',
-        location: 'Tech Hub 102',
-        professor: 'Dr. Brown'
-      }
-    ]
-  },
-  {
-    day: 'Friday',
-    classes: [
-      {
-        courseName: 'Database Systems',
-        startTime: '14:00',
-        endTime: '16:00',
-        location: 'Room 201',
-        professor: 'Prof. Miller'
-      }
-    ]
-  }
-];
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
-  const hour = i + 8; // Start from 8 AM
-  return `${hour.toString().padStart(2, '0')}:00`;
-});
-
 const UniversitySchedule: React.FC = () => {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>('');
+  const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
   const [newClass, setNewClass] = useState<Class>({
     courseName: '',
     startTime: '',
@@ -133,75 +70,107 @@ const UniversitySchedule: React.FC = () => {
     location: '',
     professor: ''
   });
-  const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
-  const listViewRef = React.useRef<HTMLDivElement>(null);
-  const gridViewRef = React.useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchSchedule();
   }, []);
 
-  const fetchSchedule = async () => {
-      setSchedule(SAMPLE_SCHEDULE);
-      setLoading(false);
-    // try {
-    //   const token = localStorage.getItem('token');
-    //   const response = await axios.get('http://localhost:5000/university-schedule', {
-    //     headers: { Authorization: `Bearer ${token}` }
-    //   });
-      
-    //   if (response.data.weeklySchedule) {
-    //     setSchedule(response.data.weeklySchedule);
-    //   } else {
-    //     // Initialize empty schedule if none exists
-    //     setSchedule(DAYS.map(day => ({ day, classes: [] })));
-    //   }
-    // } catch (error) {
-    //   console.error('Error fetching schedule:', error);
-    // } finally {
-    //   setLoading(false);
-    // }
+  const transformScheduleData = (responseData: APIResponse): DaySchedule[] => {
+    // Transform API response to match the schedule structure
+    const transformedSchedule = DAYS.map(day => {
+      const dayData = responseData.weeklySchedule.find(d => d.day === day);
+      return {
+        day,
+        classes: dayData?.classes?.map(cls => ({
+          ...cls,
+          // Ensure time format is consistent
+          startTime: cls.startTime.includes(':') ? cls.startTime : `${cls.startTime}:00`,
+          endTime: cls.endTime.includes(':') ? cls.endTime : `${cls.endTime}:00`
+        })) || []
+      };
+    });
+
+    // Sort classes by start time within each day
+    return transformedSchedule.map(day => ({
+      ...day,
+      classes: day.classes.sort((a, b) => a.startTime.localeCompare(b.startTime))
+    }));
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
+  const isClassInTimeSlot = (classItem: Class, timeSlot: string): boolean => {
+    const slotTime = timeSlot.split(':')[0];
+    const startHour = classItem.startTime.split(':')[0];
+    const endHour = classItem.endTime.split(':')[0];
+    
+    return parseInt(slotTime) >= parseInt(startHour) && 
+           parseInt(slotTime) < parseInt(endHour);
+  };
 
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.post('http://localhost:5000/university-schedule/import', 
-          formData,
-          { headers: { 
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }}
-        );
-        setSchedule(response.data.weeklySchedule);
-      } catch (error) {
-        console.error('Error uploading schedule:', error);
+  const fetchSchedule = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
+
+      const response = await axios.get<APIResponse>('http://localhost:5000/university-schedule', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.weeklySchedule) {
+        setSchedule(transformScheduleData(response.data));
+      } else {
+        setSchedule(DAYS.map(day => ({ day, classes: [] })));
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule';
+      console.error('Error fetching schedule:', errorMessage);
+      setError('Failed to load schedule. Please try again.');
+      setSchedule(DAYS.map(day => ({ day, classes: [] })));
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleAddClass = async () => {
-    if (!selectedDay) return;
+    if (!selectedDay) {
+      setError('Please select a day');
+      return;
+    }
 
     try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+
+      // Validate time format
+      if (newClass.startTime >= newClass.endTime) {
+        setError('End time must be after start time');
+        return;
+      }
+
       const updatedSchedule = schedule.map(day => {
         if (day.day === selectedDay) {
+          const updatedClasses = [...day.classes, newClass]
+            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+          
+          // Check for time conflicts
+          for (let i = 1; i < updatedClasses.length; i++) {
+            if (updatedClasses[i].startTime < updatedClasses[i-1].endTime) {
+              throw new Error('Time conflict with existing class');
+            }
+          }
+          
           return {
             ...day,
-            classes: [...day.classes, newClass].sort((a, b) => 
-              a.startTime.localeCompare(b.startTime)
-            )
+            classes: updatedClasses
           };
         }
         return day;
       });
 
-      const token = localStorage.getItem('token');
       await axios.post('http://localhost:5000/university-schedule', 
         { weeklySchedule: updatedSchedule },
         { headers: { Authorization: `Bearer ${token}` }}
@@ -216,22 +185,24 @@ const UniversitySchedule: React.FC = () => {
         location: '',
         professor: ''
       });
-    } catch (error) {
+      setError(null);
+    } catch (error: any) {
       console.error('Error adding class:', error);
+      setError(error.message || 'Failed to add class. Please try again.');
     }
   };
 
   const handleViewToggle = (view: 'grid' | 'list') => {
     setActiveView(view);
-    if (view === 'list' && listViewRef.current) {
-      listViewRef.current.scrollIntoView({ behavior: 'smooth' });
-    } else if (view === 'grid' && gridViewRef.current) {
-      gridViewRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
   };
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="loading-container">
+        <div className="loading-spinner"></div>
+        <p>Loading schedule...</p>
+      </div>
+    );
   }
 
   return (
@@ -254,16 +225,6 @@ const UniversitySchedule: React.FC = () => {
           </div>
         </div>
         <div className="action-buttons">
-          <label className="import-button">
-            <FiUpload className="button-icon" />
-            Import Schedule
-            <input
-              type="file"
-              accept=".pdf,.csv,.xlsx"
-              onChange={handleFileUpload}
-              style={{ display: 'none' }}
-            />
-          </label>
           <button
             onClick={() => setShowAddModal(true)}
             className="add-button"
@@ -273,6 +234,12 @@ const UniversitySchedule: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
+      )}
 
       <div className="view-toggle">
         <button 
@@ -290,12 +257,11 @@ const UniversitySchedule: React.FC = () => {
       </div>
 
       <div 
-        ref={gridViewRef} 
         className="schedule-table-container"
         style={{ display: activeView === 'grid' ? 'block' : 'none' }}
       >
         <table className="schedule-table">
-          <thead className="table-header">
+          <thead>
             <tr>
               <th>Time</th>
               {DAYS.map(day => (
@@ -310,7 +276,7 @@ const UniversitySchedule: React.FC = () => {
                 {DAYS.map(day => {
                   const daySchedule = schedule.find(d => d.day === day);
                   const classAtTime = daySchedule?.classes.find(c => 
-                    timeSlot >= c.startTime && timeSlot < c.endTime
+                    isClassInTimeSlot(c, timeSlot)
                   );
 
                   return (
@@ -320,10 +286,13 @@ const UniversitySchedule: React.FC = () => {
                           backgroundColor: getClassColor(classAtTime.courseName).bg,
                           borderLeftColor: getClassColor(classAtTime.courseName).border
                         }}>
-                          <div className="class-title" style={{ color: getClassColor(classAtTime.courseName).text }}>
+                          <div className="class-title" style={{ 
+                            color: getClassColor(classAtTime.courseName).text 
+                          }}>
                             {classAtTime.courseName}
                           </div>
                           <div className="class-details">
+                            <div>{classAtTime.startTime} - {classAtTime.endTime}</div>
                             <div>{classAtTime.location}</div>
                             <div>{classAtTime.professor}</div>
                           </div>
@@ -336,22 +305,32 @@ const UniversitySchedule: React.FC = () => {
             ))}
           </tbody>
         </table>
-        <hr></hr>
-        <div className="schedule-list">
-          {schedule.map(daySchedule => (
-            <div key={daySchedule.day} className="schedule-list-item">
-              <h3>{daySchedule.day}</h3>
+      </div>
+
+      <div 
+        className="schedule-list"
+        style={{ display: activeView === 'list' ? 'grid' : 'none' }}
+      >
+        {schedule.map(daySchedule => (
+          <div key={daySchedule.day} className="schedule-list-item">
+            <h3>{daySchedule.day}</h3>
+            {daySchedule.classes.length === 0 ? (
+              <p className="no-classes">No classes scheduled</p>
+            ) : (
               <ul>
-                {daySchedule.classes.map(classItem => (
-                  <li key={classItem.courseName}>
+                {daySchedule.classes.map((classItem, index) => (
+                  <li key={`${classItem.courseName}-${index}`}>
                     <div className="class-card" style={{
                       backgroundColor: getClassColor(classItem.courseName).bg,
                       borderLeftColor: getClassColor(classItem.courseName).border
                     }}>
-                      <div className="class-title" style={{ color: getClassColor(classItem.courseName).text }}>
+                      <div className="class-title" style={{ 
+                        color: getClassColor(classItem.courseName).text 
+                      }}>
                         {classItem.courseName}
                       </div>
                       <div className="class-details">
+                        <div>{classItem.startTime} - {classItem.endTime}</div>
                         <div>{classItem.location}</div>
                         <div>{classItem.professor}</div>
                       </div>
@@ -359,37 +338,7 @@ const UniversitySchedule: React.FC = () => {
                   </li>
                 ))}
               </ul>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div 
-        ref={listViewRef} 
-        className="schedule-list"
-        style={{ display: activeView === 'list' ? 'grid' : 'none' }}
-      >
-        {schedule.map(daySchedule => (
-          <div key={daySchedule.day} className="schedule-list-item">
-            <h3>{daySchedule.day}</h3>
-            <ul>
-              {daySchedule.classes.map(classItem => (
-                <li key={classItem.courseName}>
-                  <div className="class-card" style={{
-                    backgroundColor: getClassColor(classItem.courseName).bg,
-                    borderLeftColor: getClassColor(classItem.courseName).border
-                  }}>
-                    <div className="class-title" style={{ color: getClassColor(classItem.courseName).text }}>
-                      {classItem.courseName}
-                    </div>
-                    <div className="class-details">
-                      <div>{classItem.location}</div>
-                      <div>{classItem.professor}</div>
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            )}
           </div>
         ))}
       </div>

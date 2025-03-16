@@ -157,18 +157,37 @@ const AISchedule = mongoose.model('AISchedule', aiScheduleSchema);
 
 // Add new schema for university schedule
 const universityScheduleSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   weeklySchedule: [{
-    day: String,
+    day: { 
+      type: String, 
+      required: true,
+      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    },
     classes: [{
-      courseName: String,
-      startTime: String,
-      endTime: String,
-      location: String,
-      professor: String
+      courseName: { type: String, required: true },
+      startTime: { type: String, required: true },
+      endTime: { type: String, required: true },
+      location: { type: String, required: true },
+      professor: { type: String, required: true }
     }]
   }]
 });
+
+// Add validation to ensure time format
+universityScheduleSchema.path('weeklySchedule').schema.path('classes').schema.path('startTime')
+  .validate(function(v) {
+    return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+  }, 'Invalid time format. Use HH:MM');
+
+universityScheduleSchema.path('weeklySchedule').schema.path('classes').schema.path('endTime')
+  .validate(function(v) {
+    return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+  }, 'Invalid time format. Use HH:MM');
 
 const UniversitySchedule = mongoose.model('UniversitySchedule', universityScheduleSchema);
 
@@ -858,13 +877,36 @@ app.post('/university-schedule', authenticateJWT, async (req, res) => {
   const { weeklySchedule } = req.body;
 
   try {
+    // Validate weeklySchedule structure
+    if (!Array.isArray(weeklySchedule)) {
+      return res.status(400).json({ error: 'Invalid schedule format' });
+    }
+
+    // Validate each day's data
+    const isValidSchedule = weeklySchedule.every(day => 
+      day.day && Array.isArray(day.classes) && 
+      day.classes.every(cls => 
+        cls.courseName && 
+        cls.startTime && 
+        cls.endTime && 
+        cls.location && 
+        cls.professor
+      )
+    );
+
+    if (!isValidSchedule) {
+      return res.status(400).json({ error: 'Invalid schedule data format' });
+    }
+
     const result = await UniversitySchedule.findOneAndUpdate(
       { userId },
       { weeklySchedule },
       { new: true, upsert: true }
     );
-    res.json(result);
+
+    res.json({ weeklySchedule: result.weeklySchedule });
   } catch (error) {
+    console.error('Error saving university schedule:', error);
     res.status(500).json({ error: 'Error saving university schedule' });
   }
 });
@@ -873,71 +915,13 @@ app.get('/university-schedule', authenticateJWT, async (req, res) => {
   const userId = req.user.userId;
   try {
     const schedule = await UniversitySchedule.findOne({ userId });
-    res.json(schedule || { weeklySchedule: [] });
+    // Ensure response matches APIResponse interface
+    res.json({
+      weeklySchedule: schedule?.weeklySchedule || []
+    });
   } catch (error) {
+    console.error('Error fetching university schedule:', error);
     res.status(500).json({ error: 'Error fetching university schedule' });
-  }
-});
-
-// Add the import endpoint after the existing university schedule routes
-app.post('/university-schedule/import', authenticateJWT, upload.single('file'), async (req, res) => {
-  try {
-    const userId = req.user.userId;
-    const file = req.file;
-
-    if (!file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
-
-    let schedule;
-    if (file.mimetype === 'application/pdf') {
-      // Parse PDF schedule
-      const pdfData = await pdfParse(file.buffer);
-      // Use Mistral AI to parse the schedule text
-      const response = await client.chat.complete({
-        model: 'mistral-large-latest',
-        messages: [{ 
-          role: 'user', 
-          content: `Parse this university schedule and convert it to JSON format following this structure:
-          {
-            "weeklySchedule": [
-              {
-                "day": "Monday",
-                "classes": [
-                  {
-                    "courseName": "Math 101",
-                    "startTime": "09:00",
-                    "endTime": "10:30",
-                    "location": "Room 123",
-                    "professor": "Dr. Smith"
-                  }
-                ]
-              }
-            ]
-          }
-
-          Here's the schedule text:
-          ${pdfData.text}`
-        }],
-      });
-
-      schedule = JSON.parse(response.choices[0].message.content.trim());
-    } else {
-      // Handle CSV/Excel files if needed
-      // ... add CSV/Excel parsing logic here ...
-    }
-
-    // Save the parsed schedule
-    const result = await UniversitySchedule.findOneAndUpdate(
-      { userId },
-      { weeklySchedule: schedule.weeklySchedule },
-      { new: true, upsert: true }
-    );
-
-    res.json(result);
-  } catch (error) {
-    console.error('Error importing schedule:', error);
-    res.status(500).json({ error: 'Error importing schedule', details: error.message });
   }
 });
 
