@@ -151,13 +151,13 @@ export function AuthForm() {
                     placeholder="••••••••••••"
                     required
                   />
-                  <button 
+                  {/* <button 
                     type="button" 
                     onClick={togglePassword}
                     className="toggle-password"
                   >
                     {showPassword ? 'Hide' : 'Show'}
-                  </button>
+                  </button> */}
                 </div>
               </div>
 
