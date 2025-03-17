@@ -47,20 +47,18 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
       icon: <AiOutlineLineChart size={22} />, 
       label: 'Progress Tracker' 
     },
-    ...isLoggedIn ? [] : [
     { 
       path: ROUTES.PROFILE, 
       icon: <AiOutlineUser size={22} />, 
       label: 'Profile' 
-    }],
-    ...(isLoggedIn && userRole === 'admin' ? [
+    },
+    ...(userRole === 'admin' ? [
       { 
         path: ROUTES.ADMIN, 
         icon: <BsGear size={22} />, 
         label: 'Admin Dashboard' 
-      }] 
-      : []
-    )
+      }
+    ] : [])
   ];
 
   return (

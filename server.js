@@ -178,6 +178,18 @@ const universityScheduleSchema = new mongoose.Schema({
   }]
 });
 
+const checkAdminRole = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (user.role !== 'admin') {
+      return res.status(403).json({ error: 'Not authorized' });
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ error: 'Error checking admin role' });
+  }
+};
+
 // Add validation to ensure time format
 universityScheduleSchema.path('weeklySchedule').schema.path('classes').schema.path('startTime')
   .validate(function(v) {
@@ -1023,13 +1035,9 @@ app.put('/api/reminders/:id/mark-read', authenticateJWT, async (req, res) => {
 });
 
 // Add admin routes
-app.get('/api/admin/users', authenticateJWT, async (req, res) => {
+// Add admin routes
+app.get('/api/admin/users', authenticateJWT, checkAdminRole, async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId);
-    if (user.role !== 'admin') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
     const users = await User.find({}, '-password');
     res.json(users);
   } catch (error) {
@@ -1037,13 +1045,8 @@ app.get('/api/admin/users', authenticateJWT, async (req, res) => {
   }
 });
 
-app.put('/api/admin/users/:id', authenticateJWT, async (req, res) => {
+app.put('/api/admin/users/:id', authenticateJWT, checkAdminRole, async (req, res) => {
   try {
-    const admin = await User.findById(req.user.userId);
-    if (admin.role !== 'admin') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
     const { name, email, role } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
@@ -1056,13 +1059,8 @@ app.put('/api/admin/users/:id', authenticateJWT, async (req, res) => {
   }
 });
 
-app.delete('/api/admin/users/:id', authenticateJWT, async (req, res) => {
+app.delete('/api/admin/users/:id', authenticateJWT, checkAdminRole, async (req, res) => {
   try {
-    const admin = await User.findById(req.user.userId);
-    if (admin.role !== 'admin') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
     await User.findByIdAndDelete(req.params.id);
     res.json({ message: 'User deleted successfully' });
   } catch (error) {
@@ -1070,13 +1068,8 @@ app.delete('/api/admin/users/:id', authenticateJWT, async (req, res) => {
   }
 });
 
-app.get('/api/admin/analytics', authenticateJWT, async (req, res) => {
+app.get('/api/admin/analytics', authenticateJWT, checkAdminRole, async (req, res) => {
   try {
-    const admin = await User.findById(req.user.userId);
-    if (admin.role !== 'admin') {
-      return res.status(403).json({ error: 'Not authorized' });
-    }
-
     const users = await User.find();
     const analytics = {
       totalUsers: users.length,

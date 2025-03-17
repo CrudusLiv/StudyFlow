@@ -64,9 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (response.status === 200) {
-        const role = localStorage.getItem('userRole') || 'user';
+        // Get the role from the API response instead of localStorage
+        const role = response.data.role || localStorage.getItem('userRole') || 'user';
         setIsAuthenticated(true);
         setUserRole(role);
+        // Update localStorage with the latest role from server
+        localStorage.setItem('userRole', role);
         return true;
       } else {
         throw new Error('Failed to verify token');
