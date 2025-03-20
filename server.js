@@ -12,7 +12,7 @@ import session from 'express-session';
 import axios from 'axios';
 import multer from 'multer';
 import fs from 'fs';
-import path from 'path';
+import path, { dirname, join } from 'path';
 import { google } from 'googleapis';
 import pdfParse from 'pdf-parse';
 import { Mistral } from '@mistralai/mistralai';
@@ -20,6 +20,10 @@ import { fileURLToPath } from 'url';
 import { parseAIResponse, withRetry } from './utils/aiResponseUtils.js';
 import { buildEnhancedPrompt } from './utils/promptBuilder.js';
 import { tokenToString } from 'typescript';
+import { processDocuments } from './utils/pdfProcessor.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -27,7 +31,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const apiKey = process.env.MISTRAL_API_KEY;
-const client = new Mistral({ 
+const client = new Mistral({
   apiKey: apiKey,
   timeout: 30000, // 30 second timeout
   maxRetries: 3   // Allow 3 retries
@@ -42,7 +46,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { 
+  cookie: {
     secure: process.env.NODE_ENV === 'production',
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   }
@@ -69,9 +73,9 @@ mongoose.connect(process.env.MONGODB_URI, {
 
 // User schema and model
 const userSchema = new mongoose.Schema({
-  uniqueKey: { 
-    type: String, 
-    required: true, 
+  uniqueKey: {
+    type: String,
+    required: true,
     unique: true,
     default: () => Math.random().toString(36).substring(2) + Date.now().toString(36)
   },
@@ -89,7 +93,8 @@ const userSchema = new mongoose.Schema({
     start: Date,
     end: Date,
     duration: Number // in minutes
-  }]
+  }],
+  profilePicture: { type: String } // Add this line
 });
 
 const User = mongoose.model('User', userSchema);
@@ -157,14 +162,14 @@ const AISchedule = mongoose.model('AISchedule', aiScheduleSchema);
 
 // Add new schema for university schedule
 const universityScheduleSchema = new mongoose.Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
   weeklySchedule: [{
-    day: { 
-      type: String, 
+    day: {
+      type: String,
       required: true,
       enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
     },
@@ -173,7 +178,6 @@ const universityScheduleSchema = new mongoose.Schema({
       startTime: { type: String, required: true },
       endTime: { type: String, required: true },
       location: { type: String, required: true },
-      professor: { type: String, required: true }
     }]
   }]
 });
@@ -327,24 +331,24 @@ app.post('/signup', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const uniqueKey = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    
-    const user = new User({ 
-      email, 
+
+    const user = new User({
+      email,
       password: hashedPassword,
       name,
       role: role || 'user',
       uniqueKey
     });
-    
+
     await user.save();
 
     // Update AISchedule schema to include userKey reference
-    const token = jwt.sign({ 
+    const token = jwt.sign({
       userId: user._id,
-      userKey: user.uniqueKey 
+      userKey: user.uniqueKey
     }, JWT_SECRET, { expiresIn: '1h' });
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'User created successfully',
       token,
       user: {
@@ -379,7 +383,7 @@ app.post('/login', async (req, res) => {
       action: 'login'
     });
     await user.save();
-    res.json({ 
+    res.json({
       token,
       user: {
         id: user._id,
@@ -412,13 +416,13 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
 
     // Generate JWT token with user info
     const token = jwt.sign(
-      { 
-        userId: user._id, 
+      {
+        userId: user._id,
         userKey: user.uniqueKey,
         email: user.email,
-        role: user.role 
-      }, 
-      JWT_SECRET, 
+        role: user.role
+      },
+      JWT_SECRET,
       { expiresIn: '1h' }
     );
 
@@ -437,27 +441,27 @@ app.get('/auth/google/callback', passport.authenticate('google', { failureRedire
 
 // Update Google auth routes
 app.get('/auth/google',
-  passport.authenticate('google', { 
+  passport.authenticate('google', {
     scope: ['profile', 'email'],
     accessType: 'offline',
     prompt: 'consent'
   })
 );
 
-app.get('/auth/google/callback', 
+app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
   async (req, res) => {
     try {
       const user = req.user;
       // Generate JWT token
       const token = jwt.sign(
-        { 
-          userId: user._id, 
+        {
+          userId: user._id,
           userKey: user.uniqueKey,
           email: user.email,
-          role: user.role 
-        }, 
-        JWT_SECRET, 
+          role: user.role
+        },
+        JWT_SECRET,
         { expiresIn: '1h' }
       );
 
@@ -467,7 +471,7 @@ app.get('/auth/google/callback',
       redirectUrl.searchParams.set('token', token);
       redirectUrl.searchParams.set('userKey', user.uniqueKey);
       redirectUrl.searchParams.set('userRole', user.role);
-      
+
       console.log('Redirecting to:', redirectUrl.toString());
       res.redirect(redirectUrl.toString());
     } catch (error) {
@@ -477,7 +481,7 @@ app.get('/auth/google/callback',
   }
 );
 
-app.get('/auth/google/callback', 
+app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
   async (req, res) => {
     try {
@@ -492,13 +496,13 @@ app.get('/auth/google/callback',
 
       // Generate JWT token with complete user info
       const token = jwt.sign(
-        { 
+        {
           userId: user._id,
           userKey: user.uniqueKey,
           email: user.email,
           role: user.role || 'user'
-        }, 
-        JWT_SECRET, 
+        },
+        JWT_SECRET,
         { expiresIn: '1h' }
       );
 
@@ -520,37 +524,37 @@ app.get('/auth/google/callback',
 );
 
 // Fix Google callback route to use HTTP status 302 for redirect
-app.get('/auth/google/callback', 
+app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
   async (req, res) => {
     try {
       if (!req.user) {
         throw new Error('No user data received');
       }
-      
+
       // Get user data
       const user = req.user;
-      
+
       // Generate JWT token
       const token = jwt.sign(
-        { 
+        {
           userId: user._id,
           userKey: user.uniqueKey,
           email: user.email,
           role: user.role || 'user'
-        }, 
+        },
         JWT_SECRET,
         { expiresIn: '24h' } // Extend token expiration
       );
-      
+
       // Create redirect URL with auth data
       const redirectUrl = new URL('/access', process.env.CORS_ORIGIN);
       redirectUrl.searchParams.append('token', token);
       redirectUrl.searchParams.append('userKey', user.uniqueKey);
       redirectUrl.searchParams.append('userRole', user.role || 'user');
-      
+
       console.log('Redirecting to:', redirectUrl.toString());
-      
+
       // Use 302 Found for better redirect behavior
       res.redirect(302, redirectUrl.toString());
     } catch (error) {
@@ -559,6 +563,96 @@ app.get('/auth/google/callback',
     }
   }
 );
+
+// Add Microsoft authentication endpoint
+app.post('/auth/microsoft', async (req, res) => {
+  try {
+    const { token, email, name } = req.body;
+
+    // Verify the Firebase token
+    const decoded = await admin.auth().verifyIdToken(token);
+
+    if (!decoded.email) {
+      return res.status(400).json({ error: 'No email provided' });
+    }
+
+    // Find or create user
+    let user = await User.findOne({ email: decoded.email });
+    if (!user) {
+      const uniqueKey = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      user = new User({
+        email: decoded.email,
+        name: name || decoded.name,
+        uniqueKey,
+        role: 'user'
+      });
+      await user.save();
+    }
+
+    // Generate JWT token
+    const jwtToken = jwt.sign(
+      {
+        userId: user._id,
+        userKey: user.uniqueKey,
+        email: user.email,
+        role: user.role
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token: jwtToken,
+      userKey: user.uniqueKey,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Microsoft auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+// ...existing code...
+
+app.post('/auth/microsoft', async (req, res) => {
+  try {
+    console.log('Received Microsoft auth request:', req.body.email);
+    const { email, name } = req.body;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      user = new User({
+        email,
+        name,
+        uniqueKey: Math.random().toString(36).substring(2) + Date.now().toString(36),
+        role: 'user'
+      });
+      await user.save();
+      console.log('Created new user:', user.email);
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        userKey: user.uniqueKey,
+        email: user.email,
+        role: user.role
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    console.log('Sending auth response for:', user.email);
+    res.json({
+      token,
+      userKey: user.uniqueKey,
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Microsoft auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
 
 // Endpoint to fetch the MISTRAL_API_KEY
 app.get('/api/get-api-key', authenticateJWT, (req, res) => {
@@ -692,11 +786,11 @@ app.post('/ai/read-pdf', /* authenticateJWT, */ upload.single('pdf'), async (req
     } else if (req.body && req.body instanceof Buffer) {
       fileBuffer = req.body;
     }
-    
+
     if (!fileBuffer) {
       return res.status(400).json({ error: 'PDF file is required' });
     }
-    
+
     const pdfData = await pdfParse(fileBuffer);
     const pdfText = pdfData.text;
     console.log('Extracted text from PDF:', pdfText);
@@ -711,7 +805,7 @@ app.post('/ai/read-pdf', /* authenticateJWT, */ upload.single('pdf'), async (req
 app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), async (req, res) => {
   const userId = req.user.userId;
   const userKey = req.user.userKey;
-  
+
   try {
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({ error: 'PDF files are required' });
@@ -726,7 +820,7 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
           .replace(/\r\n/g, '\n')
           .replace(/\n\s*\n/g, '\n')
           .trim();
-        
+
         combinedPdfText += `=== File: ${file.originalname} ===\n${cleanedText}\n\n`;
         console.log('Extracted text from:', file.originalname, '\nLength:', cleanedText.length);
       } catch (error) {
@@ -753,7 +847,7 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
     );
 
     console.log('Sending prompt to AI...');
-    
+
     const chatResponse = await withRetry(async () => {
       return await client.chat.complete({
         model: 'mistral-large-latest',
@@ -762,9 +856,9 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
             role: 'system',
             content: 'You are a scheduling assistant. Create detailed study schedules with specific tasks from the provided PDF content.'
           },
-          { 
-            role: 'user', 
-            content: prompt 
+          {
+            role: 'user',
+            content: prompt
           }
         ],
         max_tokens: 4000,
@@ -778,7 +872,7 @@ app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), asy
 
     // Parse and validate the schedule
     const schedule = parseAIResponse(rawContent, preferences);
-    
+
     if (!schedule?.weeklySchedule?.length) {
       throw new Error('Invalid schedule structure received from AI');
     }
@@ -850,8 +944,8 @@ app.post('/ai/save-schedule', authenticateJWT, async (req, res) => {
     const result = await AISchedule.findOneAndUpdate(
       { userId, userKey },
       { $set: { weeklySchedule } },
-      { 
-        new: true, 
+      {
+        new: true,
         upsert: true,
         setDefaultsOnInsert: true
       }
@@ -860,8 +954,8 @@ app.post('/ai/save-schedule', authenticateJWT, async (req, res) => {
     res.json({ weeklySchedule: result.weeklySchedule });
   } catch (error) {
     console.error('Error saving AI schedule:', error);
-    res.status(500).json({ 
-      error: 'Error saving schedule', 
+    res.status(500).json({
+      error: 'Error saving schedule',
       details: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -871,7 +965,7 @@ app.post('/ai/save-schedule', authenticateJWT, async (req, res) => {
 app.get('/ai/get-schedule', authenticateJWT, async (req, res) => {
   const userId = req.user.userId;
   const userKey = req.user.userKey; // Add this line
-  
+
   try {
     console.log('Fetching schedule for user:', userId);
     const schedule = await AISchedule.findOne({ userId, userKey }); // Add userKey to query
@@ -895,14 +989,13 @@ app.post('/university-schedule', authenticateJWT, async (req, res) => {
     }
 
     // Validate each day's data
-    const isValidSchedule = weeklySchedule.every(day => 
-      day.day && Array.isArray(day.classes) && 
-      day.classes.every(cls => 
-        cls.courseName && 
-        cls.startTime && 
-        cls.endTime && 
-        cls.location && 
-        cls.professor
+    const isValidSchedule = weeklySchedule.every(day =>
+      day.day && Array.isArray(day.classes) &&
+      day.classes.every(cls =>
+        cls.courseName &&
+        cls.startTime &&
+        cls.endTime &&
+        cls.location
       )
     );
 
@@ -959,7 +1052,7 @@ app.post('/assignments', authenticateJWT, async (req, res) => {
     const dueDate = new Date(assignment.dueDate);
     const twoWeeksBefore = new Date(dueDate);
     twoWeeksBefore.setDate(dueDate.getDate() - 14);
-    
+
     // Create initial reminder (2 weeks before)
     if (twoWeeksBefore > new Date()) {
       await new Reminder({
@@ -1010,7 +1103,7 @@ app.put('/assignments/:id', authenticateJWT, async (req, res) => {
 // Add reminder routes
 app.get('/api/reminders', authenticateJWT, async (req, res) => {
   try {
-    const reminders = await Reminder.find({ 
+    const reminders = await Reminder.find({
       userId: req.user.userId,
       reminderDate: { $lte: new Date() },
       isRead: false
@@ -1073,11 +1166,11 @@ app.get('/api/admin/analytics', authenticateJWT, checkAdminRole, async (req, res
     const users = await User.find();
     const analytics = {
       totalUsers: users.length,
-      activeToday: users.filter(u => 
+      activeToday: users.filter(u =>
         u.lastLogin && u.lastLogin > new Date(Date.now() - 24 * 60 * 60 * 1000)
       ).length,
       averageSessionDuration: users.reduce((acc, user) => {
-        const userAvg = user.sessionDurations.reduce((sum, session) => 
+        const userAvg = user.sessionDurations.reduce((sum, session) =>
           sum + session.duration, 0) / (user.sessionDurations.length || 1);
         return acc + userAvg;
       }, 0) / users.length,
@@ -1087,11 +1180,11 @@ app.get('/api/admin/analytics', authenticateJWT, checkAdminRole, async (req, res
         email: u.email,
         lastLogin: u.lastLogin,
         totalSessions: u.sessionDurations.length,
-        averageSessionDuration: u.sessionDurations.reduce((acc, session) => 
+        averageSessionDuration: u.sessionDurations.reduce((acc, session) =>
           acc + session.duration, 0) / (u.sessionDurations.length || 1)
       }))
     };
-    
+
     res.json(analytics);
   } catch (error) {
     res.status(500).json({ error: 'Error fetching analytics' });
@@ -1105,7 +1198,8 @@ app.get('/api/user/profile', authenticateJWT, async (req, res) => {
     res.json({
       name: user.name,
       email: user.email,
-      username: user.username
+      username: user.username,
+      profilePicture: user.profilePicture // Make sure this is included
     });
   } catch (error) {
     res.status(500).json({ error: 'Error fetching profile' });
@@ -1119,13 +1213,13 @@ app.put('/api/user/profile', authenticateJWT, async (req, res) => {
       email: req.body.email,
       username: req.body.username
     };
-    
+
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       updates,
       { new: true }
     );
-    
+
     res.json({
       name: user.name,
       email: user.email,
@@ -1140,21 +1234,164 @@ app.put('/api/user/change-password', authenticateJWT, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.userId);
-    
+
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Current password is incorrect' });
     }
-    
+
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
-    
+
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error updating password' });
   }
 });
+
+// Add multer middleware for file uploads
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const diskUpload = multer({
+  storage: diskStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB size limit
+  fileFilter: (req, file, cb) => {
+    const filetypes = /pdf/;
+    const mimetype = filetypes.test(file.mimetype);
+    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    }
+    cb(new Error('Only PDF files are allowed'));
+  }
+});
+
+// Add this route to handle document uploads
+app.post('/api/upload-documents', authenticateJWT, diskUpload.array('files', 5), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return res.status(400).json({ error: 'No files uploaded' });
+    }
+
+    const userId = req.user.id;
+    const filePaths = req.files.map(file => file.path);
+
+    // Process the documents and generate a schedule
+    const schedule = await processDocuments(filePaths, userId);
+
+    // Return the generated schedule
+    res.json({ weeklySchedule: schedule });
+  } catch (error) {
+    console.error('Error processing uploaded documents:', error);
+    res.status(500).json({ error: 'Failed to process documents' });
+  }
+});
+
+// Create uploads directory if it doesn't exist
+const uploadDir = join(__dirname, 'uploads', 'profile-pictures');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const profileStorage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename: function(req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, 'profile-' + uniqueSuffix + ext);
+  }
+});
+
+const profileUpload = multer({
+  storage: profileStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Please upload an image file'));
+    }
+    cb(null, true);
+  }
+});
+
+// Profile picture endpoints
+app.post('/api/user/profile-picture', authenticateJWT, profileUpload.single('profilePicture'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Delete old profile picture if it exists
+    if (user.profilePicture) {
+      const oldPath = join(__dirname, user.profilePicture);
+      try {
+        if (fs.existsSync(oldPath)) {
+          fs.unlinkSync(oldPath);
+        }
+      } catch (error) {
+        console.error('Error deleting old profile picture:', error);
+      }
+    }
+
+    // Update relative path in database
+    const profilePictureUrl = `/uploads/profile-pictures/${req.file.filename}`;
+    user.profilePicture = profilePictureUrl;
+    await user.save();
+
+    res.json({ profilePictureUrl });
+  } catch (error) {
+    console.error('Error uploading profile picture:', error);
+    res.status(500).json({ error: 'Error uploading profile picture' });
+  }
+});
+
+app.delete('/api/user/profile-picture', authenticateJWT, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.profilePicture) {
+      const picturePath = join(__dirname, user.profilePicture);
+      try {
+        if (fs.existsSync(picturePath)) {
+          fs.unlinkSync(picturePath);
+        }
+      } catch (error) {
+        console.error('Error deleting profile picture file:', error);
+      }
+      user.profilePicture = null;
+      await user.save();
+    }
+
+    res.json({ message: 'Profile picture removed successfully' });
+  } catch (error) {
+    console.error('Error removing profile picture:', error);
+    res.status(500).json({ error: 'Error removing profile picture' });
+  }
+});
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

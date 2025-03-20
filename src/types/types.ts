@@ -26,12 +26,24 @@ export interface CalendarEvent {
   title: string;
   start: Date;
   end: Date;
+  courseCode?: string;
   description?: string;
   allDay?: boolean;
-  resource?: ScheduleTask;
+  resource?: {
+    type?: string;
+    location?: string;
+    recurring?: boolean;
+    day?: string;
+    courseCode?: string;
+    details?: {
+      courseName?: string;
+      [key: string]: any;
+    };
+  };
   priority?: 'high' | 'medium' | 'low';
   status?: 'pending' | 'in-progress' | 'completed';
   category?: string;
+  location?: string;
 }
 
 export interface Schedule {
@@ -64,4 +76,20 @@ export interface DaySchedule {
 export interface WeeklySchedule {
   week: string;
   days: DaySchedule[];
+}
+
+export interface SemesterDates {
+  startDate: Date;
+  endDate: Date;
+}
+
+export interface ClassData {
+  courseName: string;
+  courseCode: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  professor: string;
+  day: string;
+  semesterDates?: SemesterDates;
 }

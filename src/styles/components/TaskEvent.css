@@ -1,0 +1,202 @@
+/* Task Event component styling */
+.task-event {
+  padding: 4px 8px;
+  border-radius: 4px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.task-event::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.task-event-title {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.task-event-desc {
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.task-event-course {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.9;
+  margin-top: 2px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+/* Priority styling */
+.priority-high {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.priority-high::before {
+  background-color: #ef4444;
+}
+
+.priority-medium {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.priority-medium::before {
+  background-color: #f59e0b;
+}
+
+.priority-low {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.priority-low::before {
+  background-color: #10b981;
+}
+
+/* Category styling */
+.report {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.report::before {
+  background-color: #3b82f6;
+}
+
+.project {
+  background-color: #e0e7ff;
+  color: #4338ca;
+}
+
+.project::before {
+  background-color: #6366f1;
+}
+
+.presentation {
+  background-color: #fae8ff;
+  color: #86198f;
+}
+
+.presentation::before {
+  background-color: #d946ef;
+}
+
+.quiz {
+  background-color: #fce7f3;
+  color: #9d174d;
+}
+
+.quiz::before {
+  background-color: #ec4899;
+}
+
+.homework {
+  background-color: #ffedd5;
+  color: #9a3412;
+}
+
+.homework::before {
+  background-color: #fb923c;
+}
+
+/* Class event styling */
+.class {
+  background-color: #e0f2fe !important;
+  color: #0c4a6e !important;
+}
+
+.class::before {
+  background-color: #0ea5e9 !important;
+}
+
+/* Class event enhancements */
+.class-indicator {
+  font-size: 12px;
+  margin-right: 4px;
+}
+
+.task-event-location {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.9;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .task-event-course {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .priority-high {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+
+  .priority-medium {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+  }
+
+  .priority-low {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+  }
+
+  /* Dark mode category styling */
+  .report {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+  }
+
+  .project {
+    background-color: rgba(99, 102, 241, 0.2);
+    color: #a5b4fc;
+  }
+
+  .presentation {
+    background-color: rgba(217, 70, 239, 0.2);
+    color: #e9d5ff;
+  }
+
+  .quiz {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #fbcfe8;
+  }
+
+  .homework {
+    background-color: rgba(251, 146, 60, 0.2);
+    color: #fed7aa;
+  }
+
+  .class {
+    background-color: rgba(14, 165, 233, 0.2) !important;
+    color: #7dd3fc !important;
+  }
+}

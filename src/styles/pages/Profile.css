@@ -217,28 +217,91 @@
   gap: 0.5rem;
 }
 
-.password-input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
+/* Remove these sections */
+.password-input-wrapper,
+.password-toggle {
+  display: none;
 }
 
-.password-toggle {
-  position: absolute;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: #64748b;
-  cursor: pointer;
-  padding: 0.5rem;
+/* Profile Picture Section */
+.profile-picture-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.profile-picture-container {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3f4f6;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.profile-picture {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-picture-placeholder {
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.3s ease;
+  color: #9ca3af;
 }
 
-.password-toggle:hover {
-  color: #6366f1;
+.profile-picture-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.profile-picture-container:hover .profile-picture-overlay {
+  transform: translateY(0);
+}
+
+.picture-upload-button,
+.picture-remove-button {
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.picture-upload-button {
+  background: #4f46e5;
+  color: white;
+}
+
+.picture-upload-button:hover {
+  background: #4338ca;
+}
+
+.picture-remove-button {
+  background: #ef4444;
+  color: white;
+}
+
+.picture-remove-button:hover {
+  background: #dc2626;
 }
 
 @keyframes slideIn {
@@ -333,5 +396,17 @@
 
   .password-toggle:hover {
     color: #818cf8;
+  }
+
+  .profile-picture-container {
+    background: #374151;
+  }
+
+  .profile-picture-placeholder {
+    color: #6b7280;
+  }
+
+  .profile-picture-overlay {
+    background: rgba(0, 0, 0, 0.8);
   }
 }

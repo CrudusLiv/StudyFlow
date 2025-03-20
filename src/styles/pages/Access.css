@@ -234,7 +234,7 @@
     .toggle-auth {
       color: #818cf8;
     }
-  
+
     .toggle-auth:hover {
       color: #a5b4fc;
     }
@@ -272,5 +272,126 @@
 
   .auth-switch-link:hover {
     color: #a5b4fc;
+  }
+}
+
+.access-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  padding: 1rem;
+}
+
+.access-card {
+  background: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.card-header {
+  margin-bottom: 2rem;
+}
+
+.header-icon {
+  font-size: 3rem;
+  color: #4f46e5;
+  margin-bottom: 1rem;
+}
+
+h1 {
+  font-size: 1.5rem;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+.error-message {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .access-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+
+  .access-card {
+    background: #1e293b;
+  }
+
+  h1 {
+    color: #f1f5f9;
+  }
+
+  p {
+    color: #94a3b8;
+  }
+
+  .error-message {
+    background: #450a0a;
+    color: #fca5a5;
+  }
+}
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2rem 0;
+}
+
+.auth-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.microsoft-button {
+  background-color: #2f2f2f;
+  color: white;
+  border: none;
+}
+
+.microsoft-button:hover {
+  background-color: #1f1f1f;
+  transform: translateY(-2px);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .microsoft-button {
+    background-color: #404040;
+  }
+
+  .microsoft-button:hover {
+    background-color: #525252;
   }
 }

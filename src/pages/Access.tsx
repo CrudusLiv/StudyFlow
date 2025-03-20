@@ -1,103 +1,69 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-import '../styles/pages/Access.css';
-import { AccessGoogleButton } from '../components/AccessGoogleButton';
+import { BsMicrosoft } from 'react-icons/bs';
+import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
-
-interface UserResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    role: string;
-    name: string;
-    uniqueKey: string;
-  };
-}
+import axios from 'axios';
+import '../styles/pages/Access.css';
 
 export function AuthForm() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    const userKey = params.get('userKey');
-    const userRole = params.get('userRole');
-    
-    if (token && userKey) {
-      console.log("Access page: Found token in URL");
-      try {
-        // Log the user in through the auth context
-        login(token, userKey, userRole || 'user');
-        
-        // Clear URL params
-        window.history.replaceState({}, document.title, window.location.pathname);
-        
-        // Navigate after a small delay to ensure state updates
-        setTimeout(() => {
-          navigate('/', { replace: true });
-        }, 100);
-      } catch (error) {
-        console.error('Error processing authentication:', error);
-        setError('Failed to process authentication');
+    const processAuth = async () => {
+      // Only process if we have an auth in progress
+      if (!localStorage.getItem('authInProgress')) {
+        return;
       }
-    }
+
+      setLoading(true);
+      try {
+        const result = await handleRedirectResult();
+        if (result?.user) {
+          const idToken = await result.user.getIdToken();
+          const response = await axios.post('http://localhost:5000/auth/microsoft', {
+            token: idToken,
+            email: result.user.email,
+            name: result.user.displayName
+          });
+
+          if (response.data.token) {
+            login(response.data.token, response.data.userKey);
+            navigate('/schedule');
+          }
+        }
+      } catch (err) {
+        console.error('Auth processing error:', err);
+        setError('Authentication failed. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    processAuth();
   }, [navigate, login]);
 
-  const handleGoogleAuth = useCallback(() => {
+  const handleGoogleAuth = () => {
     try {
       window.location.href = 'http://localhost:5000/auth/google';
     } catch (err) {
       console.error('Google auth error:', err);
       setError("Authentication failed. Please try again.");
     }
-  }, []);
-
-  const handleGoogleCalendarAccess = async (accessToken: string) => {
-    try {
-      // Store the access token
-      localStorage.setItem('googleAccessToken', accessToken);
-      setMessage('Google Calendar connected successfully');
-    } catch (err) {
-      setError('Failed to connect Google Calendar');
-    }
   };
 
-  const togglePassword = () => {
-    setShowPassword(prev => !prev);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const handleMicrosoftAuth = async () => {
     try {
-      const endpoint = isLogin ? "login" : "signup";
-      const payload = isLogin 
-        ? { email, password } 
-        : { email, password, name, role: 'user' };
-
-      const response = await axios.post<UserResponse>(
-        `http://localhost:5000/${endpoint}`, 
-        payload
-      );
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem('userKey', response.data.user.uniqueKey);
-      navigate("/");
+      setError(null);
+      setLoading(true);
+      await signInWithMicrosoft();
     } catch (err) {
-      setError("Authentication failed");
-    } finally {
-      setIsLoading(false);
+      console.error('Microsoft auth error:', err);
+      setError('Failed to start authentication');
+      setLoading(false);
     }
   };
 
@@ -106,98 +72,31 @@ export function AuthForm() {
       <div className="auth-card">
         <div className="auth-content">
           <div className="form-section">
-            <form onSubmit={handleSubmit} className="auth-form">
-              <h1 className="form-title">
-                {isLogin ? "Welcome Back" : "Create Account"}
-              </h1>
+            <h1 className="form-title">Welcome to StudyFlow</h1>
 
-              {error && <div className="error-message">{error}</div>}
-              {message && <div className="success-message">{message}</div>}
+            {error && <div className="error-message">{error}</div>}
 
-              {!isLogin && (
-                <div className="input-group">
-                  <label className="input-label">Username</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="input-field"
-                    placeholder="Alice"
-                    required
-                  />
-                </div>
-              )}
-
-              <div className="input-group">
-                <label className="input-label">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="input-field"
-                  placeholder="user@gmail.com"
-                  required
-                />
-              </div>
-
-              <div className="input-group">
-                <label className="input-label">Password</label>
-                <div className="password-field">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="input-field"
-                    placeholder="••••••••••••"
-                    required
-                  />
-                  <button 
-                    type="button" 
-                    onClick={togglePassword}
-                    className="toggle-password"
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-              </div>
-
-              <button 
-                type="submit" 
-                className={`submit-button ${isLoading ? 'loading' : ''}`}
-                disabled={isLoading}
+            <div className="auth-buttons">
+              <button
+                onClick={handleGoogleAuth}
+                className="auth-button google-button"
               >
-                {isLoading ? "Processing..." : (isLogin ? "Sign In" : "Create Account")}
+                Sign in with Google
               </button>
-
-              <div className="divider">
-                <span>Or continue with</span>
-                <button 
-                  onClick={handleGoogleAuth}
-                  className="google-auth-button"
-                >
-                  Sign in with Google
-                </button>
-              </div>
-
-              <AccessGoogleButton
-                onSuccess={handleGoogleCalendarAccess}
-                onError={() => setError('Failed to connect Google Calendar')}
-              />
 
               <button
-                type="button"
-                onClick={() => setIsLogin(!isLogin)}
-                className="toggle-auth"
+                onClick={handleMicrosoftAuth}
+                className="auth-button microsoft-button"
+                disabled={loading}
               >
-                {isLogin ? "Need an account? Sign up" : "Already have an account? Sign in"}
+                <BsMicrosoft />
+                {loading ? 'Signing in...' : 'Sign in with Microsoft'}
               </button>
-            </form>
+            </div>
           </div>
 
           <div className="info-section">
-            <h2 className="info-title">
-              {isLogin ? "Welcome Back" : "Join StudyFlow"}
-            </h2>
+            <h2 className="info-title">Join StudyFlow</h2>
             <ul className="feature-list">
               <li>Track your progress</li>
               <li>Manage your schedule</li>
@@ -210,10 +109,9 @@ export function AuthForm() {
   );
 }
 
-export default function AuthPage() {
-  return (
-    <div className="auth-page">
-      <AuthForm />
-    </div>
-  );
-}
+// Add default export
+const Access = () => {
+  return <AuthForm />;
+};
+
+export default Access;

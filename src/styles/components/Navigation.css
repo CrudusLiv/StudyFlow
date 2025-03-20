@@ -14,8 +14,6 @@
   transform: translateX(-100%);
 }
 
-
-
 .nav-container.open {
   transform: translateX(0);
 }
@@ -161,6 +159,41 @@
 .close-button:hover::before,
 .close-button:hover::after {
   background-color: #4f46e5;
+}
+
+.theme-toggle {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: none;
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+}
+
+.theme-toggle:hover {
+  background: var(--background-hover);
+}
+
+.theme-toggle svg {
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle:hover svg {
+  transform: rotate(15deg);
+}
+
+/* Dark mode specific styles */
+.dark .theme-toggle {
+  color: var(--text-primary-dark);
+}
+
+.dark .theme-toggle:hover {
+  background: var(--background-hover-dark);
 }
 
 @media (max-width: 768px) {

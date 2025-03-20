@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  AiOutlineHome, 
-  AiOutlineCalendar, 
-  AiOutlineLineChart, 
+import {
+  AiOutlineHome,
+  AiOutlineCalendar,
+  AiOutlineLineChart,
   AiOutlineSchedule,
   AiOutlineBell,
-  AiOutlineUser 
+  AiOutlineUser
 } from 'react-icons/ai';
 import { BsGear } from 'react-icons/bs';
+import { FiSun, FiMoon } from 'react-icons/fi';
 import { ROUTES } from '../lib/routes';
+import { useTheme } from '../contexts/ThemeContext';
 import '../styles/components/Navigation.css';
 
 interface NavigationProps {
@@ -20,43 +22,44 @@ interface NavigationProps {
 
 const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) => {
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   const navigationItems = [
-    { 
-      path: ROUTES.HOME, 
-      icon: <AiOutlineHome size={22} />, 
-      label: 'Home' 
+    {
+      path: ROUTES.HOME,
+      icon: <AiOutlineHome size={22} />,
+      label: 'Home'
     },
-    { 
-      path: ROUTES.SCHEDULE, 
-      icon: <AiOutlineCalendar size={22} />, 
-      label: 'Study Schedule' 
+    {
+      path: ROUTES.SCHEDULE,
+      icon: <AiOutlineCalendar size={22} />,
+      label: 'Study Schedule'
     },
-    { 
-      path: ROUTES.UNIVERSITY_SCHEDULE, 
-      icon: <AiOutlineSchedule size={22} />, 
-      label: 'University Schedule' 
+    {
+      path: ROUTES.UNIVERSITY_SCHEDULE,
+      icon: <AiOutlineSchedule size={22} />,
+      label: 'University Schedule'
     },
-    { 
-      path: ROUTES.REMINDERS, 
-      icon: <AiOutlineBell size={22} />, 
-      label: 'Reminders' 
+   {
+      path: ROUTES.REMINDERS,
+      icon: <AiOutlineBell size={22}/>,
+      label: 'Reminders'
     },
-    { 
-      path: ROUTES.TRACKER, 
-      icon: <AiOutlineLineChart size={22} />, 
-      label: 'Progress Tracker' 
+   {
+      path: ROUTES.TRACKER,
+      icon: <AiOutlineLineChart size={22}/>,
+      label: 'Progress Tracker'
     },
-    { 
-      path: ROUTES.PROFILE, 
-      icon: <AiOutlineUser size={22} />, 
-      label: 'Profile' 
+   {
+      path: ROUTES.PROFILE,
+      icon: <AiOutlineUser size={22}/>,
+      label: 'Profile'
     },
     ...(userRole === 'admin' ? [
-      { 
-        path: ROUTES.ADMIN, 
-        icon: <BsGear size={22} />, 
-        label: 'Admin Dashboard' 
+     {
+        path: ROUTES.ADMIN,
+        icon: <BsGear size={22}/>,
+        label: 'Admin Dashboard'
       }
     ] : [])
   ];
@@ -82,6 +85,13 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
             </Link>
           ))}
         </div>
+        <button
+          onClick={toggleTheme}
+          className="theme-toggle"
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
+        </button>
       </nav>
     </>
   );

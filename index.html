@@ -6,12 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com https://apis.google.com https://*.gstatic.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.firebaseapp.com https://*.google.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://apis.google.com https://*.live.com https://*.microsoft.com;
+      style-src 'self' 'unsafe-inline';
+      connect-src 'self' https://*.firebaseio.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.live.com https://*.microsoft.com https://graph.microsoft.com wss://*.firebaseio.com http://localhost:* https://identitytoolkit.googleapis.com;
+      frame-src 'self' https://*.firebaseapp.com https://*.google.com https://*.microsoftonline.com https://*.msauth.net https://*.msftauth.net https://*.live.com;
+      img-src 'self' data: blob: https: http://localhost:5000;
       font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: https: blob:;
-      frame-src 'self' https://accounts.google.com;
-      connect-src 'self' https://accounts.google.com https://www.googleapis.com http://localhost:5000 https://*.google.com;
+      object-src 'none';
     ">
     <title>StudyFlow</title>
     <script>

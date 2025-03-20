@@ -1,91 +1,124 @@
 import React from 'react';
-import { ScheduleTask } from '../types/types';
+import { CalendarEvent } from '../types/types';
+import { FiClock, FiCalendar, FiBook, FiFlag, FiTag, FiInfo, FiMapPin } from 'react-icons/fi';
 
 interface TaskModalProps {
-  task: ScheduleTask;
-  isOpen: boolean;
+  task: CalendarEvent;
   onClose: () => void;
-  onSave: (updatedTask: ScheduleTask) => void;
-  onDelete: () => void;
 }
 
-const TaskModal: React.FC<TaskModalProps> = ({ task, isOpen, onClose, onSave, onDelete }) => {
-  const [editedTask, setEditedTask] = React.useState<ScheduleTask>(task);
+const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
+  console.log('Task received in modal:', task); // Debug log
 
-  if (!isOpen) return null;
+  const formatTime = (date: Date | string | undefined) => {
+    if (!date) return '';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '';
+      
+      return dateObj.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      return '';
+    }
+  };
+
+  const formatDate = (date: Date | string | undefined) => {
+    if (!date) return '';
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) return '';
+
+      return dateObj.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  };
+
+  const isClassEvent = task?.category === 'class';
 
   return (
-    <div className="modal-overlay">
-      <div className="task-modal">
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content task-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Task Details</h2>
-          <button className="close-button" onClick={onClose}>&times;</button>
+          <h2>{task?.title || 'Untitled Event'}</h2>
+          <button className="close-button" onClick={onClose}>×</button>
         </div>
 
-        <div className="modal-content">
-          <div className="form-group">
-            <label>Title</label>
-            <input
-              type="text"
-              value={editedTask.title}
-              onChange={e => setEditedTask({ ...editedTask, title: e.target.value })}
-              className="form-input"
-            />
-          </div>
+        <div className="task-details">
+          {task?.start && (
+            <div className="task-detail-item">
+              <FiCalendar className="detail-icon" />
+              <div>
+                <strong>Date:</strong> {formatDate(task.start)}
+              </div>
+            </div>
+          )}
 
-          <div className="form-group">
-            <label>Time</label>
-            <input
-              type="text"
-              value={editedTask.time}
-              onChange={e => setEditedTask({ ...editedTask, time: e.target.value })}
-              className="form-input"
-            />
-          </div>
+          {task?.start && task?.end && (
+            <div className="task-detail-item">
+              <FiClock className="detail-icon" />
+              <div>
+                <strong>Time:</strong> {formatTime(task.start)} - {formatTime(task.end)}
+              </div>
+            </div>
+          )}
 
-          <div className="form-group">
-            <label>Details</label>
-            <textarea
-              value={editedTask.details}
-              onChange={e => setEditedTask({ ...editedTask, details: e.target.value })}
-              className="form-input"
-              rows={3}
-            />
-          </div>
+          {task?.category && (
+            <div className="task-detail-item">
+              <FiTag className="detail-icon" />
+              <div>
+                <strong>Type:</strong> {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+              </div>
+            </div>
+          )}
 
-          <div className="form-group">
-            <label>Priority</label>
-            <select
-              value={editedTask.priority}
-              onChange={e => setEditedTask({ ...editedTask, priority: e.target.value as 'high' | 'medium' | 'low' })}
-              className="form-input"
-            >
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
+          {!isClassEvent && task?.priority && (
+            <div className="task-detail-item">
+              <FiFlag className="detail-icon" />
+              <div>
+                <strong>Priority:</strong> {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+              </div>
+            </div>
+          )}
 
-          <div className="form-group">
-            <label>Status</label>
-            <select
-              value={editedTask.status}
-              onChange={e => setEditedTask({ ...editedTask, status: e.target.value as 'pending' | 'in-progress' | 'completed' })}
-              className="form-input"
-            >
-              <option value="pending">Pending</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-        </div>
+          {(task?.courseCode || task?.resource?.courseCode) && (
+            <div className="task-detail-item">
+              <FiBook className="detail-icon" />
+              <div>
+                <strong>Course:</strong> {task.courseCode || task.resource?.courseCode}
+              </div>
+            </div>
+          )}
 
-        <div className="modal-footer">
-          <button className="delete-button" onClick={onDelete}>Delete Task</button>
-          <div className="action-buttons">
-            <button className="cancel-button" onClick={onClose}>Cancel</button>
-            <button className="save-button" onClick={() => onSave(editedTask)}>Save Changes</button>
-          </div>
+          {(task?.location || task?.resource?.location) && (
+            <div className="task-detail-item">
+              <FiMapPin className="detail-icon" />
+              <div>
+                <strong>Location:</strong> {task.location || task.resource?.location}
+              </div>
+            </div>
+          )}
+
+          {task?.description && (
+            <div className="task-detail-item">
+              <FiInfo className="detail-icon" />
+              <div>
+                <strong>Description:</strong>
+                <p>{task.description}</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

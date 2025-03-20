@@ -1,5 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { auth } from '../config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -26,26 +28,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(true);
 
-  // Check for tokens in URL on initial load
   useEffect(() => {
+    // Handle URL tokens (Google auth)
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
     const userKey = params.get('userKey');
     const userRole = params.get('userRole');
-    
+
     if (token && userKey) {
-      console.log("Found token in URL, logging in");
       localStorage.setItem('token', token);
       localStorage.setItem('userKey', userKey);
       localStorage.setItem('userRole', userRole || 'user');
       setIsAuthenticated(true);
       setUserRole(userRole || 'user');
-      
-      // Clean URL
       window.history.replaceState({}, document.title, window.location.pathname);
     }
-    
-    verifyAuth();
+
+    // Handle Firebase auth state (Microsoft auth)
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        try {
+          const idToken = await user.getIdToken();
+          const response = await axios.post('http://localhost:5000/auth/microsoft', {
+            token: idToken,
+            email: user.email,
+            name: user.displayName
+          });
+
+          if (response.data.token) {
+            localStorage.setItem('token', response.data.token);
+            localStorage.setItem('userKey', response.data.userKey);
+            localStorage.setItem('userRole', response.data.role || 'user');
+            setIsAuthenticated(true);
+            setUserRole(response.data.role || 'user');
+          }
+        } catch (error) {
+          console.error('Error processing Firebase auth:', error);
+        }
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const verifyAuth = async () => {
@@ -62,13 +86,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await axios.get('http://localhost:5000/api/user', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.status === 200) {
-        // Get the role from the API response instead of localStorage
         const role = response.data.role || localStorage.getItem('userRole') || 'user';
         setIsAuthenticated(true);
         setUserRole(role);
-        // Update localStorage with the latest role from server
         localStorage.setItem('userRole', role);
         return true;
       } else {
@@ -78,6 +100,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Auth verification failed:', error);
       localStorage.removeItem('token');
       localStorage.removeItem('userKey');
+      localStorage.removeItem('userRole');
+      setIsAuthenticated(false);
       localStorage.removeItem('userRole');
       setIsAuthenticated(false);
       setUserRole('');
@@ -92,7 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('token', token);
     localStorage.setItem('userKey', userKey);
     localStorage.setItem('userRole', role);
-    
+
     setIsAuthenticated(true);
     setUserRole(role);
   };
@@ -111,11 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ 
-      isAuthenticated, 
-      userRole, 
-      loading, 
-      login, 
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      userRole,
+      loading,
+      login,
       logout,
       checkAuth
     }}>

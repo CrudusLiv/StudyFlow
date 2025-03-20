@@ -49,7 +49,7 @@ const getClassColor = (courseName: string) => {
     { bg: '#F0F9FF', border: '#0284C7', text: '#0284C7' }, // Sky
     { bg: '#FAF5FF', border: '#9333EA', text: '#9333EA' }, // Purple
   ];
-  
+
   let hash = 0;
   for (let i = 0; i < courseName.length; i++) {
     hash = courseName.charCodeAt(i) + ((hash << 5) - hash);
@@ -102,8 +102,8 @@ const UniversitySchedule: React.FC = () => {
     const slotTime = timeSlot.split(':')[0];
     const startHour = classItem.startTime.split(':')[0];
     const endHour = classItem.endTime.split(':')[0];
-    
-    return parseInt(slotTime) >= parseInt(startHour) && 
+
+    return parseInt(slotTime) >= parseInt(startHour) &&
            parseInt(slotTime) < parseInt(endHour);
   };
 
@@ -119,7 +119,7 @@ const UniversitySchedule: React.FC = () => {
       const response = await axios.get<APIResponse>('http://localhost:5000/university-schedule', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.data.weeklySchedule) {
         setSchedule(transformScheduleData(response.data));
       } else {
@@ -145,50 +145,66 @@ const UniversitySchedule: React.FC = () => {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
 
-      // Validate time format
-      if (newClass.startTime >= newClass.endTime) {
-        setError('End time must be after start time');
+      // Check for duplicates
+      const isDuplicate = schedule.some(day => 
+        day.day === selectedDay && 
+        day.classes.some(cls => 
+          cls.courseName === newClass.courseName && 
+          cls.startTime === newClass.startTime &&
+          cls.endTime === newClass.endTime &&
+          cls.day === selectedDay
+        )
+      );
+
+      if (isDuplicate) {
+        setError('This class already exists in the schedule');
+        return;
+      }
+
+      // Validate dates
+      const startDate = new Date(newClass.semesterDates?.startDate || '');
+      const endDate = new Date(newClass.semesterDates?.endDate || '');
+
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        setError('Please enter valid semester dates');
+        return;
+      }
+
+      if (endDate <= startDate) {
+        setError('End date must be after start date');
         return;
       }
 
       const updatedSchedule = schedule.map(day => {
         if (day.day === selectedDay) {
-          const updatedClasses = [...day.classes, newClass]
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
-          
-          // Check for time conflicts
-          for (let i = 1; i < updatedClasses.length; i++) {
-            if (updatedClasses[i].startTime < updatedClasses[i-1].endTime) {
-              throw new Error('Time conflict with existing class');
-            }
-          }
-          
           return {
             ...day,
-            classes: updatedClasses
+            classes: [...day.classes, {
+              ...newClass,
+              day: selectedDay,
+              semesterDates: {
+                startDate,
+                endDate
+              }
+            }]
           };
         }
         return day;
       });
 
-      await axios.post('http://localhost:5000/university-schedule', 
+      // Save to backend
+      await axios.post(
+        'http://localhost:5000/university-schedule',
         { weeklySchedule: updatedSchedule },
         { headers: { Authorization: `Bearer ${token}` }}
       );
 
       setSchedule(updatedSchedule);
       setShowAddModal(false);
-      setNewClass({
-        courseName: '',
-        startTime: '',
-        endTime: '',
-        location: '',
-        professor: ''
-      });
       setError(null);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding class:', error);
-      setError(error.message || 'Failed to add class. Please try again.');
+      setError('Failed to add class');
     }
   };
 
@@ -242,13 +258,13 @@ const UniversitySchedule: React.FC = () => {
       )}
 
       <div className="view-toggle">
-        <button 
+        <button
           className={`view-button ${activeView === 'grid' ? 'active' : ''}`}
           onClick={() => handleViewToggle('grid')}
         >
           <FiGrid className="button-icon" /> Grid View
         </button>
-        <button 
+        <button
           className={`view-button ${activeView === 'list' ? 'active' : ''}`}
           onClick={() => handleViewToggle('list')}
         >
@@ -256,7 +272,7 @@ const UniversitySchedule: React.FC = () => {
         </button>
       </div>
 
-      <div 
+      <div
         className="schedule-table-container"
         style={{ display: activeView === 'grid' ? 'block' : 'none' }}
       >
@@ -275,7 +291,7 @@ const UniversitySchedule: React.FC = () => {
                 <td className="time-cell">{timeSlot}</td>
                 {DAYS.map(day => {
                   const daySchedule = schedule.find(d => d.day === day);
-                  const classAtTime = daySchedule?.classes.find(c => 
+                  const classAtTime = daySchedule?.classes.find(c =>
                     isClassInTimeSlot(c, timeSlot)
                   );
 
@@ -286,8 +302,8 @@ const UniversitySchedule: React.FC = () => {
                           backgroundColor: getClassColor(classAtTime.courseName).bg,
                           borderLeftColor: getClassColor(classAtTime.courseName).border
                         }}>
-                          <div className="class-title" style={{ 
-                            color: getClassColor(classAtTime.courseName).text 
+                          <div className="class-title" style={{
+                            color: getClassColor(classAtTime.courseName).text
                           }}>
                             {classAtTime.courseName}
                           </div>
@@ -307,7 +323,7 @@ const UniversitySchedule: React.FC = () => {
         </table>
       </div>
 
-      <div 
+      <div
         className="schedule-list"
         style={{ display: activeView === 'list' ? 'grid' : 'none' }}
       >
@@ -324,8 +340,8 @@ const UniversitySchedule: React.FC = () => {
                       backgroundColor: getClassColor(classItem.courseName).bg,
                       borderLeftColor: getClassColor(classItem.courseName).border
                     }}>
-                      <div className="class-title" style={{ 
-                        color: getClassColor(classItem.courseName).text 
+                      <div className="class-title" style={{
+                        color: getClassColor(classItem.courseName).text
                       }}>
                         {classItem.courseName}
                       </div>
@@ -350,7 +366,7 @@ const UniversitySchedule: React.FC = () => {
               <h2 className="modal-title">
                 <FiPlusCircle className="modal-icon" /> Add New Class
               </h2>
-              <button 
+              <button
                 className="close-button"
                 onClick={() => setShowAddModal(false)}
               >
@@ -417,6 +433,41 @@ const UniversitySchedule: React.FC = () => {
                   onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
                   className="form-input"
                 />
+              </div>
+              <div className="form-group">
+                <h3>Semester Dates</h3>
+                <div className="date-inputs">
+                  <div className="input-group">
+                    <label>Start Date</label>
+                    <input
+                      type="date"
+                      value={newClass.semesterDates?.startDate.toISOString().split('T')[0]}
+                      onChange={(e) => setNewClass(prev => ({
+                        ...prev,
+                        semesterDates: {
+                          ...prev.semesterDates,
+                          startDate: new Date(e.target.value)
+                        }
+                      }))}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="input-group">
+                    <label>End Date</label>
+                    <input
+                      type="date"
+                      value={newClass.semesterDates?.endDate.toISOString().split('T')[0]}
+                      onChange={(e) => setNewClass(prev => ({
+                        ...prev,
+                        semesterDates: {
+                          ...prev.semesterDates,
+                          endDate: new Date(e.target.value)
+                        }
+                      }))}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <div className="modal-buttons">

@@ -478,3 +478,77 @@
     border-top-color: #818cf8;
   }
 }
+
+/* Enhanced form styling */
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 6px;
+  color: #4b5563;
+}
+
+.form-error {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.time-input-group {
+  width: 100%;
+}
+
+.input-group {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6b7280;
+}
+
+.form-input {
+  padding-left: 40px;
+  height: 42px;
+}
+
+.form-select {
+  margin-bottom: 16px;
+  height: 42px;
+}
+
+/* Class display enhancements */
+.class-code {
+  font-weight: bold;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 1px 4px;
+  margin-right: 6px;
+  font-size: 0.85em;
+}
+
+.detail-icon {
+  margin-right: 6px;
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .form-label {
+    color: #e5e7eb;
+  }
+
+  .form-error {
+    background-color: #451a1a;
+    border-color: #991b1b;
+    color: #fecaca;
+  }
+}

@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FiEdit3, FiUser, FiMail, FiLock, FiLogOut, FiCheck, FiX, 
-  FiShield, FiKey, FiRefreshCcw, 
-  FiUserCheck, FiEye, FiEyeOff 
+import {
+  FiEdit3, FiUser, FiMail, FiLogOut, FiCheck, FiX,
+  FiUserCheck, FiUpload, FiTrash2
 } from 'react-icons/fi';
 import '../styles/pages/Profile.css';
 
@@ -13,12 +12,7 @@ interface UserProfile {
   email: string;
   username: string;
   avatar?: string;
-}
-
-interface PasswordChange {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
+  profilePicture?: string;
 }
 
 const Profile: React.FC = () => {
@@ -29,26 +23,22 @@ const Profile: React.FC = () => {
     avatar: ''
   });
 
-  const [passwordData, setPasswordData] = useState<PasswordChange>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [showPassword, setShowPassword] = useState({
-    current: false,
-    new: false,
-    confirm: false
-  });
+  const [profilePicture, setProfilePicture] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchUserProfile();
   }, []);
+
+  const getFullImageUrl = (profilePicturePath: string) => {
+    if (!profilePicturePath) return null;
+    if (profilePicturePath.startsWith('http')) return profilePicturePath;
+    return `http://localhost:5000${profilePicturePath}`;
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -61,27 +51,36 @@ const Profile: React.FC = () => {
       const response = await axios.get('http://localhost:5000/api/user/profile', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      // Add console.log to check the response data
-      console.log('Profile data received:', response.data);
-      
-      // Make sure we set all fields from the response
+
+      // Add console.log to debug the response
+      console.log('Profile response:', response.data);
+
       setProfile({
         name: response.data.name || '',
         email: response.data.email || '',
         username: response.data.username || '',
-        avatar: response.data.avatar || ''
+        profilePicture: response.data.profilePicture || ''
       });
+
+      // Set profile picture if it exists in the response
+      if (response.data.profilePicture) {
+        const fullImageUrl = getFullImageUrl(response.data.profilePicture);
+        setProfilePicture(fullImageUrl);
+      }
+
       setLoading(false);
     } catch (error) {
+      console.error('Error fetching profile:', error);
       setMessage({ text: 'Error fetching profile', type: 'error' });
       setLoading(false);
     }
   };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     navigate('/access');
   };
+
   const handleProfileUpdate = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -102,35 +101,59 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handlePasswordChange = async () => {
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage({ text: 'Passwords do not match', type: 'error' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type and size
+    if (!file.type.startsWith('image/')) {
+      setMessage({ text: 'Please upload an image file', type: 'error' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      setMessage({ text: 'Image size should be less than 5MB', type: 'error' });
       return;
     }
 
     try {
+      const formData = new FormData();
+      formData.append('profilePicture', file);
+
       const token = localStorage.getItem('token');
-      await axios.put(
-        'http://localhost:5000/api/user/change-password',
+      const response = await axios.post(
+        'http://localhost:5000/api/user/profile-picture',
+        formData,
         {
-          currentPassword: passwordData.currentPassword,
-          newPassword: passwordData.newPassword
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
         }
       );
-      setMessage({ text: 'Password updated successfully!', type: 'success' });
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      });
-      setIsChangingPassword(false);
+
+      const fullImageUrl = getFullImageUrl(response.data.profilePictureUrl);
+      setProfilePicture(fullImageUrl);
+      setProfile(prev => ({ ...prev, profilePicture: response.data.profilePictureUrl }));
+      setMessage({ text: 'Profile picture updated successfully!', type: 'success' });
     } catch (error) {
-      setMessage({ text: 'Error updating password', type: 'error' });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      console.error('Error uploading profile picture:', error);
+      setMessage({ text: 'Failed to upload profile picture', type: 'error' });
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete('http://localhost:5000/api/user/profile-picture', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setProfilePicture(null);
+      setMessage({ text: 'Profile picture removed successfully!', type: 'success' });
+    } catch (error) {
+      console.error('Error removing profile picture:', error);
+      setMessage({ text: 'Failed to remove profile picture', type: 'error' });
     }
   };
 
@@ -139,20 +162,61 @@ const Profile: React.FC = () => {
   return (
     <div className="profile-container">
       <div className="profile-wrapper">
+        {/* Profile Picture Section */}
+        <div className="profile-picture-section">
+          <div className="profile-picture-container">
+            {profilePicture ? (
+              <img
+                src={profilePicture}
+                alt="Profile"
+                className="profile-picture"
+              />
+            ) : (
+              <div className="profile-picture-placeholder">
+                <FiUser size={40} />
+              </div>
+            )}
+            <div className="profile-picture-overlay">
+              <button
+                className="picture-upload-button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <FiUpload />
+                <span>Upload</span>
+              </button>
+              {profilePicture && (
+                <button
+                  className="picture-remove-button"
+                  onClick={handleRemoveProfilePicture}
+                >
+                  <FiTrash2 />
+                  <span>Remove</span>
+                </button>
+              )}
+            </div>
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleProfilePictureChange}
+            accept="image/*"
+            style={{ display: 'none' }}
+          />
+        </div>
         <div className="profile-header">
           <h1 className="profile-title">
             <FiUser className="profile-icon" />
             Profile
           </h1>
         </div>
-        
+
         {message && (
           <div className={`message ${message.type === 'success' ? 'message-success' : 'message-error'}`}>
             {message.type === 'success' ? <FiCheck /> : <FiX />}
             {message.text}
           </div>
         )}
-        
+
         <div className="profile-card">
           <div className="card-header">
             <h2 className="card-title">
@@ -171,12 +235,11 @@ const Profile: React.FC = () => {
           <div className="form-group">
             <label className="form-label">
               <FiMail className="input-icon" />
-              Email
+              Email (Google Account)
             </label>
             <input
               type="email"
               value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
               disabled={true}
               className="form-input readonly"
             />
@@ -196,95 +259,11 @@ const Profile: React.FC = () => {
             />
           </div>
 
-
           {isEditing && (
             <button onClick={handleProfileUpdate} className="save-button">
               <FiCheck className="button-icon" />
               Save Changes
             </button>
-          )}
-        </div>
-
-        <div className="profile-card">
-          <div className="card-header">
-            <h2 className="card-title">
-              <FiLock className="card-icon" />
-              Change Password
-            </h2>
-            <button
-              onClick={() => setIsChangingPassword(!isChangingPassword)}
-              className="edit-button"
-            >
-              <FiEdit3 className="button-icon" />
-              {isChangingPassword ? 'Cancel' : 'Change'}
-            </button>
-          </div>
-
-          {isChangingPassword && (
-            <>
-              <div className="form-group">
-                <label className="form-label">
-                  <FiKey className="input-icon" />
-                  Current Password
-                </label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword.current ? "text" : "password"}
-                    value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                    className="form-input"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword({ ...showPassword, current: !showPassword.current })}
-                  >
-                    {showPassword.current ? <FiEyeOff /> : <FiEye />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <FiShield className="input-icon" />
-                  New Password
-                </label>
-                <div className="password-input-wrapper">
-                  <input
-                    type={showPassword.new ? "text" : "password"}
-                    value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                    className="form-input"
-                  />
-                  <button
-                    type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword({ ...showPassword, new: !showPassword.new })}
-                  >
-                    {showPassword.new ? <FiEyeOff /> : <FiEye />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <FiRefreshCcw className="input-icon" />
-                  Confirm New Password
-                </label>
-                <div className="password-input-wrapper">
-                  <input
-                    type="password"
-                    value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-              <button onClick={handlePasswordChange} className="save-button">
-                <FiCheck className="button-icon" />
-                Update Password
-              </button>
-            </>
           )}
         </div>
       </div>
