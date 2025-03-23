@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import '../styles/pages/Admin.css';
+import { setDefaultResultOrder } from 'dns';
 
 interface User {
   _id: string;
@@ -29,21 +30,58 @@ interface Analytics {
   userActivity: UserActivity[];
 }
 
+
 const Admin: React.FC = () => {
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Sample data for testing
+  const sampleAnalytics: Analytics = {
+    totalUsers: 156,
+    activeToday: 42,
+    averageSessionDuration: 45,
+    userActivity: [
+      {
+        _id: '1',
+        id: '1',
+        name: 'John Smith',
+        email: 'john@example.com',
+        role: 'student',
+        lastLogin: new Date().toISOString(),
+        totalSessions: 25,
+        averageSessionDuration: 55
+      },
+      {
+        _id: '2',
+        id: '2',
+        name: 'Emma Wilson',
+        email: 'emma@example.com',
+        role: 'student',
+        lastLogin: new Date().toISOString(),
+        totalSessions: 18,
+        averageSessionDuration: 40
+      }
+    ]
+  };
+
   useEffect(() => {
     const fetchAnalytics = async () => {
       try {
+        setLoading(true);
         const token = localStorage.getItem('token');
-        const response = await axios.get('http://localhost:5000/api/admin/analytics', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setAnalytics(response.data);
-      } catch (error) {
-        setError('Failed to fetch analytics data');
+        
+        // Use sample data for testing
+        setAnalytics(sampleAnalytics);
+        
+        // Uncomment for real API usage
+        // const response = await axios.get('http://localhost:5000/api/admin/analytics', {
+        //   headers: { Authorization: `Bearer ${token}` }
+        // });
+        // setAnalytics(response.data);
+        
+      } catch (error: any) {
+        setError(error.response?.data?.error || 'Failed to fetch analytics data');
         console.error('Error fetching analytics:', error);
       } finally {
         setLoading(false);
@@ -57,11 +95,10 @@ const Admin: React.FC = () => {
   if (error) return <div>Error: {error}</div>;
   if (!analytics) return <div>No data available</div>;
 
-  const activityData = analytics?.userActivity.map(user => ({
-    name: user.name,
-    sessions: user.totalSessions,
-    average: Math.round(user.averageSessionDuration)
-  })) || [];
+  const activityData = analytics ? analytics.userActivity.map(user => ({
+    name: user.name.split(' ')[0], // Use first name only for better display
+    'Study Time': Math.round(user.averageSessionDuration)
+  })) : [];
 
   return (
     <div className="admin-container">
@@ -94,15 +131,28 @@ const Admin: React.FC = () => {
         </div>
         <div className="chart-content">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={activityData}>
+            <BarChart data={activityData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <XAxis 
+                dataKey="name" 
+                label={{ value: 'Users', position: 'bottom', offset: 0 }}
+              />
+              <YAxis 
+                label={{ 
+                  value: 'Time (minutes)', 
+                  angle: -90, 
+                  position: 'insideLeft',
+                  offset: 10
+                }}
+              />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="sessions" stroke="#8884d8" name="Total Sessions" />
-              <Line type="monotone" dataKey="average" stroke="#82ca9d" name="Avg Duration (min)" />
-            </LineChart>
+              <Bar 
+                dataKey="Study Time" 
+                fill="#8884d8" 
+                name="Average Study Time (min)"
+              />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </div>

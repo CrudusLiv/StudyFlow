@@ -66,7 +66,18 @@
 
 .chart-content {
   height: 400px;
-  padding: 1rem;
+  padding: 2rem 1rem;
+}
+
+.recharts-cartesian-axis-label {
+  fill: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.recharts-legend-item-text {
+  font-size: 0.875rem;
+  color: #4b5563;
 }
 
 .table-container {
@@ -124,6 +135,15 @@
 
 .dark .table-body td {
   border-color: #374151;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .recharts-cartesian-axis-label,
+  .recharts-legend-item-text {
+    fill: #9ca3af;
+    color: #9ca3af;
+  }
 }
 
 

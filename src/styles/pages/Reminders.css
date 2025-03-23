@@ -1,42 +1,70 @@
 .reminders-container {
-  max-width: 64rem;
+  max-width: 70rem;
   height: 100%;
   min-height: 100vh;
   margin: 0 auto;
-  padding: 2.5rem;
-  background: linear-gradient(135deg, #f3f4f6 0%, #ffffff 100%);
+  padding: 3rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  transition: background 0.5s ease;
 }
 
 .reminders-title {
-  font-size: 2.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-size: 2.5rem;
   font-weight: 800;
-  margin-bottom: 2.5rem;
-  color: #111827;
+  margin-bottom: 3rem;
+  color: #0f172a;
   text-transform: uppercase;
   letter-spacing: 0.075em;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.reminders-title span {
+  font-size: 3rem;
 }
 
 .reminders-list {
-  background: white;
+  display: grid;
+  gap: 1.5rem;
+  background: transparent;
   border-radius: 1.25rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   overflow: hidden;
   border: 1px solid rgba(229, 231, 235, 0.6);
   backdrop-filter: blur(12px);
 }
 
 .reminder-item {
+  background: rgba(255, 255, 255, 0.9);
   padding: 2rem;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  border-bottom: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.1);
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  transform-origin: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  will-change: transform, background-color;
 }
 
 .reminder-item:hover {
-  transform: translateX(10px);
+  transform: translateY(-4px) scale(1.01);
   background-color: rgba(249, 250, 251, 0.9);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.05);
+}
+
+.reminder-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .reminder-content {
@@ -54,9 +82,10 @@
 }
 
 .reminder-title {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #1e293b;
+  letter-spacing: -0.025em;
   line-height: 1.4;
   margin: 10px 0;
 }
@@ -68,52 +97,120 @@
 }
 
 .reminder-meta {
-  display: flex;
-  gap: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+  margin-top: 1.5rem;
   font-size: 0.9375rem;
   color: #6b7280;
   font-weight: 500;
 }
 
+.reminder-meta time,
+.reminder-course {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
 .mark-read-button {
   padding: 0.75rem 1.5rem;
   font-size: 0.9375rem;
-  font-weight: 600;
-  background-color: #10b981;
+  font-weight: 500;
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 9999px;
+  border-radius: 0.75rem;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+  will-change: transform, background-color;
 }
 
 .mark-read-button:hover {
-  transform: translateY(-2px) scale(1.05);
-  background-color: #059669;
-  box-shadow: 0 6px 8px rgba(16, 185, 129, 0.35);
+  transform: translateY(-2px);
+  background: #2563eb;
+  box-shadow: 0 8px 15px rgba(16, 185, 129, 0.3);
+}
+
+.mark-read-button:active {
+  transform: translateY(-1px);
 }
 
 .unread {
-  background-color: #fef3c7;
-  border-left: 5px solid #f59e0b;
+  background: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid #3b82f6;
 }
 
 .empty-state {
-  padding: 5rem 2.5rem;
   text-align: center;
+  padding: 4rem 2rem;
   color: #6b7280;
   font-size: 1.25rem;
-  background: #f9fafb;
+  background: white;
   border-radius: 1rem;
   margin: 2.5rem 0;
-  border: 2px dashed #e5e7eb;
+  border: 2px dashed #e2e8f0;
+  animation: fadeScale 0.5s ease-out;
+}
+
+.empty-state .empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1.5rem;
+  display: block;
+}
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  color: white;
+  font-weight: 500;
+  animation: slideIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  z-index: 1000;
+  backdrop-filter: blur(8px);
+}
+
+.notification.success {
+  background-color: #10b981;
+}
+
+.notification.error {
+  background-color: #ef4444;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeScale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   .reminders-container {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   }
 
   .reminders-title {
@@ -126,24 +223,34 @@
     border-color: rgba(55, 65, 81, 0.6);
   }
 
+  .reminder-item {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(148, 163, 184, 0.1);
+  }
+
   .reminder-item:hover {
-    background-color: rgba(31, 41, 55, 0.9);
+    background-color: rgba(31, 41, 55, 0.98);
   }
 
   .reminder-title {
-    color: #f3f4f6;
+    color: #f8fafc;
   }
 
   .reminder-message {
-    color: #d1d5db;
+    color: #cbd5e1;
   }
 
   .reminder-meta {
-    color: #9ca3af;
+    border-color: #334155;
+  }
+
+  .reminder-meta time,
+  .reminder-course {
+    color: #94a3b8;
   }
 
   .unread {
-    background-color: rgba(234, 179, 8, 0.15);
+    background: rgba(59, 130, 246, 0.1);
     border-left: 5px solid #d97706;
   }
 
@@ -156,8 +263,29 @@
   }
 
   .empty-state {
-    background: #374151;
-    border-color: #4b5563;
+    background: rgba(30, 41, 59, 0.8);
+    border-color: #334155;
     color: #9ca3af;
   }
+
+  .notification.success {
+    background-color: #059669;
+  }
+
+  .notification.error {
+    background-color: #dc2626;
+  }
+}
+
+.dark .reminder-item {
+  background: rgba(31, 41, 55, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+.dark .reminder-item:hover {
+  background: rgba(31, 41, 55, 0.98);
+}
+
+.dark .empty-state {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
 }

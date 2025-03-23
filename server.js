@@ -232,6 +232,22 @@ const reminderSchema = new mongoose.Schema({
 });
 
 const Reminder = mongoose.model('Reminder', reminderSchema);
+app.get('/api/admin/analytics', async (req, res) => {
+  try {
+    const users = await User.find();
+    const userCount = users.length;
+    const userData = users.map(user => ({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+    res.json({ userCount, userData });
+  }catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 // Passport configuration
 passport.use(new GoogleStrategy({
