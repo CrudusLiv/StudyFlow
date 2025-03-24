@@ -4,66 +4,42 @@
  * @returns {Array} Array of assignment objects
  */
 export function extractAssignments(text) {
-  console.log('Starting assignment extraction from text...');
+  console.log('Starting enhanced assignment extraction...');
   const assignments = [];
-  const paragraphs = text.split(/\n\s*\n/); // Split by paragraph breaks
+  const sections = text.split(/\n\s*\n/);
 
-  // Enhanced patterns for assignment detection
-  const assignmentPatterns = [
-    /\b(?:assignment|homework|project|task|exercise|lab work)\s*(?:no\.?|number)?:?\s*\d*/i,
-    /due\s*(?:date|by|on|:)/i,
-    /submit\s*(?:by|before|until)/i,
-    /deadline\s*:/i
-  ];
+  sections.forEach(section => {
+    // Enhanced patterns for finding assignments
+    const assignmentPatterns = [
+      /assignment\s*(?:no\.?|number)?[\s:]*(\d+)/i,
+      /assessment\s*(?:no\.?|number)?[\s:]*(\d+)/i,
+      /project\s*(?:no\.?|number)?[\s:]*(\d+)/i,
+      /task\s*(?:no\.?|number)?[\s:]*(\d+)/i,
+      /deliverable\s*(?:no\.?|number)?[\s:]*(\d+)/i
+    ];
 
-  const dueDatePatterns = [
-    // More comprehensive date patterns
-    /(?:due|submit|deadline|by)\s*:?\s*(\d{1,2}[-/]\d{1,2}[-/]\d{4})/i,
-    /(\d{1,2}(?:st|nd|rd|th)?\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{4})/i,
-    /(\d{4}[-/]\d{1,2}[-/]\d{1,2})/
-  ];
+    for (const pattern of assignmentPatterns) {
+      const match = section.match(pattern);
+      if (match) {
+        const assignment = {
+          number: match[1],
+          title: extractTitle(section),
+          dueDate: extractDueDate(section),
+          weight: extractWeight(section),
+          requirements: extractRequirements(section),
+          deliverables: extractDeliverables(section),
+          type: determineAssignmentType(section),
+          priority: calculatePriority(section)
+        };
 
-  paragraphs.forEach(paragraph => {
-    const lines = paragraph.split('\n');
-
-    lines.forEach(line => {
-      const isAssignment = assignmentPatterns.some(pattern => pattern.test(line));
-
-      if (isAssignment) {
-        // Extract due date using multiple patterns
-        let dueDate = null;
-        for (const pattern of dueDatePatterns) {
-          const match = line.match(pattern);
-          if (match) {
-            dueDate = match[1];
-            break;
-          }
-        }
-
-        // Extract course code if present
-        const courseCode = line.match(/([A-Z]{2,}\d{3,})/)?.[1] || '';
-
-        // Calculate priority based on due date proximity and keywords
-        const priority = calculatePriority(line, dueDate);
-
-        // Estimate work hours more accurately
-        const workHours = estimateWorkHoursEnhanced(line);
-
-        assignments.push({
-          title: cleanTitle(line),
-          dueDate,
-          courseCode,
-          estimatedHours: workHours,
-          priority,
-          type: determineAssignmentType(line),
-          details: extractDetails(line)
-        });
+        assignments.push(assignment);
+        break; // Found an assignment in this section
       }
-    });
+    }
   });
 
-  console.log(`Found ${assignments.length} assignments with details:`,
-    assignments.slice(0, 2));
+  console.log(`Found ${assignments.length} assignments:`, 
+    assignments.map(a => ({title: a.title, dueDate: a.dueDate})));
   return assignments;
 }
 
@@ -163,7 +139,7 @@ export function extractDates(text) {
  * @returns {Array} Generated schedule
  */
 export function generateSchedule(assignments, dates, userId, metadata = {}) {
-  console.log('Generating schedule with enhanced assignments:', assignments.slice(0, 2));
+  console.log('Generating enhanced schedule with assignments:', assignments.slice(0, 2));
 
   // Convert date strings to Date objects
   const processedAssignments = assignments.map(assignment => {
@@ -174,12 +150,21 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
       courseCode: assignment.courseCode || metadata.courseCode || '',
       title: assignment.title || 'Untitled Assignment',
       type: assignment.type || determineAssignmentType(assignment.title || ''),
-      priority: assignment.priority || calculatePriority(assignment.title || '', assignment.dueDate)
+      priority: assignment.priority || calculatePriority(assignment.title || '', assignment.dueDate),
+      // Estimate workload based on complexity
+      estimatedHours: assignment.estimatedHours || estimateComplexity(assignment)
     };
   });
 
-  // Sort assignments by due date (null dates at the end)
+  // Sort assignments by due date and priority (null dates at the end)
   const sortedAssignments = processedAssignments.sort((a, b) => {
+    // First sort by priority (high to low)
+    const priorityWeight = { high: 3, medium: 2, low: 1 };
+    const priorityDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+    
+    if (priorityDiff !== 0) return priorityDiff;
+    
+    // Then sort by due date (earlier to later)
     if (!a.dueDate && !b.dueDate) return 0;
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
@@ -188,7 +173,8 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
 
   const events = sortedAssignments.map(assignment => {
     const totalHours = calculateRequiredHours(assignment);
-    const startDate = calculateStartDate(assignment.dueDate, totalHours);
+    const daysNeeded = Math.ceil(totalHours / 3); // Max 3 hours per day
+    const startDate = calculateStartDate(assignment.dueDate, daysNeeded);
 
     return {
       id: `task-${Math.random().toString(36).substr(2, 9)}`,
@@ -201,6 +187,7 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
       category: assignment.type || 'task',
       courseCode: assignment.courseCode || metadata.courseCode || '',
       totalHours,
+      daysNeeded,
       resource: {
         ...assignment,
         details: {
@@ -218,7 +205,209 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
     lastEvent: events[events.length - 1]
   });
 
-  return distributeEventsOptimally(events);
+  // Pass the class schedule from metadata if available
+  const classSchedule = metadata.userPreferences?.classSchedule || null;
+  return distributeEventsOptimally(events, classSchedule);
+}
+
+// Estimate complexity based on various factors
+function estimateComplexity(assignment) {
+  let complexity = 2; // Base complexity
+
+  // Check title and description for complexity indicators
+  const complexityIndicators = [
+    'research', 'analysis', 'project', 'paper', 'essay', 'report', 
+    'presentation', 'complex', 'difficult', 'comprehensive'
+  ];
+  
+  const text = `${assignment.title} ${assignment.description || ''}`.toLowerCase();
+  
+  complexityIndicators.forEach(indicator => {
+    if (text.includes(indicator)) {
+      complexity += 1;
+    }
+  });
+  
+  // Adjust for assignment type
+  if (assignment.type === 'essay' || assignment.type === 'report') complexity += 2;
+  if (assignment.type === 'project' || assignment.type === 'presentation') complexity += 3;
+  if (assignment.type === 'quiz' || assignment.type === 'homework') complexity += 1;
+  
+  return Math.min(complexity, 8); // Cap at 8 hours
+}
+
+function calculateRequiredHours(assignment) {
+  // Start with either provided estimate or complexity-based estimate
+  let hours = assignment.estimatedHours || 3;
+
+  // Adjust based on detailed requirements
+  if (assignment.details) {
+    if (assignment.details.wordCount) {
+      hours += Math.ceil(assignment.details.wordCount / 400); // ~400 words per hour
+    }
+    if (assignment.details.pageCount) {
+      hours += assignment.details.pageCount * 1.5; // 1.5 hours per page
+    }
+    if (assignment.details.groupWork) {
+      hours *= 0.7; // Reduce hours for group work
+    }
+  }
+
+  // Adjust for assignment weight
+  if (assignment.weight) {
+    hours *= (1 + assignment.weight / 100);
+  }
+
+  return Math.max(1, Math.min(12, Math.round(hours)));
+}
+
+function calculateStartDate(dueDate, daysNeeded) {
+  const today = new Date();
+
+  if (!dueDate) {
+    // If no due date, start from tomorrow
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    return tomorrow;
+  }
+
+  // Calculate ideal start date based on days needed
+  const idealStart = new Date(dueDate);
+  idealStart.setDate(dueDate.getDate() - (daysNeeded + 2)); // +2 days buffer
+  idealStart.setHours(10, 0, 0, 0);
+
+  // If ideal start is in the past, start from tomorrow
+  if (idealStart < today) {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    return tomorrow;
+  }
+
+  return idealStart;
+}
+
+function distributeEventsOptimally(events, providedClassSchedule = null) {
+  // Get class schedule from cached data (if available) or use provided schedule
+  let classSchedule = [];
+  try {
+    // Check if we're in a browser environment
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const cachedClasses = localStorage.getItem('scheduleRawClasses');
+      if (cachedClasses) {
+        classSchedule = JSON.parse(cachedClasses);
+        console.log('Using cached class schedule for study time distribution');
+      }
+    } else if (providedClassSchedule) {
+      // Use the provided class schedule when in server environment
+      classSchedule = providedClassSchedule;
+      console.log('Using provided class schedule for study time distribution');
+    } else {
+      console.warn('No class schedule available - proceeding without class conflict checking');
+    }
+  } catch (error) {
+    console.warn('Could not access class schedule:', error);
+  }
+
+  // Sort events by priority and due date
+  const sortedEvents = events.sort((a, b) => {
+    const priorityWeight = { high: 3, medium: 2, low: 1 };
+    const priorityDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+
+    if (priorityDiff !== 0) return priorityDiff;
+    if (!a.end && !b.end) return 0;
+    if (!a.end) return 1;
+    if (!b.end) return -1;
+    return a.end.getTime() - b.end.getTime();
+  });
+
+  // Distribute across available days, avoiding overload and class times
+  const MAX_HOURS_PER_DAY = 4;
+  const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const scheduledEvents = [];
+  const dayLoads = new Map();
+  
+  // Helper function to check if a time slot conflicts with classes
+  const conflictsWithClass = (date, duration) => {
+    if (!classSchedule || classSchedule.length === 0) return false;
+    
+    const dayName = DAYS_OF_WEEK[date.getDay()];
+    const startHour = date.getHours();
+    const endHour = startHour + duration;
+    
+    // Check for conflicts with classes on this day
+    return classSchedule.some(cls => {
+      if (cls.day !== dayName) return false;
+      
+      const classStartHour = parseInt(cls.startTime.split(':')[0], 10);
+      const classEndHour = parseInt(cls.endTime.split(':')[0], 10);
+      
+      // Check if there's overlap
+      return (startHour < classEndHour && endHour > classStartHour);
+    });
+  };
+
+  for (const event of sortedEvents) {
+    // Create multiple study sessions for each event based on totalHours
+    const totalSessions = Math.ceil(event.totalHours / 2); // 2 hours per session max
+    let hoursRemaining = event.totalHours;
+    const startDate = new Date(event.start);
+    
+    // Distribute across multiple days
+    for (let i = 0; i < totalSessions && hoursRemaining > 0; i++) {
+      const sessionHours = Math.min(hoursRemaining, 2); // Max 2 hours per session
+      let sessionDate = new Date(startDate);
+      sessionDate.setDate(startDate.getDate() + i);
+      
+      // Find a good time slot on this day
+      let foundSlot = false;
+      const timeSlots = [10, 13, 16, 19]; // Try different start times: 10am, 1pm, 4pm, 7pm
+      
+      for (const startHour of timeSlots) {
+        sessionDate.setHours(startHour, 0, 0, 0);
+        
+        // Skip if this slot conflicts with a class
+        if (conflictsWithClass(sessionDate, sessionHours)) {
+          continue;
+        }
+        
+        // Check if day isn't overloaded
+        const dayKey = sessionDate.toDateString();
+        const currentLoad = dayLoads.get(dayKey) || 0;
+        
+        if (currentLoad + sessionHours <= MAX_HOURS_PER_DAY) {
+          // Create study session event
+          const sessionEnd = new Date(sessionDate);
+          sessionEnd.setHours(sessionDate.getHours() + sessionHours);
+          
+          scheduledEvents.push({
+            ...event,
+            id: `${event.id}-session-${i+1}`,
+            title: `Study: ${event.title}`,
+            start: new Date(sessionDate),
+            end: sessionEnd,
+            sessionNumber: i + 1,
+            totalSessions
+          });
+          
+          // Update day load
+          dayLoads.set(dayKey, currentLoad + sessionHours);
+          hoursRemaining -= sessionHours;
+          foundSlot = true;
+          break;
+        }
+      }
+      
+      // If no slot found on this day, try the next day
+      if (!foundSlot) {
+        i--; // Try again for this session
+        startDate.setDate(startDate.getDate() + 1); // Move to next day
+      }
+    }
+  }
+
+  return scheduledEvents;
 }
 
 // Helper function to parse various date formats
@@ -248,105 +437,24 @@ function parseDateString(dateStr) {
   return null;
 }
 
-function calculateRequiredHours(assignment) {
-  let hours = assignment.estimatedHours || 2;
+// Modified version of distributeEventsOptimally
+function distributeEvents(events) {
+  // Simple distribution - one event per day
+  return events.map((event, index) => {
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() + index);
+    startDate.setHours(9, 0, 0, 0); // Start at 9 AM
 
-  // Adjust based on detailed requirements
-  if (assignment.details) {
-    if (assignment.details.wordCount) {
-      hours += Math.ceil(assignment.details.wordCount / 500); // ~500 words per hour
-    }
-    if (assignment.details.pageCount) {
-      hours += assignment.details.pageCount * 2; // 2 hours per page
-    }
-    if (assignment.details.groupWork) {
-      hours *= 0.7; // Reduce hours for group work
-    }
-  }
+    const endDate = new Date(startDate);
+    endDate.setHours(startDate.getHours() + event.totalHours);
 
-  // Adjust for assignment weight
-  if (assignment.weight) {
-    hours *= (1 + assignment.weight / 100);
-  }
-
-  return Math.max(1, Math.min(8, Math.round(hours)));
-}
-
-function calculateStartDate(dueDate, totalHours) {
-  const today = new Date();
-
-  if (!dueDate) {
-    // If no due date, start from tomorrow
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-    return tomorrow;
-  }
-
-  // Calculate ideal start date based on total hours needed
-  const daysNeeded = Math.ceil(totalHours / 4); // Max 4 hours per day
-  const idealStart = new Date(dueDate);
-  idealStart.setDate(dueDate.getDate() - daysNeeded);
-  idealStart.setHours(9, 0, 0, 0);
-
-  // If ideal start is in the past, start from tomorrow
-  if (idealStart < today) {
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(9, 0, 0, 0);
-    return tomorrow;
-  }
-
-  return idealStart;
-}
-
-function distributeEventsOptimally(events) {
-  // Sort events by priority and due date
-  const sortedEvents = events.sort((a, b) => {
-    const priorityWeight = { high: 3, medium: 2, low: 1 };
-    const priorityDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
-
-    if (priorityDiff !== 0) return priorityDiff;
-    if (!a.end && !b.end) return 0;
-    if (!a.end) return 1;
-    if (!b.end) return -1;
-    return a.end.getTime() - b.end.getTime();
+    return {
+      title: event.title,
+      start: startDate,
+      end: endDate,
+      userId: event.userId
+    };
   });
-
-  // Distribute across available days, avoiding overload
-  const MAX_HOURS_PER_DAY = 4;
-  const scheduledEvents = [];
-  const dayLoads = new Map();
-
-  for (const event of sortedEvents) {
-    const startDate = new Date(event.start);
-    let scheduledStart = null;
-
-    // Find the best day for this event
-    while (!scheduledStart) {
-      const dayKey = startDate.toDateString();
-      const currentLoad = dayLoads.get(dayKey) || 0;
-
-      if (currentLoad + event.totalHours <= MAX_HOURS_PER_DAY) {
-        scheduledStart = new Date(startDate);
-        scheduledStart.setHours(9 + currentLoad); // Start at 9 AM + current load
-        dayLoads.set(dayKey, currentLoad + event.totalHours);
-      } else {
-        startDate.setDate(startDate.getDate() + 1);
-      }
-    }
-
-    const scheduledEnd = new Date(scheduledStart);
-    scheduledEnd.setHours(scheduledStart.getHours() + event.totalHours);
-
-    scheduledEvents.push({
-      ...event,
-      start: scheduledStart,
-      end: scheduledEnd
-    });
-  }
-
-  return scheduledEvents;
 }
 
 // Helper functions
@@ -375,21 +483,23 @@ function estimateWorkHours(text) {
   return Math.max(1, Math.min(8, baseHours + complexityHours));
 }
 
-function distributeEvents(events) {
-  // Simple distribution - one event per day
-  return events.map((event, index) => {
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() + index);
-    startDate.setHours(9, 0, 0, 0); // Start at 9 AM
+function extractTitle(text) {
+  // Try multiple patterns to find the most likely title
+  const patterns = [
+    /(?:assignment|assessment|project|task):?\s*([^.!?\n]+)/i,
+    /title:?\s*([^.!?\n]+)/i,
+    /(\d\.\s*[^.!?\n]+)/
+  ];
 
-    const endDate = new Date(startDate);
-    endDate.setHours(startDate.getHours() + event.totalHours);
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (match && match[1].trim()) {
+      return match[1].trim();
+    }
+  }
 
-    return {
-      title: event.title,
-      start: startDate,
-      end: endDate,
-      userId: event.userId
-    };
-  });
+  // Fallback: take first line or sentence
+  return text.split(/[.!?\n]/)[0].trim();
 }
+
+

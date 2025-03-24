@@ -101,14 +101,14 @@ export const parseTimeRange = (timeRange: string, dateStr: string): { start: Dat
  * Convert schedule tasks to calendar events
  */
 export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
-  console.log('Converting study data to events:', studyData.slice(0, 2));
+  console.log('Converting study data to events with enhanced distribution:', studyData.slice(0, 2));
 
   if (!Array.isArray(studyData)) {
     console.warn('Study data is not an array');
     return [];
   }
 
-  // Enhanced task to event conversion
+  // Enhanced task to event conversion with better distribution
   const events: CalendarEvent[] = studyData.map(task => {
     // Ensure start and end dates are proper Date objects
     let start = task.start instanceof Date ? task.start : new Date(task.start);
@@ -118,7 +118,7 @@ export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
     if (isNaN(start.getTime())) {
       console.warn('Invalid start date for task:', task.title);
       start = new Date();
-      start.setHours(9, 0, 0, 0);
+      start.setHours(10, 0, 0, 0);
     }
 
     if (isNaN(end.getTime())) {
@@ -127,76 +127,106 @@ export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
       end.setHours(start.getHours() + (task.totalHours || 2));
     }
 
+    // Determine priority based on due date proximity if not specified
+    const priority = task.priority || determinePriority(end);
+
     return {
       id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
       title: task.title,
       start: start,
       end: end,
       description: task.description || '',
-      priority: task.priority || 'medium',
+      priority: priority,
       status: task.status || 'pending',
       category: task.category || 'task',
       courseCode: task.courseCode || '',
       location: task.location || '',
-      resource: task.resource || task
+      resource: {
+        ...task.resource || {},
+        type: task.resource?.type || 'task',
+        details: {
+          ...(task.resource?.details || {}),
+          sessionNumber: task.sessionNumber,
+          totalSessions: task.totalSessions
+        }
+      }
     };
   });
 
-  console.log('Generated events:', events.slice(0, 2));
+  console.log('Generated events with better distribution:', events.slice(0, 2));
   return events;
+};
+
+/**
+ * Helper function to determine priority based on due date proximity
+ */
+const determinePriority = (dueDate: Date): 'high' | 'medium' | 'low' => {
+  const now = new Date();
+  const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysUntilDue <= 3) return 'high';
+  if (daysUntilDue <= 7) return 'medium';
+  return 'low';
 };
 
 /**
  * Convert university classes to calendar events
  */
-export const classesToEvents = (scheduleData: any): CalendarEvent[] => {
-  if (!scheduleData?.weeklySchedule) return [];
+export const classesToEvents = (classes: any[]): CalendarEvent[] => {
+  console.log('Converting classes to events. Input:', classes);
+  
+  if (!Array.isArray(classes)) {
+    console.warn('Classes is not an array:', classes);
+    return [];
+  }
+
+  if (classes.length === 0) {
+    console.log('No classes to convert');
+    return [];
+  }
 
   const events: CalendarEvent[] = [];
-  const currentDate = new Date();
 
-  scheduleData.weeklySchedule.forEach((daySchedule: any) => {
-    if (!daySchedule?.day || !Array.isArray(daySchedule.classes)) return;
+  classes.forEach(classItem => {
+    if (!classItem.courseName || !classItem.startTime || !classItem.endTime || !classItem.day) {
+      console.warn('Invalid class data:', classItem);
+      return;
+    }
 
-    daySchedule.classes.forEach((classItem: any) => {
-      if (!classItem.courseName || !classItem.startTime || !classItem.endTime) return;
-
-      // Use semester dates if available, otherwise default to 12 weeks
+    try {
       const startDate = classItem.semesterDates?.startDate 
         ? new Date(classItem.semesterDates.startDate)
-        : currentDate;
+        : new Date();
       const endDate = classItem.semesterDates?.endDate
         ? new Date(classItem.semesterDates.endDate)
-        : new Date(currentDate.getTime() + (12 * 7 * 24 * 60 * 60 * 1000));
+        : new Date(startDate.getTime() + (12 * 7 * 24 * 60 * 60 * 1000));
 
-      // Generate events only within semester dates
-      let currentEventDate = new Date(startDate);
-      while (currentEventDate <= endDate) {
-        if (getDayName(currentEventDate) === daySchedule.day) {
-          const [startHour, startMinute] = classItem.startTime.split(':').map(Number);
-          const [endHour, endMinute] = classItem.endTime.split(':').map(Number);
+      let currentDay = new Date(startDate);
+      
+      while (currentDay <= endDate) {
+        if (currentDay.toLocaleDateString('en-us', { weekday: 'long' }) === classItem.day) {
+          const eventStart = new Date(currentDay);
+          const [startHours, startMinutes] = classItem.startTime.split(':');
+          eventStart.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10), 0);
 
-          const eventStart = new Date(currentEventDate);
-          eventStart.setHours(startHour, startMinute, 0, 0);
-
-          const eventEnd = new Date(currentEventDate);
-          eventEnd.setHours(endHour, endMinute, 0, 0);
+          const eventEnd = new Date(currentDay);
+          const [endHours, endMinutes] = classItem.endTime.split(':');
+          eventEnd.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10), 0);
 
           events.push({
-            id: `class-${daySchedule.day}-${classItem.courseName}-${currentEventDate.getTime()}`,
-            title: `${classItem.courseName}${classItem.location ? ` - ${classItem.location}` : ''}`,
+            id: `class-${classItem._id}-${currentDay.toISOString()}`,
+            title: `${classItem.courseName} (${classItem.courseCode})`,
             start: eventStart,
             end: eventEnd,
-            allDay: false,
+            courseCode: classItem.courseCode,
+            location: classItem.location,
             category: 'class',
-            courseCode: classItem.courseCode || classItem.courseName,
-            location: classItem.location || '',
             resource: {
               type: 'class',
-              location: classItem.location || '',
+              courseCode: classItem.courseCode,
+              location: classItem.location,
               recurring: true,
-              day: daySchedule.day,
-              courseCode: classItem.courseCode || classItem.courseName,
+              day: classItem.day,
               details: {
                 courseName: classItem.courseName,
                 professor: classItem.professor
@@ -204,13 +234,34 @@ export const classesToEvents = (scheduleData: any): CalendarEvent[] => {
             }
           });
         }
-        currentEventDate.setDate(currentEventDate.getDate() + 1);
+        currentDay.setDate(currentDay.getDate() + 1);
       }
-    });
+    } catch (error) {
+      console.error('Error processing class:', classItem, error);
+    }
   });
 
+  console.log('Generated events:', events.length, 'First event:', events[0]);
   return events;
 };
+
+export function convertClassesToEvents(classes: any) {
+  console.log("Converting classes to events. Input: ", classes);
+
+  // Accept both arrays and objects with weeklySchedule
+  if (Array.isArray(classes)) {
+    // ...existing code...
+  } else if (classes && Array.isArray(classes.weeklySchedule)) {
+    // Treat classes.weeklySchedule as the actual array of classes
+    classes = classes.weeklySchedule;
+    // ...existing code...
+  } else {
+    console.log("Classes is not an array: ", classes);
+    return [];
+  }
+
+
+}
 
 const getDayName = (date: Date): string => {
   return date.toLocaleDateString('en-US', { weekday: 'long' });

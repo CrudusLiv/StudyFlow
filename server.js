@@ -21,6 +21,11 @@ import { parseAIResponse, withRetry } from './utils/aiResponseUtils.js';
 import { buildEnhancedPrompt } from './utils/promptBuilder.js';
 import { tokenToString } from 'typescript';
 import { processDocuments } from './utils/pdfProcessor.js';
+import { processPDF } from './utils/pdfProcessor.js';
+import { extractAssignments, extractDates, generateSchedule } from './utils/textProcessing.js';
+import User from './models/User.js';
+import TaskSchedule from './models/TaskSchedule.js';
+import ClassSchedule from './models/ClassSchedule.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -97,8 +102,6 @@ const userSchema = new mongoose.Schema({
   profilePicture: { type: String } // Add this line
 });
 
-const User = mongoose.model('User', userSchema);
-
 // Task schema and model
 const taskSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -110,16 +113,12 @@ const taskSchema = new mongoose.Schema({
   pdfPath: { type: String },
 });
 
-const Task = mongoose.model('Task', taskSchema);
-
 // Schedule schema and model
 const scheduleSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   date: { type: String, required: true },
   tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
 });
-
-const Schedule = mongoose.model('Schedule', scheduleSchema);
 
 // Add new schema for AI-generated schedule
 const aiScheduleSchema = new mongoose.Schema({
@@ -628,8 +627,6 @@ app.post('/auth/microsoft', async (req, res) => {
   }
 });
 
-// ...existing code...
-
 app.post('/auth/microsoft', async (req, res) => {
   try {
     console.log('Received Microsoft auth request:', req.body.email);
@@ -819,94 +816,69 @@ app.post('/ai/read-pdf', /* authenticateJWT, */ upload.single('pdf'), async (req
 
 // AI schedule generation route using memoryStorage
 app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), async (req, res) => {
-  const userId = req.user.userId;
-  const userKey = req.user.userKey;
-
   try {
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'PDF files are required' });
+      return res.status(400).json({ error: 'No PDF files provided' });
     }
 
-    // Improved PDF text extraction
-    let combinedPdfText = '';
-    for (const file of req.files) {
+    // Process each PDF file
+    const processPromises = req.files.map(async (file) => {
       try {
-        const pdfData = await pdfParse(file.buffer);
-        const cleanedText = pdfData.text
-          .replace(/\r\n/g, '\n')
-          .replace(/\n\s*\n/g, '\n')
-          .trim();
-
-        combinedPdfText += `=== File: ${file.originalname} ===\n${cleanedText}\n\n`;
-        console.log('Extracted text from:', file.originalname, '\nLength:', cleanedText.length);
+        console.log('Processing PDF file:', file.originalname);
+        const data = await pdfParse(file.buffer);
+        const extractedData = await processPDF(file.buffer);
+        return {
+          text: data.text,
+          structuredContent: extractedData
+        };
       } catch (error) {
-        console.error('Error parsing PDF:', file.originalname, error);
-        return res.status(400).json({ error: `Error reading PDF: ${file.originalname}` });
+        console.error(`Error processing PDF ${file.originalname}:`, error);
+        return null;
       }
-    }
-
-    if (!combinedPdfText.trim()) {
-      return res.status(400).json({ error: 'No valid text content found in PDFs' });
-    }
-
-    const preferences = req.body.preferences ? JSON.parse(req.body.preferences) : {};
-    console.log('Using preferences:', preferences);
-
-    // Enhanced prompt with specific instructions
-    const prompt = buildEnhancedPrompt(
-      combinedPdfText,
-      preferences,
-      {
-        currentDate: new Date().toISOString(),
-        currentDay: new Date().toLocaleDateString('en-US', { weekday: 'long' })
-      }
-    );
-
-    console.log('Sending prompt to AI...');
-
-    const chatResponse = await withRetry(async () => {
-      return await client.chat.complete({
-        model: 'mistral-large-latest',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a scheduling assistant. Create detailed study schedules with specific tasks from the provided PDF content.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 4000,
-        temperature: 0.7,
-        request_timeout: 60000
-      });
     });
 
-    const rawContent = chatResponse.choices[0].message.content;
-    console.log('Raw AI response received, length:', rawContent.length);
+    const results = await Promise.all(processPromises);
+    const validResults = results.filter(result => result !== null);
 
-    // Parse and validate the schedule
-    const schedule = parseAIResponse(rawContent, preferences);
-
-    if (!schedule?.weeklySchedule?.length) {
-      throw new Error('Invalid schedule structure received from AI');
+    if (validResults.length === 0) {
+      return res.status(400).json({ error: 'Could not process any PDF files' });
     }
 
-    // Save the schedule
-    const result = await AISchedule.findOneAndUpdate(
-      { userId, userKey },
-      { weeklySchedule: schedule.weeklySchedule },
-      { new: true, upsert: true }
+    // Combine all extracted content
+    const combinedContent = {
+      assignments: [],
+      dates: [],
+      metadata: {}
+    };
+
+    validResults.forEach(result => {
+      if (result.structuredContent) {
+        combinedContent.assignments.push(...(result.structuredContent.assignments || []));
+        combinedContent.dates.push(...(result.structuredContent.dates || []));
+        // Merge metadata if available
+        if (result.structuredContent.syllabus) {
+          combinedContent.metadata = {
+            ...combinedContent.metadata,
+            courseCode: result.structuredContent.syllabus.courseCode || '',
+            courseTitle: result.structuredContent.syllabus.courseTitle || '',
+            semester: result.structuredContent.syllabus.semester || ''
+          };
+        }
+      }
+    });
+
+    // Generate schedule using the textProcessing utility
+    const schedule = generateSchedule(
+      combinedContent.assignments,
+      combinedContent.dates,
+      req.user.userId,
+      combinedContent.metadata
     );
 
-    res.json({ weeklySchedule: result.weeklySchedule });
+    res.json(schedule);
   } catch (error) {
-    console.error('Schedule generation error:', error);
-    res.status(500).json({
-      error: 'Error generating schedule',
-      details: error.message
-    });
+    console.error('Error generating schedule:', error);
+    res.status(500).json({ error: 'Failed to generate schedule' });
   }
 });
 
@@ -1408,6 +1380,134 @@ app.delete('/api/user/profile-picture', authenticateJWT, async (req, res) => {
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
+
+// Add PDF parsing endpoint
+app.post('/api/parse-pdf', 
+  authenticateJWT, 
+  upload.single('file'), 
+  async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      console.log('Processing PDF file:', req.file.originalname);
+      const result = await processPDF(req.file.buffer);
+      
+      res.json({
+        message: 'PDF processed successfully',
+        data: result
+      });
+    } catch (error) {
+      console.error('PDF processing error:', error);
+      res.status(500).json({
+        error: 'Failed to process PDF',
+        details: error.message
+      });
+    }
+});
+
+// Class schedule routes
+app.post('/api/schedule/classes', authenticateJWT, async (req, res) => {
+  try {
+    console.log('Received class schedule data:', req.body);
+    
+    const { courseName, courseCode, startTime, endTime, location, professor, day, semesterDates } = req.body;
+    const userId = req.user.userId;
+
+    // Validate required fields
+    if (!courseName || !courseCode || !startTime || !endTime || !day) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        received: { courseName, courseCode, startTime, endTime, day }
+      });
+    }
+
+    // Create new class schedule
+    const newClass = new ClassSchedule({
+      userId,
+      courseName,
+      courseCode,
+      startTime,
+      endTime,
+      location: location || '',
+      professor: professor || '',
+      day,
+      semesterDates: semesterDates || null
+    });
+
+    await newClass.save();
+    console.log('Class schedule saved:', newClass);
+
+    // After creating the class, fetch all classes for the user
+    const allClasses = await ClassSchedule.find({ userId: req.user.userId });
+    
+    res.status(201).json({
+      message: 'Class schedule added successfully',
+      class: newClass,
+      allClasses: allClasses
+    });
+  } catch (error) {
+    console.error('Error adding class schedule:', error);
+    res.status(500).json({ 
+      error: 'Failed to add class schedule',
+      details: error.message 
+    });
+  }
+});
+
+app.get('/api/schedule/classes', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    console.log('Fetching classes for user:', userId);
+    
+    const classes = await ClassSchedule.find({ userId });
+    console.log('Found classes:', classes);
+
+    res.json(classes);
+  } catch (error) {
+    console.error('Error fetching classes:', error);
+    res.status(500).json({ error: 'Failed to fetch classes' });
+  }
+});
+
+app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) => {
+  try {
+    // Process PDF files
+    const userId = req.user.id;
+    const filePaths = req.files.map(file => file.path);
+    
+    // Extract content from PDFs
+    const pdfContent = [];
+    for (const filePath of filePaths) {
+      try {
+        const fileBuffer = fs.readFileSync(filePath);
+        const extractedData = await processPDF(fileBuffer);
+        pdfContent.push(extractedData);
+      } catch (error) {
+        console.error('Error processing PDF file:', error);
+      }
+    }
+    
+    // Extract assignments and dates from PDF content
+    const assignments = pdfContent.flatMap(content => 
+      extractAssignments(content.rawText || '')
+    );
+    
+    const dates = pdfContent.flatMap(content => 
+      extractDates(content.rawText || '')
+    );
+    
+    // Generate schedule using the imported function
+    const metadata = pdfContent[0]?.syllabus || {};
+    const schedule = generateSchedule(assignments, dates, userId, metadata);
+    
+    res.json({ success: true, schedule });
+  } catch (error) {
+    console.error('Error generating schedule:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

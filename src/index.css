@@ -1,14 +1,80 @@
 @import './styles/main.css';
-/* Swap themes by changing this import */
 @import './styles/themes/light.css';
 
+/* Root variables that apply to both themes */
 :root {
-  /* Global variables used for layout spacing / typography */
   --base-spacing: 1rem;
   --base-radius: 0.5rem;
   --base-font-size: 16px;
   --heading-line-height: 1.2;
   --body-line-height: 1.6;
+}
+
+/* Apply dark theme only when .dark class is present */
+.dark {
+  /* Dark theme overrides for all variables from light theme */
+  --background: #1a1a1a;
+  --foreground: #e0e0e0;
+  --card: #2a2a2a;
+  --card-foreground: #e0e0e0;
+  --popover: #222222;
+  --popover-foreground: #e0e0e0;
+  --primary: #4a90e2;
+  --primary-foreground: #ffffff;
+  --secondary: #2c3e50;
+  --secondary-foreground: #ffffff;
+  --muted: #333333;
+  --muted-foreground: #ccc;
+  --accent: #4a90e2;
+  --accent-foreground: #ffffff;
+  --destructive: #e3342f;
+  --destructive-foreground: #ffffff;
+  --border: #444444;
+  --input: #444444;
+  --ring: #646cff;
+  
+  /* Calendar variables */
+  --calendar-bg: #1f2937;
+  --calendar-header-bg: #374151;
+  --calendar-border: #4b5563;
+  --calendar-event-bg: #6366f1;
+  --calendar-event-text: #ffffff;
+  --calendar-today-bg: rgba(99, 102, 241, 0.15);
+  --calendar-grid-bg: #1f2937;
+  --calendar-time-text: #9ca3af;
+  
+  /* Task priority colors */
+  --priority-high-bg: rgba(239, 68, 68, 0.2);
+  --priority-high-text: #fca5a5;
+  --priority-high-border: #ef4444;
+  --priority-medium-bg: rgba(245, 158, 11, 0.2);
+  --priority-medium-text: #fcd34d;
+  --priority-medium-border: #f59e0b;
+  --priority-low-bg: rgba(16, 185, 129, 0.2);
+  --priority-low-text: #6ee7b7;
+  --priority-low-border: #10b981;
+  
+  /* Modal colors */
+  --modal-bg: #1f2937;
+  --modal-border: #374151;
+  --modal-text: #e5e7eb;
+  --modal-overlay: rgba(0, 0, 0, 0.7);
+  
+  /* Input colors */
+  --input-bg: #374151;
+  --input-border: #4b5563;
+  --input-text: #e5e7eb;
+  --input-placeholder: #9ca3af;
+  --input-focus-border: #6366f1;
+  --input-focus-ring: rgba(99, 102, 241, 0.3);
+  
+  /* Button colors */
+  --button-primary-bg: #6366f1;
+  --button-primary-text: #ffffff;
+  --button-secondary-bg: #374151;
+  --button-secondary-text: #e5e7eb;
+  --button-danger-bg: #b91c1c;
+  --button-danger-text: #ffffff;
 }
 
 /* Global resets and more comfortable typography */

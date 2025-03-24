@@ -33,5 +33,55 @@
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #e2e8f0;
     --sidebar-ring: #a0aec0;
-  }
-  
+    
+    /* Additional calendar variables */
+    --calendar-bg: #ffffff;
+    --calendar-header-bg: #f8fafc;
+    --calendar-border: #e5e7eb;
+    --calendar-event-bg: #4f46e5;
+    --calendar-event-text: #ffffff;
+    --calendar-today-bg: #f5f3ff;
+    --calendar-grid-bg: #f9fafb;
+    --calendar-time-text: #6b7280;
+    
+    /* Enhanced calendar variables with RGB values for gradients */
+    --calendar-event-bg-rgb: 79, 70, 229;
+    
+    /* Task priority colors */
+    --priority-high-bg: #fee2e2;
+    --priority-high-text: #b91c1c;
+    --priority-high-border: #ef4444;
+    --priority-medium-bg: #fef3c7;
+    --priority-medium-text: #92400e;
+    --priority-medium-border: #f59e0b;
+    --priority-low-bg: #d1fae5;
+    --priority-low-text: #065f46;
+    --priority-low-border: #10b981;
+    
+    /* Enhanced priority colors with RGB values */
+    --priority-high-bg-rgb: 254, 226, 226;
+    --priority-medium-bg-rgb: 254, 243, 199;
+    --priority-low-bg-rgb: 209, 250, 229;
+    
+    /* Modal colors */
+    --modal-bg: #ffffff;
+    --modal-border: #e5e7eb;
+    --modal-text: #1f2937;
+    --modal-overlay: rgba(0, 0, 0, 0.5);
+    
+    /* Input colors */
+    --input-bg: #ffffff;
+    --input-border: #d1d5db;
+    --input-text: #1f2937;
+    --input-placeholder: #9ca3af;
+    --input-focus-border: #4f46e5;
+    --input-focus-ring: rgba(79, 70, 229, 0.2);
+    
+    /* Button colors */
+    --button-primary-bg: #4f46e5;
+    --button-primary-text: #ffffff;
+    --button-secondary-bg: #f3f4f6;
+    --button-secondary-text: #374151;
+    --button-danger-bg: #ef4444;
+    --button-danger-text: #ffffff;
+}

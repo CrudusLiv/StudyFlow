@@ -1,6 +1,6 @@
 .profile-container {
   padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  background: linear-gradient(135deg, var(--background) 0%, var(--muted) 100%);
   min-height: 100vh;
 }
 
@@ -14,17 +14,17 @@
 .profile-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--foreground);
   margin-bottom: 2.5rem;
   text-align: center;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .profile-card {
-  background: white;
+  background: var(--card);
   border-radius: 1.2rem;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid var(--border);
   padding: 2.5rem;
   margin-bottom: 2rem;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -338,75 +338,69 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .profile-container {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  }
+/* Replace media query with .dark class */
+.dark .profile-container {
+  background: linear-gradient(135deg, var(--background) 0%, var(--muted) 100%);
+}
 
-  .profile-title {
-    color: #f1f5f9;
-  }
+.dark .profile-title {
+  color: var(--foreground);
+}
 
-  .profile-card {
-    background-color: #1e293b;
-    border-color: #334155;
-  }
+.dark .profile-card {
+  background-color: var(--card);
+  border-color: var(--border);
+}
 
-  .card-title {
-    color: #f1f5f9;
-  }
+.dark .card-title {
+  color: var(--foreground);
+}
 
-  .form-label {
-    color: #cbd5e1;
-  }
+.dark .form-label {
+  color: var(--muted-foreground);
+}
 
-  .form-input {
-    background-color: #334155;
-    border-color: #475569;
-    color: #f1f5f9;
-  }
+.dark .form-input {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--input-text);
+}
 
-  .form-input.readonly {
-    background-color: #1e293b;
-    border-color: #475569;
-    color: #94a3b8;
-  }
+.dark .form-input.readonly {
+  background-color: var(--muted);
+  border-color: var(--border);
+  color: var(--muted-foreground);
+}
 
-  .edit-button {
-    background: #312e81;
-    color: #818cf8;
-  }
+.dark .edit-button {
+  background: var(--button-secondary-bg);
+  color: var(--primary);
+}
 
-  .edit-button:hover {
-    background: #3730a3;
-    color: #a5b4fc;
-  }
+.dark .edit-button:hover {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
 
-  .card-header {
-    border-bottom-color: #334155;
-  }
+.dark .card-header {
+  border-bottom-color: var(--border);
+}
 
-  .profile-icon, .card-icon, .input-icon, .button-icon {
-    color: #f1f5f9;
-  }
+.dark .profile-icon, 
+.dark .card-icon, 
+.dark .input-icon, 
+.dark .button-icon {
+  color: var(--foreground);
+}
 
-  .password-toggle {
-    color: #94a3b8;
-  }
+.dark .profile-picture-container {
+  background: var(--muted);
+}
 
-  .password-toggle:hover {
-    color: #818cf8;
-  }
+.dark .profile-picture-placeholder {
+  color: var(--muted-foreground);
+}
 
-  .profile-picture-container {
-    background: #374151;
-  }
-
-  .profile-picture-placeholder {
-    color: #6b7280;
-  }
-
-  .profile-picture-overlay {
-    background: rgba(0, 0, 0, 0.8);
-  }
+.dark .profile-picture-overlay {
+  background: rgba(0, 0, 0, 0.8);
 }

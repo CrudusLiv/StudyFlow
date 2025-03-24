@@ -3,6 +3,7 @@ import axios from 'axios';
 import '../styles/pages/UniversitySchedule.css';
 import {
   FiCalendar,
+  FiUpload,
   FiPlusCircle,
   FiClock,
   FiMapPin,
@@ -13,6 +14,8 @@ import {
   FiGrid,
   FiList
 } from 'react-icons/fi';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
 
 interface Class {
   courseName: string;
@@ -27,19 +30,6 @@ interface DaySchedule {
   classes: Class[];
 }
 
-interface APIResponse {
-  weeklySchedule: {
-    day: string;
-    classes: Class[];
-  }[];
-}
-
-const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
-  const hour = i + 8; // Start from 8 AM
-  return `${hour.toString().padStart(2, '0')}:00`;
-});
-
 const getClassColor = (courseName: string) => {
   const colors = [
     { bg: '#EEF2FF', border: '#4F46E5', text: '#4F46E5' }, // Indigo
@@ -49,7 +39,7 @@ const getClassColor = (courseName: string) => {
     { bg: '#F0F9FF', border: '#0284C7', text: '#0284C7' }, // Sky
     { bg: '#FAF5FF', border: '#9333EA', text: '#9333EA' }, // Purple
   ];
-
+  
   let hash = 0;
   for (let i = 0; i < courseName.length; i++) {
     hash = courseName.charCodeAt(i) + ((hash << 5) - hash);
@@ -57,12 +47,89 @@ const getClassColor = (courseName: string) => {
   return colors[Math.abs(hash) % colors.length];
 };
 
+const SAMPLE_SCHEDULE: DaySchedule[] = [
+  {
+    day: 'Monday',
+    classes: [
+      {
+        courseName: 'Advanced Mathematics',
+        startTime: '09:00',
+        endTime: '10:30',
+        location: 'Room 301',
+        professor: 'Dr. Smith'
+      },
+      {
+        courseName: 'Physics Lab',
+        startTime: '11:00',
+        endTime: '13:00',
+        location: 'Lab Building B',
+        professor: 'Prof. Johnson'
+      }
+    ]
+  },
+  {
+    day: 'Tuesday',
+    classes: [
+      {
+        courseName: 'Computer Science',
+        startTime: '10:00',
+        endTime: '12:00',
+        location: 'Tech Hub 201',
+        professor: 'Dr. Williams'
+      }
+    ]
+  },
+  {
+    day: 'Wednesday',
+    classes: [
+      {
+        courseName: 'Data Structures',
+        startTime: '13:00',
+        endTime: '15:00',
+        location: 'Room 405',
+        professor: 'Prof. Davis'
+      }
+    ]
+  },
+  {
+    day: 'Thursday',
+    classes: [
+      {
+        courseName: 'Software Engineering',
+        startTime: '09:00',
+        endTime: '11:00',
+        location: 'Tech Hub 102',
+        professor: 'Dr. Brown'
+      }
+    ]
+  },
+  {
+    day: 'Friday',
+    classes: [
+      {
+        courseName: 'Database Systems',
+        startTime: '14:00',
+        endTime: '16:00',
+        location: 'Room 201',
+        professor: 'Prof. Miller'
+      }
+    ]
+  }
+];
+
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
+  const hour = i + 8; // Start from 8 AM
+  return `${hour.toString().padStart(2, '0')}:00`;
+});
+
+const localizer = momentLocalizer(moment);
+
 const UniversitySchedule: React.FC = () => {
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string>('');
-  const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
   const [newClass, setNewClass] = useState<Class>({
     courseName: '',
     startTime: '',
@@ -70,155 +137,128 @@ const UniversitySchedule: React.FC = () => {
     location: '',
     professor: ''
   });
-  const [error, setError] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<'grid' | 'list'>('grid');
+  const listViewRef = React.useRef<HTMLDivElement>(null);
+  const gridViewRef = React.useRef<HTMLDivElement>(null);
+  const [bigEvents, setBigEvents] = useState<any[]>([]);
 
   useEffect(() => {
     fetchSchedule();
   }, []);
 
-  const transformScheduleData = (responseData: APIResponse): DaySchedule[] => {
-    // Transform API response to match the schedule structure
-    const transformedSchedule = DAYS.map(day => {
-      const dayData = responseData.weeklySchedule.find(d => d.day === day);
-      return {
-        day,
-        classes: dayData?.classes?.map(cls => ({
-          ...cls,
-          // Ensure time format is consistent
-          startTime: cls.startTime.includes(':') ? cls.startTime : `${cls.startTime}:00`,
-          endTime: cls.endTime.includes(':') ? cls.endTime : `${cls.endTime}:00`
-        })) || []
-      };
-    });
-
-    // Sort classes by start time within each day
-    return transformedSchedule.map(day => ({
-      ...day,
-      classes: day.classes.sort((a, b) => a.startTime.localeCompare(b.startTime))
-    }));
-  };
-
-  const isClassInTimeSlot = (classItem: Class, timeSlot: string): boolean => {
-    const slotTime = timeSlot.split(':')[0];
-    const startHour = classItem.startTime.split(':')[0];
-    const endHour = classItem.endTime.split(':')[0];
-
-    return parseInt(slotTime) >= parseInt(startHour) &&
-           parseInt(slotTime) < parseInt(endHour);
-  };
-
   const fetchSchedule = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-
-      const response = await axios.get<APIResponse>('http://localhost:5000/university-schedule', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.weeklySchedule) {
-        setSchedule(transformScheduleData(response.data));
-      } else {
-        setSchedule(DAYS.map(day => ({ day, classes: [] })));
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to load schedule';
-      console.error('Error fetching schedule:', errorMessage);
-      setError('Failed to load schedule. Please try again.');
-      setSchedule(DAYS.map(day => ({ day, classes: [] })));
-    } finally {
+      setSchedule(SAMPLE_SCHEDULE);
       setLoading(false);
+    // try {
+    //   const token = localStorage.getItem('token');
+    //   const response = await axios.get('http://localhost:5000/university-schedule', {
+    //     headers: { Authorization: `Bearer ${token}` }
+    //   });
+      
+    //   if (response.data.weeklySchedule) {
+    //     setSchedule(response.data.weeklySchedule);
+    //   } else {
+    //     // Initialize empty schedule if none exists
+    //     setSchedule(DAYS.map(day => ({ day, classes: [] })));
+    //   }
+    // } catch (error) {
+    //   console.error('Error fetching schedule:', error);
+    // } finally {
+    //   setLoading(false);
+    // }
+  };
+
+  useEffect(() => {
+    async function fetchClassesDebugStyle() {
+      try {
+        const classes = await scheduleService.fetchClasses();
+        console.log("Fetched classes (debug style):", classes);
+
+        if (!Array.isArray(classes) || classes.length === 0) return;
+
+        const formattedEvents = classes.flatMap((cls) => {
+          const events = [];
+          // ...replicate recurring-event logic from DebugCalendar...
+          return events;
+        });
+
+        setBigEvents(formattedEvents);
+      } catch (err) {
+        console.error("Error in debug style fetch:", err);
+      }
+    }
+    fetchClassesDebugStyle();
+  }, []);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await axios.post('http://localhost:5000/university-schedule/import', 
+          formData,
+          { headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }}
+        );
+        setSchedule(response.data.weeklySchedule);
+      } catch (error) {
+        console.error('Error uploading schedule:', error);
+      }
     }
   };
 
   const handleAddClass = async () => {
-    if (!selectedDay) {
-      setError('Please select a day');
-      return;
-    }
+    if (!selectedDay) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token found');
-
-      // Check for duplicates
-      const isDuplicate = schedule.some(day => 
-        day.day === selectedDay && 
-        day.classes.some(cls => 
-          cls.courseName === newClass.courseName && 
-          cls.startTime === newClass.startTime &&
-          cls.endTime === newClass.endTime &&
-          cls.day === selectedDay
-        )
-      );
-
-      if (isDuplicate) {
-        setError('This class already exists in the schedule');
-        return;
-      }
-
-      // Validate dates
-      const startDate = new Date(newClass.semesterDates?.startDate || '');
-      const endDate = new Date(newClass.semesterDates?.endDate || '');
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        setError('Please enter valid semester dates');
-        return;
-      }
-
-      if (endDate <= startDate) {
-        setError('End date must be after start date');
-        return;
-      }
-
       const updatedSchedule = schedule.map(day => {
         if (day.day === selectedDay) {
           return {
             ...day,
-            classes: [...day.classes, {
-              ...newClass,
-              day: selectedDay,
-              semesterDates: {
-                startDate,
-                endDate
-              }
-            }]
+            classes: [...day.classes, newClass].sort((a, b) => 
+              a.startTime.localeCompare(b.startTime)
+            )
           };
         }
         return day;
       });
 
-      // Save to backend
-      await axios.post(
-        'http://localhost:5000/university-schedule',
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:5000/university-schedule', 
         { weeklySchedule: updatedSchedule },
         { headers: { Authorization: `Bearer ${token}` }}
       );
 
       setSchedule(updatedSchedule);
       setShowAddModal(false);
-      setError(null);
+      setNewClass({
+        courseName: '',
+        startTime: '',
+        endTime: '',
+        location: '',
+        professor: ''
+      });
     } catch (error) {
       console.error('Error adding class:', error);
-      setError('Failed to add class');
     }
   };
 
   const handleViewToggle = (view: 'grid' | 'list') => {
     setActiveView(view);
+    if (view === 'list' && listViewRef.current) {
+      listViewRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else if (view === 'grid' && gridViewRef.current) {
+      gridViewRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading schedule...</p>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
@@ -241,6 +281,16 @@ const UniversitySchedule: React.FC = () => {
           </div>
         </div>
         <div className="action-buttons">
+          <label className="import-button">
+            <FiUpload className="button-icon" />
+            Import Schedule
+            <input
+              type="file"
+              accept=".pdf,.csv,.xlsx"
+              onChange={handleFileUpload}
+              style={{ display: 'none' }}
+            />
+          </label>
           <button
             onClick={() => setShowAddModal(true)}
             className="add-button"
@@ -251,20 +301,14 @@ const UniversitySchedule: React.FC = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
-
       <div className="view-toggle">
-        <button
+        <button 
           className={`view-button ${activeView === 'grid' ? 'active' : ''}`}
           onClick={() => handleViewToggle('grid')}
         >
           <FiGrid className="button-icon" /> Grid View
         </button>
-        <button
+        <button 
           className={`view-button ${activeView === 'list' ? 'active' : ''}`}
           onClick={() => handleViewToggle('list')}
         >
@@ -272,12 +316,13 @@ const UniversitySchedule: React.FC = () => {
         </button>
       </div>
 
-      <div
+      <div 
+        ref={gridViewRef} 
         className="schedule-table-container"
         style={{ display: activeView === 'grid' ? 'block' : 'none' }}
       >
         <table className="schedule-table">
-          <thead>
+          <thead className="table-header">
             <tr>
               <th>Time</th>
               {DAYS.map(day => (
@@ -291,8 +336,8 @@ const UniversitySchedule: React.FC = () => {
                 <td className="time-cell">{timeSlot}</td>
                 {DAYS.map(day => {
                   const daySchedule = schedule.find(d => d.day === day);
-                  const classAtTime = daySchedule?.classes.find(c =>
-                    isClassInTimeSlot(c, timeSlot)
+                  const classAtTime = daySchedule?.classes.find(c => 
+                    timeSlot >= c.startTime && timeSlot < c.endTime
                   );
 
                   return (
@@ -302,13 +347,10 @@ const UniversitySchedule: React.FC = () => {
                           backgroundColor: getClassColor(classAtTime.courseName).bg,
                           borderLeftColor: getClassColor(classAtTime.courseName).border
                         }}>
-                          <div className="class-title" style={{
-                            color: getClassColor(classAtTime.courseName).text
-                          }}>
+                          <div className="class-title" style={{ color: getClassColor(classAtTime.courseName).text }}>
                             {classAtTime.courseName}
                           </div>
                           <div className="class-details">
-                            <div>{classAtTime.startTime} - {classAtTime.endTime}</div>
                             <div>{classAtTime.location}</div>
                             <div>{classAtTime.professor}</div>
                           </div>
@@ -321,32 +363,22 @@ const UniversitySchedule: React.FC = () => {
             ))}
           </tbody>
         </table>
-      </div>
-
-      <div
-        className="schedule-list"
-        style={{ display: activeView === 'list' ? 'grid' : 'none' }}
-      >
-        {schedule.map(daySchedule => (
-          <div key={daySchedule.day} className="schedule-list-item">
-            <h3>{daySchedule.day}</h3>
-            {daySchedule.classes.length === 0 ? (
-              <p className="no-classes">No classes scheduled</p>
-            ) : (
+        <hr></hr>
+        <div className="schedule-list">
+          {schedule.map(daySchedule => (
+            <div key={daySchedule.day} className="schedule-list-item">
+              <h3>{daySchedule.day}</h3>
               <ul>
-                {daySchedule.classes.map((classItem, index) => (
-                  <li key={`${classItem.courseName}-${index}`}>
+                {daySchedule.classes.map(classItem => (
+                  <li key={classItem.courseName}>
                     <div className="class-card" style={{
                       backgroundColor: getClassColor(classItem.courseName).bg,
                       borderLeftColor: getClassColor(classItem.courseName).border
                     }}>
-                      <div className="class-title" style={{
-                        color: getClassColor(classItem.courseName).text
-                      }}>
+                      <div className="class-title" style={{ color: getClassColor(classItem.courseName).text }}>
                         {classItem.courseName}
                       </div>
                       <div className="class-details">
-                        <div>{classItem.startTime} - {classItem.endTime}</div>
                         <div>{classItem.location}</div>
                         <div>{classItem.professor}</div>
                       </div>
@@ -354,9 +386,49 @@ const UniversitySchedule: React.FC = () => {
                   </li>
                 ))}
               </ul>
-            )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div 
+        ref={listViewRef} 
+        className="schedule-list"
+        style={{ display: activeView === 'list' ? 'grid' : 'none' }}
+      >
+        {schedule.map(daySchedule => (
+          <div key={daySchedule.day} className="schedule-list-item">
+            <h3>{daySchedule.day}</h3>
+            <ul>
+              {daySchedule.classes.map(classItem => (
+                <li key={classItem.courseName}>
+                  <div className="class-card" style={{
+                    backgroundColor: getClassColor(classItem.courseName).bg,
+                    borderLeftColor: getClassColor(classItem.courseName).border
+                  }}>
+                    <div className="class-title" style={{ color: getClassColor(classItem.courseName).text }}>
+                      {classItem.courseName}
+                    </div>
+                    <div className="class-details">
+                      <div>{classItem.location}</div>
+                      <div>{classItem.professor}</div>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <Calendar
+          localizer={localizer}
+          events={bigEvents}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: 600 }}
+        />
       </div>
 
       {showAddModal && (
@@ -366,7 +438,7 @@ const UniversitySchedule: React.FC = () => {
               <h2 className="modal-title">
                 <FiPlusCircle className="modal-icon" /> Add New Class
               </h2>
-              <button
+              <button 
                 className="close-button"
                 onClick={() => setShowAddModal(false)}
               >
@@ -433,41 +505,6 @@ const UniversitySchedule: React.FC = () => {
                   onChange={(e) => setNewClass({ ...newClass, professor: e.target.value })}
                   className="form-input"
                 />
-              </div>
-              <div className="form-group">
-                <h3>Semester Dates</h3>
-                <div className="date-inputs">
-                  <div className="input-group">
-                    <label>Start Date</label>
-                    <input
-                      type="date"
-                      value={newClass.semesterDates?.startDate.toISOString().split('T')[0]}
-                      onChange={(e) => setNewClass(prev => ({
-                        ...prev,
-                        semesterDates: {
-                          ...prev.semesterDates,
-                          startDate: new Date(e.target.value)
-                        }
-                      }))}
-                      className="form-input"
-                    />
-                  </div>
-                  <div className="input-group">
-                    <label>End Date</label>
-                    <input
-                      type="date"
-                      value={newClass.semesterDates?.endDate.toISOString().split('T')[0]}
-                      onChange={(e) => setNewClass(prev => ({
-                        ...prev,
-                        semesterDates: {
-                          ...prev.semesterDates,
-                          endDate: new Date(e.target.value)
-                        }
-                      }))}
-                      className="form-input"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
             <div className="modal-buttons">
