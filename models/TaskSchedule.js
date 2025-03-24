@@ -19,11 +19,6 @@ const taskScheduleSchema = new mongoose.Schema({
     required: true
   },
   description: String,
-  priority: {
-    type: String,
-    enum: ['high', 'medium', 'low'],
-    default: 'medium'
-  },
   category: {
     type: String,
     enum: ['task', 'study', 'assignment', 'exam'],

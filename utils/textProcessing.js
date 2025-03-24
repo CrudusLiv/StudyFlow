@@ -29,7 +29,7 @@ export function extractAssignments(text) {
           requirements: extractRequirements(section),
           deliverables: extractDeliverables(section),
           type: determineAssignmentType(section),
-          priority: calculatePriority(section)
+          priority: calculatePriority(section) // This line should be removed
         };
 
         assignments.push(assignment);
@@ -52,24 +52,8 @@ function cleanTitle(text) {
 }
 
 function calculatePriority(text, dueDate) {
-  let score = 0;
-
-  // Priority keywords
-  if (/\b(?:urgent|important|critical|mandatory)\b/i.test(text)) score += 3;
-  if (/\b(?:final|exam|assessment)\b/i.test(text)) score += 2;
-
-  // Due date proximity
-  if (dueDate) {
-    const due = new Date(dueDate);
-    const now = new Date();
-    const daysUntilDue = Math.ceil((due - now) / (1000 * 60 * 60 * 24));
-
-    if (daysUntilDue <= 3) score += 3;
-    else if (daysUntilDue <= 7) score += 2;
-    else if (daysUntilDue <= 14) score += 1;
-  }
-
-  return score >= 3 ? 'high' : score >= 2 ? 'medium' : 'low';
+  // This function is being removed as priority is no longer needed
+  return 'medium'; // Return default value to avoid errors
 }
 
 function estimateWorkHoursEnhanced(text) {
@@ -139,32 +123,28 @@ export function extractDates(text) {
  * @returns {Array} Generated schedule
  */
 export function generateSchedule(assignments, dates, userId, metadata = {}) {
-  console.log('Generating enhanced schedule with assignments:', assignments.slice(0, 2));
+  console.log('Generating enhanced schedule with user preferences:', 
+    metadata.userPreferences ? Object.keys(metadata.userPreferences) : 'none');
 
-  // Convert date strings to Date objects
+  // Convert date strings to Date objects and add assignment tagging
   const processedAssignments = assignments.map(assignment => {
     // Normalize assignment structure and fill in missing data
     return {
       ...assignment,
+      documentType: assignment.documentType || 'assignment', // Ensure assignment tagging
       dueDate: parseDateString(assignment.dueDate),
       courseCode: assignment.courseCode || metadata.courseCode || '',
       title: assignment.title || 'Untitled Assignment',
       type: assignment.type || determineAssignmentType(assignment.title || ''),
-      priority: assignment.priority || calculatePriority(assignment.title || '', assignment.dueDate),
-      // Estimate workload based on complexity
+      // Remove priority calculation
+      // estimatedHours based on complexity
       estimatedHours: assignment.estimatedHours || estimateComplexity(assignment)
     };
   });
 
-  // Sort assignments by due date and priority (null dates at the end)
+  // Sort assignments by due date only (remove priority sorting)
   const sortedAssignments = processedAssignments.sort((a, b) => {
-    // First sort by priority (high to low)
-    const priorityWeight = { high: 3, medium: 2, low: 1 };
-    const priorityDiff = (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
-    
-    if (priorityDiff !== 0) return priorityDiff;
-    
-    // Then sort by due date (earlier to later)
+    // Sort by due date (earlier to later)
     if (!a.dueDate && !b.dueDate) return 0;
     if (!a.dueDate) return 1;
     if (!b.dueDate) return -1;
@@ -183,7 +163,7 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
       end: assignment.dueDate || new Date(startDate.getTime() + totalHours * 3600000),
       description: assignment.description || '',
       location: assignment.courseCode || '',
-      priority: assignment.priority || 'medium',
+      // Remove priority field
       category: assignment.type || 'task',
       courseCode: assignment.courseCode || metadata.courseCode || '',
       totalHours,
@@ -205,9 +185,20 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
     lastEvent: events[events.length - 1]
   });
 
-  // Pass the class schedule from metadata if available
-  const classSchedule = metadata.userPreferences?.classSchedule || null;
-  return distributeEventsOptimally(events, classSchedule);
+  // Get user preferences for schedule generation
+  const userPrefs = metadata.userPreferences || {};
+  console.log('Using preferences for schedule generation:', userPrefs);
+  
+  // Extract class schedule ensuring all classes are properly tagged
+  const classSchedule = (userPrefs.classSchedule || []).map(cls => ({
+    ...cls,
+    documentType: 'class' // Ensure class tagging
+  }));
+  
+  // Distribute study sessions optimally with user preferences
+  const studySchedule = distributeStudySessions(events, classSchedule, userPrefs);
+
+  return studySchedule;
 }
 
 // Estimate complexity based on various factors
@@ -500,6 +491,334 @@ function extractTitle(text) {
 
   // Fallback: take first line or sentence
   return text.split(/[.!?\n]/)[0].trim();
+}
+
+/**
+ * Calculate how many days are needed based on total hours and preferences
+ */
+function calculateDaysNeeded(totalHours, preferences = {}) {
+  // Get preferred study session length (default: 2 hours)
+  const preferredSessionLength = preferences.preferredSessionLength || 2;
+  
+  // Get max study hours per day (default: 4)
+  const maxHoursPerDay = preferences.studyHoursPerDay || 4;
+  
+  // Calculate how many sessions are needed
+  const sessionsNeeded = Math.ceil(totalHours / preferredSessionLength);
+  
+  // Calculate minimum days needed for these sessions
+  const minimumDaysNeeded = Math.ceil(sessionsNeeded * preferredSessionLength / maxHoursPerDay);
+  
+  // Add buffer days based on task complexity
+  return Math.max(2, minimumDaysNeeded);
+}
+
+/**
+ * Calculate the optimal start date based on due date, days needed, and priority
+ */
+function calculateOptimalStartDate(dueDate, daysNeeded) {
+  const now = new Date();
+  
+  // If no due date, start tomorrow
+  if (!dueDate) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    return tomorrow;
+  }
+  
+  // Calculate ideal start date (no priority buffer)
+  const totalDaysNeeded = daysNeeded + 1; // Add a standard buffer
+  
+  const idealStart = new Date(dueDate);
+  idealStart.setDate(dueDate.getDate() - totalDaysNeeded);
+  idealStart.setHours(9, 0, 0, 0);
+  
+  // If ideal start is in the past, start from tomorrow
+  if (idealStart < now) {
+    const tomorrow = new Date(now);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    return tomorrow;
+  }
+  
+  return idealStart;
+}
+
+/**
+ * Distribute study sessions optimally based on class schedule and preferences
+ */
+function distributeStudySessions(events, classSchedule = [], preferences = {}) {
+  // Default preferences with enhanced options
+  const userPrefs = {
+    studyHoursPerDay: 4,
+    preferredStudyTimes: ['morning', 'afternoon', 'evening'],
+    breakDuration: 15,
+    longBreakDuration: 30, 
+    sessionsBeforeLongBreak: 4,
+    weekendStudy: true,
+    preferredSessionLength: 2,
+    wakeUpTime: '08:00',
+    sleepTime: '23:00',
+    preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    minimumDaysBetweenSessions: 1,
+    preferSpacedRepetition: true,
+    ...preferences
+  };
+  
+  console.log('Distributing study sessions with enhanced preferences:', {
+    wakeUpTime: userPrefs.wakeUpTime,
+    sleepTime: userPrefs.sleepTime,
+    preferredDays: userPrefs.preferredStudyDays,
+    spacedRepetition: userPrefs.preferSpacedRepetition
+  });
+  
+  // Time slot mappings for preferred study times
+  const timeSlotsByPreference = {
+    morning: [8, 9, 10, 11],
+    afternoon: [12, 13, 14, 15],
+    evening: [16, 17, 18, 19],
+    night: [20, 21, 22]
+  };
+  
+  if (userPrefs.dayStartTime && userPrefs.dayEndTime) {
+    try {
+      const startHour = parseInt(userPrefs.dayStartTime.split(':')[0], 10);
+      const endHour = parseInt(userPrefs.dayEndTime.split(':')[0], 10);
+      
+      // Build custom time slot array
+      const customTimeSlots = [];
+      for (let hour = startHour; hour <= endHour; hour++) {
+        customTimeSlots.push(hour);
+      }
+      
+      console.log('Using custom time range:', startHour, 'to', endHour);
+    } catch (e) {
+      console.warn('Error parsing custom time range:', e);
+    }
+  }
+  
+  // Get preferred time slots based on user preferences
+  const preferredTimeSlots = userPrefs.preferredStudyTimes.flatMap(pref => 
+    timeSlotsByPreference[pref] || []
+  ).sort((a, b) => a - b);
+  
+  const studySessions = [];
+  const dayLoads = new Map(); // Track hours assigned to each day
+  const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  
+  // Map class schedule for conflict checking
+  const classTimesByDay = new Map();
+  
+  if (classSchedule && classSchedule.length > 0) {
+    classSchedule.forEach(cls => {
+      const day = cls.day || '';
+      if (!classTimesByDay.has(day)) {
+        classTimesByDay.set(day, []);
+      }
+      
+      // Parse start and end times
+      let startHour = 0, endHour = 0;
+      try {
+        startHour = parseInt(cls.startTime.split(':')[0], 10);
+        endHour = parseInt(cls.endTime.split(':')[0], 10);
+        // Add buffer before and after class
+        startHour = Math.max(0, startHour - 1);
+        endHour = Math.min(23, endHour + 1);
+      } catch (e) {
+        console.warn('Error parsing class time:', e);
+      }
+      
+      classTimesByDay.get(day).push({ start: startHour, end: endHour });
+    });
+  }
+  
+  // Helper function to check for class conflicts
+  const hasClassConflict = (date, duration) => {
+    const day = daysOfWeek[date.getDay()];
+    const startHour = date.getHours();
+    const endHour = startHour + duration;
+    
+    const dayClasses = classTimesByDay.get(day) || [];
+    return dayClasses.some(cls => 
+      (startHour < cls.end && endHour > cls.start)
+    );
+  };
+  
+  // Helper to check if a date is a weekend
+  const isWeekend = (date) => {
+    const day = date.getDay();
+    return day === 0 || day === 6; // Sunday or Saturday
+  };
+  
+  // Sort events by due date only (remove priority sorting)
+  const sortedEvents = events.sort((a, b) => {
+    // Sort by due date
+    const aDate = b.end ? b.end.getTime() : Number.MAX_SAFE_INTEGER;
+    const bDate = a.end ? a.end.getTime() : Number.MAX_SAFE_INTEGER;
+    return aDate - bDate;
+  });
+  
+  for (const event of sortedEvents) {
+    // Skip if not a study task
+    if (event.resource?.type === 'class') {
+      studySessions.push(event);
+      continue;
+    }
+    
+    // Get total hours needed for this task
+    const totalHours = event.totalHours || 2;
+    
+    // Calculate optimal session duration
+    const optimalSessionDuration = Math.min(
+      userPrefs.preferredSessionLength,
+      totalHours
+    );
+    
+    // Calculate number of sessions needed
+    const sessionsNeeded = Math.ceil(totalHours / optimalSessionDuration);
+    
+    // Get base start date for this task
+    const startDate = new Date(event.start);
+    let hoursRemaining = totalHours;
+    
+    // Distribute in multiple sessions
+    for (let i = 0; i < sessionsNeeded && hoursRemaining > 0; i++) {
+      let sessionDate = new Date(startDate);
+      sessionDate.setDate(startDate.getDate() + i);
+      
+      // Skip weekends if user prefers not to study on weekends
+      if (!userPrefs.weekendStudy && isWeekend(sessionDate)) {
+        sessionDate.setDate(sessionDate.getDate() + (sessionDate.getDay() === 0 ? 1 : 2));
+      }
+      
+      // Session duration is minimum of preferred length and remaining hours
+      const sessionDuration = Math.min(optimalSessionDuration, hoursRemaining);
+      
+      // Find a suitable time slot on this day
+      let foundSlot = false;
+      
+      for (const startHour of preferredTimeSlots) {
+        // Check day load
+        const dayKey = sessionDate.toDateString();
+        const currentLoad = dayLoads.get(dayKey) || 0;
+        
+        // Skip if day is already fully loaded
+        if (currentLoad + sessionDuration > userPrefs.studyHoursPerDay) {
+          continue;
+        }
+        
+        sessionDate.setHours(startHour, 0, 0, 0);
+        
+        // Skip if slot conflicts with class
+        if (hasClassConflict(sessionDate, sessionDuration)) {
+          continue;
+        }
+        
+        // We found a suitable slot!
+        foundSlot = true;
+        
+        // Create end time
+        const sessionEnd = new Date(sessionDate);
+        sessionEnd.setHours(sessionDate.getHours() + sessionDuration);
+        
+        // Create session event
+        const sessionEvent = {
+          ...event,
+          id: `${event.id}-session-${i+1}`,
+          title: `Study: ${event.title}`,
+          start: new Date(sessionDate),
+          end: sessionEnd,
+          sessionNumber: i + 1,
+          totalSessions: sessionsNeeded,
+          description: createSessionDescription(event, i+1, sessionsNeeded)
+        };
+        
+        studySessions.push(sessionEvent);
+        
+        // Update tracking
+        dayLoads.set(dayKey, (currentLoad + sessionDuration));
+        hoursRemaining -= sessionDuration;
+        break;
+      }
+      
+      // If no slot found on this day, try next day
+      if (!foundSlot) {
+        i--; // Try again for this session
+        startDate.setDate(startDate.getDate() + 1); // Try next day
+      }
+    }
+  }
+  
+  return studySessions;
+}
+
+/**
+ * Create a detailed session description
+ */
+function createSessionDescription(event, sessionNumber, totalSessions) {
+  const parts = [];
+  
+  // Add session number
+  parts.push(`Study Session ${sessionNumber} of ${totalSessions}`);
+  
+  // Add main description (truncated if needed)
+  if (event.description) {
+    const maxLength = 100;
+    const desc = event.description.length > maxLength ? 
+      event.description.substring(0, maxLength) + '...' : 
+      event.description;
+    parts.push(desc);
+  }
+  
+  // Add deadline if available
+  if (event.end) {
+    const deadlineStr = event.end.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric'
+    });
+    parts.push(`Due: ${deadlineStr}`);
+  }
+  
+  // Add course info if available
+  if (event.courseCode || event.resource?.courseCode) {
+    parts.push(`Course: ${event.courseCode || event.resource?.courseCode}`);
+  }
+  
+  // Join with line breaks
+  return parts.join('\n');
+}
+
+// Determine if a date is a weekend
+function isWeekend(date) {
+  const day = date.getDay();
+  return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+}
+
+// Get available hours for a day based on preferences and classes
+function getAvailableHours(dayOfWeek, classes, preferences) {
+  const dayClasses = classes.filter(cls => cls.day === dayOfWeek);
+  
+  // Default available hours (8am to 8pm)
+  let availableHours = Array.from({ length: 12 }, (_, i) => i + 8);
+  
+  // Remove hours that have classes
+  dayClasses.forEach(cls => {
+    try {
+      const startHour = parseInt(cls.startTime.split(':')[0], 10);
+      const endHour = parseInt(cls.endTime.split(':')[0], 10);
+      
+      // Remove class hours from available hours
+      availableHours = availableHours.filter(hour => 
+        hour < startHour || hour >= endHour
+      );
+    } catch (e) {
+      console.warn('Error parsing class time:', e);
+    }
+  });
+  
+  return availableHours;
 }
 
 

@@ -10,7 +10,6 @@ import Access from './pages/Access';
 import Schedule from './pages/Schedule';
 import Tracker from './pages/Tracker';
 import Notifications from './pages/Notifications';
-import UniversitySchedule from './pages/UniversitySchedule';
 import Admin from './pages/Admin';
 import Profile from './pages/Profile';
 import Reminders from './pages/Reminders';
@@ -56,11 +55,6 @@ function App() {
                   <Route path="/notifications" element={
                     <ProtectedRoute>
                       <Notifications />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/university-schedule" element={
-                    <ProtectedRoute>
-                      <UniversitySchedule />
                     </ProtectedRoute>
                   } />
                   <Route path="/admin" element={

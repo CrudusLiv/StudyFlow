@@ -9,6 +9,9 @@
   user-select: none;
   position: relative;
   overflow: hidden;
+  /* Default task styling */
+  background-color: var(--calendar-event-bg);
+  color: var(--calendar-event-text);
 }
 
 .task-event::before {
@@ -46,34 +49,6 @@
   border-radius: 3px;
   display: inline-block;
   background: rgba(0, 0, 0, 0.05);
-}
-
-/* Priority styling with variables */
-.priority-high {
-  background-color: var(--priority-high-bg);
-  color: var(--priority-high-text);
-}
-
-.priority-high::before {
-  background-color: var(--priority-high-border);
-}
-
-.priority-medium {
-  background-color: var(--priority-medium-bg);
-  color: var(--priority-medium-text);
-}
-
-.priority-medium::before {
-  background-color: var(--priority-medium-border);
-}
-
-.priority-low {
-  background-color: var(--priority-low-bg);
-  color: var(--priority-low-text);
-}
-
-.priority-low::before {
-  background-color: var(--priority-low-border);
 }
 
 /* Category styling - replace with CSS variables */
@@ -148,24 +123,9 @@
   text-overflow: ellipsis;
 }
 
-/* Replace dark mode media query with .dark class selectors */
+/* Dark mode themes */
 .dark .task-event-course {
   background: rgba(255, 255, 255, 0.1);
-}
-
-.dark .priority-high {
-  background-color: var(--priority-high-bg);
-  color: var(--priority-high-text);
-}
-
-.dark .priority-medium {
-  background-color: var(--priority-medium-bg);
-  color: var(--priority-medium-text);
-}
-
-.dark .priority-low {
-  background-color: var(--priority-low-bg);
-  color: var(--priority-low-text);
 }
 
 .dark .report {

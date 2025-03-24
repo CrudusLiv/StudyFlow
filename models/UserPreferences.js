@@ -7,6 +7,7 @@ const userPreferencesSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  // Study timing preferences
   studyHoursPerDay: {
     type: Number,
     default: 4,
@@ -18,23 +19,14 @@ const userPreferencesSchema = new mongoose.Schema({
     enum: ['morning', 'afternoon', 'evening', 'night'],
     default: ['morning', 'evening']
   },
-  breakDuration: {
-    type: Number,
-    default: 15,
-    min: 5,
-    max: 60
-  },
-  weekendStudy: {
-    type: Boolean,
-    default: true
-  },
   preferredSessionLength: {
     type: Number,
     default: 2,
     min: 0.5,
     max: 4
   },
-  dayStartTime: {
+  // Daily schedule preferences
+  wakeUpTime: {
     type: String,
     default: '08:00',
     validate: {
@@ -44,15 +36,72 @@ const userPreferencesSchema = new mongoose.Schema({
       message: props => `${props.value} is not a valid time format!`
     }
   },
-  dayEndTime: {
+  sleepTime: {
     type: String,
-    default: '22:00',
+    default: '23:00',
     validate: {
       validator: function(v) {
         return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
       },
       message: props => `${props.value} is not a valid time format!`
     }
+  },
+  // Break preferences
+  breakDuration: {
+    type: Number,
+    default: 15,
+    min: 5,
+    max: 60
+  },
+  longBreakDuration: {
+    type: Number,
+    default: 30,
+    min: 15,
+    max: 120
+  },
+  sessionsBeforeLongBreak: {
+    type: Number,
+    default: 4,
+    min: 1,
+    max: 10
+  },
+  // Week preferences
+  weekendStudy: {
+    type: Boolean,
+    default: true
+  },
+  preferredStudyDays: {
+    type: [String],
+    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  },
+  // Focus & productivity preferences
+  focusPeriods: {
+    type: [{
+      startTime: String,
+      endTime: String,
+      days: [String]
+    }],
+    default: []
+  },
+  restPeriods: {
+    type: [{
+      startTime: String,
+      endTime: String,
+      days: [String]
+    }],
+    default: []
+  },
+  // Advanced settings
+  minimumDaysBetweenSessions: {
+    type: Number,
+    default: 1,
+    min: 0,
+    max: 7
+  },
+  preferSpacedRepetition: {
+    type: Boolean,
+    default: true
   },
   createdAt: {
     type: Date,

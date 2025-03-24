@@ -77,30 +77,48 @@ export const scheduleService = {
   /**
    * Process uploaded PDF files and generate a study schedule
    */
-  async processUploadedPDFs(files: File[]) {
+  async processUploadedPDFs(files: File[], options: any = {}) {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       
-      files.forEach(file => {
+      // Add files to form data with assignment tag
+      files.forEach((file, index) => {
         formData.append('files', file);
+        // Add file metadata including document type
+        formData.append(`fileMetadata[${index}]`, JSON.stringify({
+          name: file.name,
+          documentType: file.documentType || 'assignment'
+        }));
       });
 
       // Add user preferences to form data
       try {
-        const preferences = localStorage.getItem('userPreferences');
-        if (preferences) {
-          formData.append('preferences', preferences);
-        }
+        const preferences = options.preferences || 
+                           JSON.parse(localStorage.getItem('userPreferences') || '{}');
+        formData.append('preferences', JSON.stringify(preferences));
       } catch (error) {
         console.warn('Error adding preferences to form data:', error);
       }
       
-      // Also include class schedule data if available
+      // Include class schedule data if available
       try {
         const classSchedule = localStorage.getItem('scheduleRawClasses');
         if (classSchedule) {
           formData.append('classSchedule', classSchedule);
+          
+          // Add class tag information
+          const classes = JSON.parse(classSchedule);
+          classes.forEach((cls: any, index: number) => {
+            if (cls._id) {
+              formData.append(`classMetadata[${index}]`, JSON.stringify({
+                id: cls._id,
+                documentType: 'class',
+                courseCode: cls.courseCode || '',
+                courseName: cls.courseName || ''
+              }));
+            }
+          });
         }
       } catch (error) {
         console.warn('Error adding class schedule to form data:', error);

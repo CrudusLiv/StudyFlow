@@ -202,9 +202,22 @@ const Schedule: React.FC = () => {
 
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
+  const [preferences, setPreferences] = useState({
+    studyHoursPerDay: 4,
+    breakDuration: 15,
+    weekendStudy: true,
+    preferredStudyTimes: ['morning', 'evening'],
+    preferredSessionLength: 2,
+    dayStartTime: '08:00',
+    dayEndTime: '22:00'
+  });
+
+  const [classData, setClassData] = useState([]); // Properly define classData
+
   useEffect(() => {
     fetchScheduleData();
     fetchClassSchedules();
+    loadPreferences();
   }, []);
 
   // Fetch schedule data from the API
@@ -2420,6 +2433,104 @@ const Schedule: React.FC = () => {
       </div>
     );
   };
+
+  const loadPreferences = async () => {
+    try {
+      setPreferencesLoading(true);
+      const userPrefs = await scheduleService.getUserPreferences();
+      
+      if (userPrefs) {
+        setPreferences(prevPrefs => ({
+          ...prevPrefs,
+          ...userPrefs
+        }));
+        // Store preferences for PDF processing
+        localStorage.setItem('userPreferences', JSON.stringify(userPrefs));
+      }
+      
+      setPreferencesError(null);
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+      setPreferencesError('Failed to load your preferences. Using defaults.');
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  const savePreferences = async () => {
+    try {
+      setPreferencesLoading(true);
+      setPreferencesError(null);
+      
+      const savedPrefs = await scheduleService.updateUserPreferences(preferences);
+      
+      if (savedPrefs) {
+        // Update local storage for PDF processing
+        localStorage.setItem('userPreferences', JSON.stringify(savedPrefs));
+      }
+      
+      setPreferencesSuccess('Preferences saved successfully!');
+      setTimeout(() => setPreferencesSuccess(null), 3000);
+      
+      // Re-fetch with new preferences if we have study data
+      if (studyData.length > 0) {
+        processEvents(studyData, classData);
+      }
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      setPreferencesError('Failed to save preferences. Please try again.');
+    } finally {
+      setPreferencesLoading(false);
+    }
+  };
+
+  // Process file drop for PDF upload
+  const onDrop = useCallback(async (acceptedFiles) => {
+    if (acceptedFiles.length === 0) return;
+
+    const validFiles = acceptedFiles.filter(file => 
+      file.type === 'application/pdf' || file.name.endsWith('.pdf')
+    );
+
+    if (validFiles.length === 0) {
+      alert('Please upload PDF files only');
+      return;
+    }
+
+    setLoading(true);
+    
+    try {
+      // Ensure all uploaded files are tagged as assignments
+      const taggedFiles = validFiles.map(file => {
+        // Create a new File object with custom properties
+        const taggedFile = new File([file], file.name, {
+          type: file.type,
+          lastModified: file.lastModified
+        });
+        // Add assignment tag as a non-enumerable property
+        Object.defineProperty(taggedFile, 'documentType', {
+          value: 'assignment',
+          writable: false,
+          enumerable: true
+        });
+        return taggedFile;
+      });
+
+      // Get user preferences to send with the request
+      const userPrefs = localStorage.getItem('userPreferences');
+      const options = userPrefs ? { preferences: JSON.parse(userPrefs) } : {};
+      
+      const studySchedule = await scheduleService.processUploadedPDFs(taggedFiles, options);
+      console.log('Processed study schedule with preferences:', studySchedule);
+      setStudyData(studySchedule);
+      processEvents(studySchedule, classData);
+    } catch (error) {
+      console.error('Error processing PDFs:', error);
+      alert('Error processing PDF files. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [classData, processEvents]);
 
   return (
     <div className="schedule-container">

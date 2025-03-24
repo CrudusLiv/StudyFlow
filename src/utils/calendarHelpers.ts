@@ -127,16 +127,12 @@ export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
       end.setHours(start.getHours() + (task.totalHours || 2));
     }
 
-    // Determine priority based on due date proximity if not specified
-    const priority = task.priority || determinePriority(end);
-
     return {
       id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
       title: task.title,
       start: start,
       end: end,
       description: task.description || '',
-      priority: priority,
       status: task.status || 'pending',
       category: task.category || 'task',
       courseCode: task.courseCode || '',
@@ -155,18 +151,6 @@ export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
 
   console.log('Generated events with better distribution:', events.slice(0, 2));
   return events;
-};
-
-/**
- * Helper function to determine priority based on due date proximity
- */
-const determinePriority = (dueDate: Date): 'high' | 'medium' | 'low' => {
-  const now = new Date();
-  const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-  
-  if (daysUntilDue <= 3) return 'high';
-  if (daysUntilDue <= 7) return 'medium';
-  return 'low';
 };
 
 /**

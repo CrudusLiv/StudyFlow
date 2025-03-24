@@ -6,13 +6,13 @@ interface TaskEventProps {
 }
 
 const TaskEventComponent: React.FC<TaskEventProps> = ({ event }) => {
-  const priorityClass = event.priority ? `priority-${event.priority}` : '';
+  // Remove priority class references
   const categoryClass = event.category || '';
   const isClassEvent = event.category === 'class';
   const courseCode = event.courseCode || event.resource?.courseCode;
 
   return (
-    <div className={`task-event ${priorityClass} ${categoryClass}`}>
+    <div className={`task-event ${categoryClass}`}>
       <div className="task-event-title">
         {isClassEvent && courseCode ? `${courseCode} - ` : ''}{event.title}
       </div>

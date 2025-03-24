@@ -45,7 +45,7 @@
     --calendar-grid-bg: #1f2937;
     --calendar-time-text: #9ca3af;
     
-    /* Task priority colors */
+    /* Task priority colors - keep these for backward compatibility but they won't be used */
     --priority-high-bg: rgba(239, 68, 68, 0.2);
     --priority-high-bg-rgb: 239, 68, 68;
     --priority-high-text: #fca5a5;

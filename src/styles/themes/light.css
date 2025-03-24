@@ -47,7 +47,7 @@
     /* Enhanced calendar variables with RGB values for gradients */
     --calendar-event-bg-rgb: 79, 70, 229;
     
-    /* Task priority colors */
+    /* Task priority colors - keep these for backward compatibility but they won't be used */
     --priority-high-bg: #fee2e2;
     --priority-high-text: #b91c1c;
     --priority-high-border: #ef4444;

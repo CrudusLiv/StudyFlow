@@ -1,6 +1,6 @@
 import React from 'react';
 import { CalendarEvent } from '../types/types';
-import { FiClock, FiCalendar, FiBook, FiFlag, FiTag, FiInfo, FiMapPin } from 'react-icons/fi';
+import { FiClock, FiCalendar, FiBook, FiTag, FiInfo, FiMapPin } from 'react-icons/fi';
 
 interface TaskModalProps {
   task: CalendarEvent;
@@ -83,14 +83,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
             </div>
           )}
 
-          {!isClassEvent && task?.priority && (
-            <div className="task-detail-item">
-              <FiFlag className="detail-icon" />
-              <div>
-                <strong>Priority:</strong> {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-              </div>
-            </div>
-          )}
+          {/* Remove priority section */}
 
           {(task?.courseCode || task?.resource?.courseCode) && (
             <div className="task-detail-item">

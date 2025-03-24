@@ -1,6 +1,8 @@
 /* Core layout */
 .schedule-container {
-  padding: 2rem;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
   min-height: 100vh;
   background: var(--background);
 }
@@ -10,11 +12,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 20px;
   background: var(--card);
   padding: 1.5rem;
   border-radius: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 2rem;
+}
+
+.schedule-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--foreground);
 }
 
 .header-left {

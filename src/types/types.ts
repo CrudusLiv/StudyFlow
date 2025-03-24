@@ -40,7 +40,6 @@ export interface CalendarEvent {
       [key: string]: any;
     };
   };
-  priority?: 'high' | 'medium' | 'low';
   status?: 'pending' | 'in-progress' | 'completed';
   category?: string;
   location?: string;
@@ -58,7 +57,6 @@ export interface ScheduleTask {
   dueDate?: string;
   assignmentTitle?: string;
   courseCode?: string;
-  priority?: 'high' | 'medium' | 'low';
   status: 'pending' | 'in-progress' | 'completed';
   category?: string;
   pdfReference?: {

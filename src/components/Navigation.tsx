@@ -35,11 +35,6 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
       icon: <AiOutlineCalendar size={22} />,
       label: 'Study Schedule'
     },
-    {
-      path: ROUTES.UNIVERSITY_SCHEDULE,
-      icon: <AiOutlineSchedule size={22} />,
-      label: 'University Schedule'
-    },
    {
       path: ROUTES.REMINDERS,
       icon: <AiOutlineBell size={22}/>,
