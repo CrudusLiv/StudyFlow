@@ -4,13 +4,14 @@ import moment from 'moment';
 import axios from 'axios';
 import {
   FiCalendar,
-  FiUpload,
   FiSettings,
-  FiX,
-  FiPlusCircle,
+  // FiUpload,
+ 
+  // FiX,
+  // FiPlusCircle,
   FiClock,
   FiMapPin,
-  FiUser,
+  // FiUser,
   FiCode,
   FiBook,
   FiGrid,
@@ -21,7 +22,7 @@ import {
   FiAlertCircle
 } from 'react-icons/fi';
 
-import { WeeklySchedule, DaySchedule, CalendarEvent } from '../types/types';
+import { WeeklySchedule, CalendarEvent } from '../types/types';
 import '../styles/pages/Schedule.css';
 import { tasksToEvents, classesToEvents } from '../utils/calendarHelpers';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
