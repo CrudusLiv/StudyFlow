@@ -2603,6 +2603,15 @@ input:checked + .toggle-label:before {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
+.schedule-title {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(45deg, #4338ca, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
 
 .view-selector {
   display: flex;

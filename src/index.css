@@ -144,19 +144,19 @@ button,
   padding: 0.75rem 1.5rem;
   border: 1px solid var(--border);
   border-radius: var(--base-radius);
-  /* background-color: var(--primary);  */
+  background-color: var(--primary);
   color: var(--primary-foreground);
   cursor: pointer;
   transition: background-color 0.25s, border-color 0.25s;
   font-weight: 600;
 }
 
-/* button:hover,
+button:hover,
 .button:hover,
 [role="button"]:hover {
   background-color: var(--secondary);
   border-color: var(--secondary);
-} */
+}
 
 /* Form element styling */
 input,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BsGoogle, BsMicrosoft } from 'react-icons/bs';
+import { BsMicrosoft } from 'react-icons/bs';
 import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -81,7 +81,6 @@ export function AuthForm() {
                 onClick={handleGoogleAuth}
                 className="auth-button google-button"
               >
-                <BsGoogle />
                 Sign in with Google
               </button>
 

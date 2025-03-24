@@ -4,19 +4,10 @@ import moment from 'moment';
 import axios from 'axios';
 import {
   FiCalendar,
+  FiUpload,
   FiSettings,
-<<<<<<< Updated upstream
-  // FiUpload,
- 
-  // FiX,
-  // FiPlusCircle,
   FiClock,
   FiMapPin,
-  // FiUser,
-=======
-  FiClock,
-  FiMapPin,
->>>>>>> Stashed changes
   FiCode,
   FiBook,
   FiGrid,
@@ -29,11 +20,7 @@ import {
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-<<<<<<< Updated upstream
-import { WeeklySchedule, CalendarEvent } from '../types/types';
-=======
 import { WeeklySchedule, DaySchedule, CalendarEvent, ClassData } from '../types/types';
->>>>>>> Stashed changes
 import '../styles/pages/Schedule.css';
 import { tasksToEvents, classesToEvents } from '../utils/calendarHelpers';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
