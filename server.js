@@ -27,11 +27,17 @@ import User from './models/User.js';
 import TaskSchedule from './models/TaskSchedule.js';
 import ClassSchedule from './models/ClassSchedule.js';
 
+// Import routes
+import authRoutes from './routes/authRoutes.js';
+import userRoutes from './routes/userRoutes.js';
+import scheduleRoutes from './routes/scheduleRoutes.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const DEFAULT_PORT = 5000;
+const PORT = process.env.PORT || DEFAULT_PORT;
 const JWT_SECRET = process.env.JWT_SECRET || 'default_jwt_secret';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -41,6 +47,19 @@ const client = new Mistral({
   timeout: 30000, // 30 second timeout
   maxRetries: 3   // Allow 3 retries
 });
+
+// Ensure JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  const fallbackSecret = 'default_secret_for_development';
+  console.warn(`⚠️ JWT_SECRET not set in environment! Using fallback secret. This is NOT secure for production.`);
+  process.env.JWT_SECRET = fallbackSecret;
+}
+
+// Verify JWT_SECRET is set
+if (!process.env.JWT_SECRET) {
+  console.error('JWT_SECRET environment variable is not set! Using a fallback for development.');
+  process.env.JWT_SECRET = 'development_fallback_secret_do_not_use_in_production';
+}
 
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
@@ -1493,6 +1512,84 @@ app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) =
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Apply routes
+app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
+app.use('/api/schedule', scheduleRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err);
+  
+  // Check if response has already been sent
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  // Send appropriate error response
+  res.status(500).json({
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// Try to start the server with error handling for port conflicts
+const startServer = (port) => {
+  try {
+    const server = app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
+    });
+    
+    server.on('error', (e) => {
+      if (e.code === 'EADDRINUSE') {
+        console.log(`Port ${port} is busy, trying port ${port + 1}...`);
+        startServer(port + 1);
+      } else {
+        console.error('Server error:', e);
+      }
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+// Start the server with the configured port
+startServer(PORT);
+
+// Debug route to check JWT secret
+app.get('/api/debug/config', (req, res) => {
+  console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
+  res.json({ 
+    jwtSecretExists: !!process.env.JWT_SECRET,
+    mongodbConnected: mongoose.connection.readyState === 1,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Improved Error Handling Middleware
+app.use((err, req, res, next) => {
+  console.error('Server Error:', err);
+  
+  // Check if headers already sent
+  if (res.headersSent) {
+    return next(err);
+  }
+  
+  // Custom error handling with helpful details
+  const statusCode = err.statusCode || 500;
+  const message = err.message || 'Internal server error';
+  
+  // Include stack trace in development
+  const errorResponse = {
+    error: message,
+    statusCode,
+    path: req.path
+  };
+  
+  if (process.env.NODE_ENV !== 'production') {
+    errorResponse.stack = err.stack;
+  }
+  
+  res.status(statusCode).json(errorResponse);
 });

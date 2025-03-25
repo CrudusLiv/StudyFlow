@@ -1,59 +1,60 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
-  AiOutlineHome,
-  AiOutlineCalendar,
-  AiOutlineLineChart,
-  AiOutlineSchedule,
-  AiOutlineBell,
-  AiOutlineUser
-} from 'react-icons/ai';
-import { BsGear } from 'react-icons/bs';
-import { FiSun, FiMoon } from 'react-icons/fi';
+  FiHome,
+  FiCalendar,
+  FiBook,
+  FiClock,
+  FiUser,
+  FiLogOut,
+  FiSun,
+  FiMoon
+} from 'react-icons/fi';
 import { ROUTES } from '../lib/routes';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/components/Navigation.css';
 
 interface NavigationProps {
   isOpen: boolean;
   onClose: () => void;
-  isLoggedIn: boolean;
-  userRole: string;
 }
 
-const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) => {
+const Navigation = ({ isOpen, onClose }: NavigationProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const navigationItems = [
     {
       path: ROUTES.HOME,
-      icon: <AiOutlineHome size={22} />,
+      icon: <FiHome size={22} />,
       label: 'Home'
     },
     {
       path: ROUTES.SCHEDULE,
-      icon: <AiOutlineCalendar size={22} />,
+      icon: <FiCalendar size={22} />,
       label: 'Study Schedule'
     },
-   {
+    {
       path: ROUTES.REMINDERS,
-      icon: <AiOutlineBell size={22}/>,
+      icon: <FiClock size={22} />,
       label: 'Reminders'
     },
-   {
+    {
       path: ROUTES.TRACKER,
-      icon: <AiOutlineLineChart size={22}/>,
+      icon: <FiBook size={22} />,
       label: 'Progress Tracker'
     },
-   {
+    {
       path: ROUTES.PROFILE,
-      icon: <AiOutlineUser size={22}/>,
+      icon: <FiUser size={22} />,
       label: 'Profile'
     },
-    ...(userRole === 'admin' ? [
-     {
+    ...(user?.role === 'admin' ? [
+      {
         path: ROUTES.ADMIN,
-        icon: <BsGear size={22}/>,
+        icon: <FiLogOut size={22} />,
         label: 'Admin Dashboard'
       }
     ] : [])
@@ -83,12 +84,13 @@ const Navigation = ({ isOpen, onClose, isLoggedIn, userRole }: NavigationProps) 
         <button
           onClick={toggleTheme}
           className="theme-toggle"
-          aria-label="Toggle theme"
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
         >
-          {theme === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
+          {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
         </button>
       </nav>
     </>
   );
 };
+
 export default Navigation;

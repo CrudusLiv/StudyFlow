@@ -115,9 +115,17 @@ const userPreferencesSchema = new mongoose.Schema({
 
 // Update the updatedAt field on save
 userPreferencesSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
+  try {
+    this.updatedAt = new Date();
+    next();
+  } catch (error) {
+    console.error('Error in UserPreferences pre-save hook:', error);
+    next(error);
+  }
 });
+
+// Add an index for faster lookups
+userPreferencesSchema.index({ userId: 1 }, { unique: true });
 
 const UserPreferences = mongoose.model('UserPreferences', userPreferencesSchema);
 export default UserPreferences;

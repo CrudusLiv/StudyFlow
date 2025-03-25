@@ -14,8 +14,8 @@ import {
   FiList,
   FiFile,
   FiAlertCircle,
-  FiInfo,  // Add this import
-  FiCheck   // Add this import if not already present
+  FiInfo,  
+  FiCheck  
 } from 'react-icons/fi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -28,6 +28,7 @@ import TaskModal from '../components/TaskModal';
 import ClassModal from '../components/ClassModal';
 import { scheduleService } from '../services/scheduleService';
 import DebugCalendar from '../components/DebugCalendar';
+import PreferencesPanel from '../components/PreferencesPanel';                
 
 // Set up the moment localizer properly
 const localizer = momentLocalizer(moment);
@@ -204,15 +205,26 @@ const Schedule: React.FC = () => {
 
   const [preferences, setPreferences] = useState({
     studyHoursPerDay: 4,
-    breakDuration: 15,
-    weekendStudy: true,
     preferredStudyTimes: ['morning', 'evening'],
+    breakDuration: 15,
+    longBreakDuration: 30,
+    sessionsBeforeLongBreak: 4,
+    weekendStudy: true,
     preferredSessionLength: 2,
-    dayStartTime: '08:00',
-    dayEndTime: '22:00'
+    wakeUpTime: '08:00',
+    sleepTime: '23:00',
+    preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+    minimumDaysBetweenSessions: 1,
+    preferSpacedRepetition: true
   });
 
   const [classData, setClassData] = useState([]); // Properly define classData
+
+  const [preferencesLoading, setPreferencesLoading] = useState(false);
+  const [preferencesError, setPreferencesError] = useState(null);
+  const [preferencesSuccess, setPreferencesSuccess] = useState(null);
+
+  const [showPreferences, setShowPreferences] = useState(false);
 
   useEffect(() => {
     fetchScheduleData();
@@ -2146,8 +2158,6 @@ const Schedule: React.FC = () => {
   const GridView = () => {
     const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
-      const hour = i + 8; // Start from 8 AM
-      return `${hour.toString().padStart(2, '0')}:00`;
     });
 
     return (
@@ -2440,49 +2450,51 @@ const Schedule: React.FC = () => {
       const userPrefs = await scheduleService.getUserPreferences();
       
       if (userPrefs) {
+        console.log('Loaded preferences:', userPrefs);
         setPreferences(prevPrefs => ({
           ...prevPrefs,
           ...userPrefs
         }));
-        // Store preferences for PDF processing
-        localStorage.setItem('userPreferences', JSON.stringify(userPrefs));
       }
       
       setPreferencesError(null);
     } catch (error) {
       console.error('Error loading preferences:', error);
-      setPreferencesError('Failed to load your preferences. Using defaults.');
+      // Don't show error to user since we're using defaults
+      // Just log it for debugging purposes
     } finally {
       setPreferencesLoading(false);
     }
   };
 
-  const savePreferences = async () => {
+  // Save preferences to server
+const savePreferences = async () => {
+  try {
+    setPreferencesLoading(true);
+    setPreferencesError(null);
+    
+    console.log('Saving preferences:', preferences);
+    
     try {
-      setPreferencesLoading(true);
-      setPreferencesError(null);
-      
+      // This will now always return preferences (either from server or local)
       const savedPrefs = await scheduleService.updateUserPreferences(preferences);
       
-      if (savedPrefs) {
-        // Update local storage for PDF processing
-        localStorage.setItem('userPreferences', JSON.stringify(savedPrefs));
-      }
-      
+      // Success message - even if we only saved locally
       setPreferencesSuccess('Preferences saved successfully!');
       setTimeout(() => setPreferencesSuccess(null), 3000);
       
-      // Re-fetch with new preferences if we have study data
+      // Re-fetch with new preferences if needed
       if (studyData.length > 0) {
         processEvents(studyData, classData);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving preferences:', error);
-      setPreferencesError('Failed to save preferences. Please try again.');
-    } finally {
-      setPreferencesLoading(false);
+      setPreferencesError('Could not save preferences to server. Your preferences are still saved locally.');
     }
-  };
+  } finally {
+    setPreferencesLoading(false);
+  }
+};
 
   // Process file drop for PDF upload
   const onDrop = useCallback(async (acceptedFiles) => {
@@ -2577,7 +2589,7 @@ const Schedule: React.FC = () => {
           </div>
           <button
             className="settings-button"
-            onClick={() => setShowPreferencesModal(true)}
+            onClick={() => setShowPreferences(true)}
           >
             <FiSettings className="button-icon" />
             Preferences
@@ -2730,7 +2742,19 @@ const Schedule: React.FC = () => {
       {showAddClassModal && renderAddClassModal()}
 
       {/* Preferences Modal */}
-      {showPreferencesModal && renderPreferencesModal()}
+      {showPreferences && (
+        <div className="modal-overlay">
+          <PreferencesPanel
+            onClose={() => setShowPreferences(false)}
+            preferences={preferences}
+            setPreferences={setPreferences}
+            onSave={savePreferences}
+            loading={preferencesLoading}
+            error={preferencesError}
+            success={preferencesSuccess}
+          />
+        </div>
+      )}
 
       {renderUploadModal()}
       {showDebugCalendar && <DebugCalendar />}

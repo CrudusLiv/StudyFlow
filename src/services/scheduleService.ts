@@ -150,32 +150,72 @@ export const scheduleService = {
   async getUserPreferences() {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.warn('No authentication token found');
+        return this.getDefaultPreferences();
+      }
+
+      console.log('Fetching user preferences from:', `${BASE_URL}/preferences`);
       const response = await axios.get(`${BASE_URL}/preferences`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      console.log('Preferences response:', response.data);
       if (response.data && response.data.preferences) {
         // Cache preferences
         localStorage.setItem('userPreferences', JSON.stringify(response.data.preferences));
         return response.data.preferences;
       }
       
-      return null;
+      return this.getDefaultPreferences();
     } catch (error) {
       console.error('Error fetching user preferences:', error);
       
-      // Try to get from localStorage if API fails
-      try {
-        const cachedPreferences = localStorage.getItem('userPreferences');
-        if (cachedPreferences) {
-          return JSON.parse(cachedPreferences);
-        }
-      } catch (e) {
-        console.warn('Error reading cached preferences:', e);
+      // Get cached preferences if available
+      const cachedPrefs = this.getCachedPreferences();
+      if (cachedPrefs) {
+        return cachedPrefs;
       }
       
-      return null;
+      // Return default preferences as fallback
+      return this.getDefaultPreferences();
     }
+  },
+
+  // Helper to get cached preferences
+  getCachedPreferences() {
+    try {
+      const cachedPreferences = localStorage.getItem('userPreferences');
+      if (cachedPreferences) {
+        console.log('Using cached preferences');
+        return JSON.parse(cachedPreferences);
+      }
+    } catch (e) {
+      console.warn('Error reading cached preferences:', e);
+    }
+    return null;
+  },
+
+  // Helper to get default preferences
+  getDefaultPreferences() {
+    const defaultPrefs = {
+      studyHoursPerDay: 4,
+      preferredStudyTimes: ['morning', 'evening'],
+      breakDuration: 15,
+      longBreakDuration: 30,
+      sessionsBeforeLongBreak: 4,
+      weekendStudy: true,
+      preferredSessionLength: 2,
+      wakeUpTime: '08:00',
+      sleepTime: '23:00',
+      preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    };
+    
+    // Save default preferences to localStorage
+    localStorage.setItem('userPreferences', JSON.stringify(defaultPrefs));
+    console.log('Using default preferences');
+    
+    return defaultPrefs;
   },
 
   /**
@@ -184,23 +224,56 @@ export const scheduleService = {
   async updateUserPreferences(preferences: any) {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(`${BASE_URL}/preferences`, preferences, {
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+      
+      // Always store preferences locally first as a backup
+      localStorage.setItem('userPreferences', JSON.stringify(preferences));
+      console.log('Preferences saved locally as backup');
+      
+      // If no token, just return the locally saved preferences
+      if (!token) {
+        console.warn('No authentication token found, saving preferences locally only');
+        return preferences;
+      }
+
+      console.log('Updating preferences on server:', preferences);
+      
+      // Make a shallow copy to avoid modifying the original object
+      const preferencesToSend = { ...preferences };
+      
+      // Remove any undefined or null values
+      Object.keys(preferencesToSend).forEach(key => {
+        if (preferencesToSend[key] === undefined || preferencesToSend[key] === null) {
+          delete preferencesToSend[key];
         }
       });
-      
-      if (response.data && response.data.preferences) {
-        // Update cached preferences
-        localStorage.setItem('userPreferences', JSON.stringify(response.data.preferences));
-        return response.data.preferences;
+
+      try {
+        const response = await axios.post(`${BASE_URL}/preferences`, preferencesToSend, {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        console.log('Preferences updated on server successfully');
+        if (response.data && response.data.preferences) {
+          return response.data.preferences;
+        }
+        
+        // If server doesn't return preferences, return the local ones
+        return preferences;
+      } catch (err: any) {
+        // Handle auth errors gracefully
+        console.error('Error updating preferences on server:', err.response?.data?.error || err.message);
+        console.log('Using locally saved preferences instead');
+        
+        // Return locally saved preferences instead of throwing error
+        return preferences;
       }
-      
-      return null;
     } catch (error) {
-      console.error('Error updating user preferences:', error);
-      throw error;
+      console.error('Error in updateUserPreferences:', error);
+      // Return local preferences as fallback
+      return preferences;
     }
   }
 };
