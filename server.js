@@ -238,6 +238,25 @@ const assignmentSchema = new mongoose.Schema({
 
 const Assignment = mongoose.model('Assignment', assignmentSchema);
 
+// Add new schema for AI-generated schedule
+app.get('/api/admin/analytics', async (req, res) => {
+  try {
+    const users = await User.find();
+    const userCount = users.length;
+    const userData = users.map(user => ({
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+    }));
+    res.json({ userCount, userData });
+  }catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
 // Add Reminder schema after Assignment schema
 const reminderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
