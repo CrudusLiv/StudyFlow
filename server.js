@@ -23,14 +23,18 @@ import { tokenToString } from 'typescript';
 import { processDocuments } from './utils/pdfProcessor.js';
 import { processPDF } from './utils/pdfProcessor.js';
 import { extractAssignments, extractDates, generateSchedule } from './utils/textProcessing.js';
+import { sanitizePdfData, validatePdfDocumentData } from './utils/pdfDataHandler.js';
 import User from './models/User.js';
 import TaskSchedule from './models/TaskSchedule.js';
 import ClassSchedule from './models/ClassSchedule.js';
+import UserPreferences from './models/UserPreferences.js';
+import PDFDocument from './models/PDFDocument.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
+import pdfRoutes from './routes/pdfRoutes.js'; // Add this line
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -496,7 +500,7 @@ app.get('/auth/google/callback',
           userId: user._id,
           userKey: user.uniqueKey,
           email: user.email,
-          role: user.role
+          role: user.role || 'user'
         },
         JWT_SECRET,
         { expiresIn: '1h' }
@@ -507,7 +511,7 @@ app.get('/auth/google/callback',
       redirectUrl.pathname = '/access'; // explicitly set the path
       redirectUrl.searchParams.set('token', token);
       redirectUrl.searchParams.set('userKey', user.uniqueKey);
-      redirectUrl.searchParams.set('userRole', user.role);
+      redirectUrl.searchParams.set('userRole', user.role || 'user');
 
       console.log('Redirecting to:', redirectUrl.toString());
       res.redirect(redirectUrl.toString());
@@ -836,71 +840,118 @@ app.post('/ai/read-pdf', /* authenticateJWT, */ upload.single('pdf'), async (req
   }
 });
 
-// AI schedule generation route using memoryStorage
+// Update the generate schedule route to fix PDF document handling
 app.post('/ai/generate-schedule', authenticateJWT, upload.array('pdfFiles'), async (req, res) => {
   try {
+    // Process PDF files
+    const userId = req.user.id;
+    
+    // Check if we have files to process
     if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: 'No PDF files provided' });
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No PDF files uploaded' 
+      });
     }
-
-    // Process each PDF file
-    const processPromises = req.files.map(async (file) => {
-      try {
-        console.log('Processing PDF file:', file.originalname);
-        const data = await pdfParse(file.buffer);
-        const extractedData = await processPDF(file.buffer);
-        return {
-          text: data.text,
-          structuredContent: extractedData
-        };
-      } catch (error) {
-        console.error(`Error processing PDF ${file.originalname}:`, error);
-        return null;
-      }
-    });
-
-    const results = await Promise.all(processPromises);
-    const validResults = results.filter(result => result !== null);
-
-    if (validResults.length === 0) {
-      return res.status(400).json({ error: 'Could not process any PDF files' });
-    }
-
-    // Combine all extracted content
-    const combinedContent = {
-      assignments: [],
-      dates: [],
-      metadata: {}
-    };
-
-    validResults.forEach(result => {
-      if (result.structuredContent) {
-        combinedContent.assignments.push(...(result.structuredContent.assignments || []));
-        combinedContent.dates.push(...(result.structuredContent.dates || []));
-        // Merge metadata if available
-        if (result.structuredContent.syllabus) {
-          combinedContent.metadata = {
-            ...combinedContent.metadata,
-            courseCode: result.structuredContent.syllabus.courseCode || '',
-            courseTitle: result.structuredContent.syllabus.courseTitle || '',
-            semester: result.structuredContent.syllabus.semester || ''
-          };
+    
+    console.log(`Processing ${req.files.length} PDFs for schedule generation`);
+    
+    // Generate schedule using the files
+    try {
+      // Process each file
+      const processedFiles = [];
+      for (const file of req.files) {
+        try {
+          const result = await processPDF(file.buffer);
+          processedFiles.push({
+            fileName: file.originalname,
+            data: result
+          });
+        } catch (fileError) {
+          console.error(`Error processing ${file.originalname}:`, fileError);
         }
       }
-    });
+      
+      if (processedFiles.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to process any of the uploaded files',
+          schedule: []
+        });
+      }
+      
+      // Extract assignment data from processed files
+      const allAssignments = [];
+      const allDates = [];
+      
+      processedFiles.forEach(file => {
+        if (file.data.assignments && Array.isArray(file.data.assignments)) {
+          allAssignments.push(...file.data.assignments);
+        }
+        
+        if (file.data.dates && Array.isArray(file.data.dates)) {
+          allDates.push(...file.data.dates);
+        }
+      });
+      
+      // Generate schedule
+      const metadata = {
+        courseCode: processedFiles[0]?.data.courseCode || '',
+        instructor: processedFiles[0]?.data.instructor || '',
+        semester: processedFiles[0]?.data.semester || ''
+      };
+      
+      // Call the schedule generation function
+      const schedule = generateSchedule(allAssignments, allDates, userId, metadata);
+      
+      // Check if schedule was created successfully
+      if (!schedule || schedule.length === 0) {
+        return res.json({
+          success: false,
+          message: 'No schedulable assignments found in documents. Check if due dates are valid.',
+          schedule: []
+        });
+      }
+      
+      // Save generated schedule to associated PDF documents
+      const fileNames = req.files.map(file => file.originalname);
+      const documents = await PDFDocument.find({
+        userId: req.user.id,
+        originalName: { $in: fileNames }
+      });
+      
+      // Update each document with proper error handling
+      for (const doc of documents) {
+        try {
+          doc.generatedSchedule = schedule;
+          await doc.save();
+        } catch (saveError) {
+          console.error('Error saving schedule to document:', doc.title, saveError);
+        }
+      }
 
-    // Generate schedule using the textProcessing utility
-    const schedule = generateSchedule(
-      combinedContent.assignments,
-      combinedContent.dates,
-      req.user.userId,
-      combinedContent.metadata
-    );
-
-    res.json(schedule);
+      return res.json({ 
+        success: true, 
+        schedule,
+        message: `Successfully generated schedule with ${schedule.length} items`
+      });
+    } catch (scheduleError) {
+      console.error('Error generating schedule:', scheduleError);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to generate schedule',
+        details: scheduleError.message,
+        schedule: []
+      });
+    }
   } catch (error) {
-    console.error('Error generating schedule:', error);
-    res.status(500).json({ error: 'Failed to generate schedule' });
+    console.error('Error in schedule generation endpoint:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      schedule: []
+    });
   }
 });
 
@@ -1403,7 +1454,7 @@ app.delete('/api/user/profile-picture', authenticateJWT, async (req, res) => {
 // Serve uploaded files statically
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
-// Add PDF parsing endpoint
+// Update the PDF parsing endpoint
 app.post('/api/parse-pdf', 
   authenticateJWT, 
   upload.single('file'), 
@@ -1416,10 +1467,44 @@ app.post('/api/parse-pdf',
       console.log('Processing PDF file:', req.file.originalname);
       const result = await processPDF(req.file.buffer);
       
-      res.json({
-        message: 'PDF processed successfully',
-        data: result
-      });
+      // Ensure we have a valid user ID
+      const userId = req.user.id || req.user.userId;
+      if (!userId) {
+        return res.status(400).json({ error: 'User ID not found in token' });
+      }
+      
+      // Create a filename if one doesn't exist
+      const fileName = req.file.filename || `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
+      
+      // Sanitize the extracted data for database storage
+      const sanitizedData = sanitizePdfData(result);
+      
+      try {
+        // Create a new PDF document with proper structure
+        const pdfDocument = new PDFDocument({
+          userId,
+          title: req.file.originalname,
+          fileName,
+          originalName: req.file.originalname,
+          extractedData: sanitizedData
+        });
+
+        await pdfDocument.save();
+        
+        res.json({
+          message: 'PDF processed successfully',
+          data: result,
+          documentId: pdfDocument._id
+        });
+      } catch (dbError) {
+        console.error('Error saving PDF document to database:', dbError);
+        // Still return the processed data even if DB save fails
+        res.json({
+          message: 'PDF processed but not saved to database',
+          data: result,
+          error: dbError.message
+        });
+      }
     } catch (error) {
       console.error('PDF processing error:', error);
       res.status(500).json({
@@ -1427,6 +1512,36 @@ app.post('/api/parse-pdf',
         details: error.message
       });
     }
+});
+
+// Add route to fetch all PDF documents for the current user
+app.get('/api/pdf-documents', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documents = await PDFDocument.find({ userId }).sort({ createdAt: -1 });
+    res.json(documents);
+  } catch (error) {
+    console.error('Error fetching PDF documents:', error);
+    res.status(500).json({ error: 'Failed to fetch PDF documents' });
+  }
+});
+
+// Add route to fetch a specific PDF document
+app.get('/api/pdf-documents/:id', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    const document = await PDFDocument.findOne({ _id: documentId, userId });
+
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.json(document);
+  } catch (error) {
+    console.error('Error fetching PDF document:', error);
+    res.status(500).json({ error: 'Failed to fetch PDF document' });
+  }
 });
 
 // Class schedule routes
@@ -1485,7 +1600,7 @@ app.get('/api/schedule/classes', authenticateJWT, async (req, res) => {
     
     const classes = await ClassSchedule.find({ userId });
     console.log('Found classes:', classes);
-
+    
     res.json(classes);
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -1533,8 +1648,9 @@ app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) =
 
 // Apply routes
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/schedule', scheduleRoutes);
+app.use('/api', pdfRoutes); // Add this line to include PDF routes
 
 // Error handling middleware
 app.use((err, req, res, next) => {

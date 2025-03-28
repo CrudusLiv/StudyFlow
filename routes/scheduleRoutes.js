@@ -5,6 +5,7 @@ import fs from 'fs';
 import { processDocuments } from '../utils/pdfProcessor.js';
 import ClassSchedule from '../models/ClassSchedule.js';
 import UserPreferences from '../models/UserPreferences.js';
+import PDFDocument from '../models/PDFDocument.js';
 import { validateToken } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -31,6 +32,8 @@ router.get('/classes', async (req, res) => {
   try {
     const userId = req.user.id;
     const classes = await ClassSchedule.find({ userId });
+    
+    // Ensure we're sending the data directly as an array
     res.status(200).json(classes);
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -59,6 +62,58 @@ router.post('/classes', async (req, res) => {
   }
 });
 
+// Get all PDF documents for the current user
+router.get('/pdf-documents', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documents = await PDFDocument.find({ userId }).sort({ createdAt: -1 });
+    res.status(200).json(documents);
+  } catch (error) {
+    console.error('Error fetching PDF documents:', error);
+    res.status(500).json({ error: 'Error fetching PDF documents' });
+  }
+});
+
+// Get a specific PDF document
+router.get('/pdf-documents/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    
+    const document = await PDFDocument.findOne({ _id: documentId, userId });
+    
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    res.status(200).json(document);
+  } catch (error) {
+    console.error('Error fetching PDF document:', error);
+    res.status(500).json({ error: 'Error fetching PDF document' });
+  }
+});
+
+// Delete a PDF document
+router.delete('/pdf-documents/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    
+    const document = await PDFDocument.findOne({ _id: documentId, userId });
+    
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    await document.remove();
+    
+    res.status(200).json({ message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting PDF document:', error);
+    res.status(500).json({ error: 'Error deleting PDF document' });
+  }
+});
+
 // Process PDF files and generate a study schedule
 router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
   try {
@@ -69,87 +124,102 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
     
-    // Get file paths of uploaded files
+    console.log(`Processing ${files.length} PDFs for user ${userId}`, {
+      fileNames: files.map(f => f.originalname),
+      fileSizes: files.map(f => f.size)
+    });
+    
+    // Extract file paths - all files are now treated as assignments by default
     const filePaths = files.map(file => file.path);
+    const fileMetadata = files.map(file => ({
+      filePath: file.path,
+      name: file.originalname,
+      documentType: 'assignment'
+    }));
     
-    // Parse file metadata to tag assignments
-    const fileMetadata = {};
-    if (req.body.fileMetadata) {
-      try {
-        // Handle multiple fileMetadata entries
-        if (Array.isArray(req.body.fileMetadata)) {
-          req.body.fileMetadata.forEach((meta, index) => {
-            const parsedMeta = JSON.parse(meta);
-            fileMetadata[index] = parsedMeta;
-          });
-        } else {
-          // Handle single fileMetadata object
-          const metaArray = JSON.parse(req.body.fileMetadata);
-          metaArray.forEach((meta, index) => {
-            fileMetadata[index] = meta;
-          });
-        }
-      } catch (e) {
-        console.warn('Error parsing file metadata:', e);
-      }
-    }
-    
-    // Get user preferences
+    // Process user preferences for cognitive optimization
     let userPreferences = {};
     if (req.body.preferences) {
       try {
         userPreferences = JSON.parse(req.body.preferences);
+        console.log('Using provided user preferences');
       } catch (e) {
-        console.warn('Error parsing preferences:', e);
+        console.error('Error parsing preferences:', e);
+        console.log('Using default preferences');
       }
     } else {
-      // Try to get user preferences from database
-      try {
-        const userPrefs = await UserPreferences.findOne({ userId });
-        if (userPrefs) {
-          userPreferences = userPrefs.toObject();
-        }
-      } catch (e) {
-        console.warn('Error getting user preferences from database:', e);
-      }
+      console.log('No preferences provided, using defaults');
     }
     
-    // Get class schedule
+    // Get class schedule with proper class tagging
     let classSchedule = [];
     if (req.body.classSchedule) {
       try {
         classSchedule = JSON.parse(req.body.classSchedule);
+        console.log('Using provided class schedule');
       } catch (e) {
-        console.warn('Error parsing class schedule:', e);
+        console.error('Error parsing class schedule:', e);
       }
     } else {
-      // Try to get class schedule from database
+      console.log('No class schedule provided');
+    }
+    
+    // Tag each class entry with class type
+    const taggedClassSchedule = classSchedule.map(cls => ({
+      ...cls,
+      documentType: 'class'
+    }));
+
+    // Process the documents with all metadata
+    const options = {
+      preferences: {
+        ...userPreferences,
+        enableCognitiveOptimization: true
+      },
+      classSchedule: taggedClassSchedule,
+      fileMetadata: fileMetadata,
+      documentType: 'assignment'
+    };
+    
+    console.log(`Starting processDocuments with ${filePaths.length} files`);
+    const studySchedule = await processDocuments(filePaths, userId, options);
+    console.log(`processDocuments completed - generated ${studySchedule.length} schedule items`);
+    
+    // After processing and generating a schedule, save to database
+    if (studySchedule && studySchedule.length > 0) {
       try {
-        const classes = await ClassSchedule.find({ userId });
-        if (classes && classes.length > 0) {
-          classSchedule = classes.map(cls => cls.toObject());
+        // Save processed PDFs to database
+        for (let i = 0; i < files.length; i++) {
+          const pdfDoc = new PDFDocument({
+            userId,
+            title: fileMetadata[i].name.replace(/\.[^/.]+$/, ""), // Remove file extension
+            fileName: fileMetadata[i].name,
+            originalName: fileMetadata[i].name,
+            // Add extracted data and generated schedule
+            extractedData: {
+              // Add extracted data if available
+              // This will be populated in a future update
+            },
+            generatedSchedule: studySchedule
+          });
+          
+          await pdfDoc.save();
+          console.log(`Saved PDF document: ${pdfDoc._id}`);
         }
-      } catch (e) {
-        console.warn('Error getting class schedule from database:', e);
+      } catch (dbError) {
+        console.error('Error saving PDF documents to database:', dbError);
+        // Continue despite database error - we'll still return the schedule
       }
     }
     
-    // Process the documents with all metadata
-    const options = {
-      preferences: userPreferences,
-      classSchedule: classSchedule,
-      fileMetadata: fileMetadata
-    };
-    
-    const studySchedule = await processDocuments(filePaths, userId, options);
-    
     res.status(200).json({
-      message: 'Files processed successfully',
-      studySchedule
+      message: `${files.length} files processed successfully`,
+      studySchedule,
+      count: studySchedule.length
     });
   } catch (error) {
     console.error('Error processing PDFs:', error);
-    res.status(500).json({ error: 'Error processing PDFs' });
+    res.status(500).json({ error: 'Error processing PDFs: ' + error.message });
   }
 });
 

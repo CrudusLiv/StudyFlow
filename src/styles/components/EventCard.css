@@ -1,0 +1,213 @@
+.event-card {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  margin-bottom: 16px;
+  border-left: 4px solid #6366F1;
+  transition: box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+}
+
+.event-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Priority-based styling */
+.event-card.priority-high {
+  border-left-color: #EF4444;
+}
+
+.event-card.priority-medium {
+  border-left-color: #F59E0B;
+}
+
+.event-card.priority-low {
+  border-left-color: #10B981;
+}
+
+/* Category-based styling */
+.event-card.category-class {
+  background-color: #EEF2FF;
+}
+
+.event-card.category-study {
+  background-color: #F5F3FF;
+}
+
+.event-card.category-topic-study {
+  background-color: #FCE7F3;
+}
+
+.event-card.category-knowledge-check {
+  background-color: #FEF2F2;
+}
+
+.event-card.category-revision {
+  background-color: #FFFBEB;
+}
+
+.event-card.category-milestone {
+  background-color: #ECFDF5;
+}
+
+.event-card.category-practice {
+  background-color: #F0FDFA;
+}
+
+/* Header styles */
+.event-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.event-type-icon {
+  font-size: 18px;
+  margin-right: 12px;
+}
+
+.event-type-icon.class {
+  color: #6366F1;
+}
+
+.event-type-icon.study {
+  color: #8B5CF6;
+}
+
+.event-type-icon.topic {
+  color: #EC4899;
+}
+
+.event-type-icon.revision {
+  color: #F59E0B;
+}
+
+.event-type-icon.check {
+  color: #EF4444;
+}
+
+.event-type-icon.practice {
+  color: #10B981;
+}
+
+.event-type-icon.milestone {
+  color: #0EA5E9;
+}
+
+.event-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1F2937;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.priority-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.priority-badge.priority-high {
+  background-color: #FEE2E2;
+  color: #B91C1C;
+}
+
+.priority-badge.priority-medium {
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.priority-badge.priority-low {
+  background-color: #D1FAE5;
+  color: #065F46;
+}
+
+/* Content styles */
+.event-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.event-time-location {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.event-time,
+.event-date,
+.event-course,
+.event-location,
+.event-detail {
+  display: flex;
+  align-items: center;
+  color: #4B5563;
+}
+
+.icon {
+  margin-right: 6px;
+  font-size: 14px;
+  color: #6B7280;
+}
+
+.event-description {
+  font-size: 14px;
+  color: #4B5563;
+  line-height: 1.5;
+  margin: 8px 0;
+}
+
+.event-questions,
+.event-checklist {
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.event-questions ul,
+.event-checklist ul {
+  margin-top: 4px;
+  padding-left: 24px;
+}
+
+.event-questions li,
+.event-checklist li {
+  margin-bottom: 4px;
+}
+
+/* Action buttons */
+.event-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.action-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.details-button {
+  background-color: #EEF2FF;
+  color: #4F46E5;
+}
+
+.details-button:hover {
+  background-color: #E0E7FF;
+}

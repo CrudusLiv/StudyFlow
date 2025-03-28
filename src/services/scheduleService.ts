@@ -4,125 +4,137 @@ import { ClassData } from '../types/types';
 const BASE_URL = 'http://localhost:5000/api/schedule';
 
 export const scheduleService = {
+  /**
+   * Fetch all classes for the current user
+   * @returns {Promise<Array>} The array of class objects
+   */
   async fetchClasses() {
     try {
       const token = localStorage.getItem('token');
-      
-      // Show we're fetching data
-      console.log('Fetching classes from server...');
-      
-      const response = await axios.get(`${BASE_URL}/classes`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('Fetched classes:', response.data);
-      
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        // Cache timestamp to know when we last updated
-        localStorage.setItem('scheduleLastUpdated', new Date().toISOString());
+      if (!token) {
+        throw new Error('No authentication token found');
       }
+
+      const response = await axios.get(`${BASE_URL}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      console.log('Raw API response from fetchClasses:', response.data);
       
-      return Array.isArray(response.data) ? response.data : [];
+      // Ensure we always return an array, even if the API returns an object with a data property
+      if (response.data && Array.isArray(response.data)) {
+        return response.data; // Return direct array
+      } else if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data; // Return the data array property
+      } else {
+        console.warn('Unexpected format in API response:', response.data);
+        return []; // Return empty array as fallback
+      }
     } catch (error) {
       console.error('Error fetching classes:', error);
-      
-      // If we have cached classes, return those instead
-      const cachedRawClasses = localStorage.getItem('scheduleRawClasses');
-      if (cachedRawClasses) {
-        console.log('Using cached classes due to fetch error');
-        return JSON.parse(cachedRawClasses);
-      }
-      
-      return [];
+      throw error;
     }
   },
 
+  /**
+   * Add a new class
+   * @param {ClassData} classData - The class data to add
+   * @returns {Promise<Object>} The response including the new class and all classes
+   */
   async addClass(classData: ClassData) {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
       const response = await axios.post(`${BASE_URL}/classes`, classData, {
-        headers: { 
+        headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
-      
-      console.log('Added class response:', response.data);
-      
-      // Update the cache with the new data
-      if (response.data.allClasses) {
-        localStorage.setItem('scheduleRawClasses', JSON.stringify(response.data.allClasses));
-        localStorage.setItem('scheduleLastUpdated', new Date().toISOString());
-      }
-      
-      return {
-        newClass: response.data.class,
-        allClasses: response.data.allClasses || []
-      };
+
+      return response.data;
     } catch (error) {
       console.error('Error adding class:', error);
       throw error;
     }
   },
   
-  // Clear all schedule-related cache
-  clearCache() {
-    localStorage.removeItem('scheduleEvents');
-    localStorage.removeItem('scheduleRawClasses');
-    localStorage.removeItem('scheduleClassesByDay');
-    localStorage.removeItem('scheduleLastUpdated');
-    console.log('Schedule cache cleared from service');
-  },
-
   /**
-   * Process uploaded PDF files and generate a study schedule
+   * Process uploaded PDF files
+   * @param {File[]} files - Array of PDF files to process
+   * @param {Object} options - Additional options like preferences
+   * @returns {Promise<Array>} Generated schedule
    */
-  async processUploadedPDFs(files: File[], options: any = {}) {
+  async processUploadedPDFs(files, options = {}) {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
       
-      // Add files to form data with assignment tag
+      // Add files to form data - all files are assignments
       files.forEach((file, index) => {
         formData.append('files', file);
-        // Add file metadata including document type
+        // Add file metadata with assignment type for all files
         formData.append(`fileMetadata[${index}]`, JSON.stringify({
           name: file.name,
-          documentType: file.documentType || 'assignment'
+          documentType: 'assignment' // Always set as assignment
         }));
       });
 
-      // Add user preferences to form data
+      // Add enhanced user preferences for cognitive optimization
       try {
-        const preferences = options.preferences || 
-                           JSON.parse(localStorage.getItem('userPreferences') || '{}');
+        const cachedPrefs = this.getCachedPreferences();
+        const preferences = options.preferences || cachedPrefs || this.getDefaultPreferences();
+        
+        // Enhance with cognitive factors if not present
+        if (!preferences.cognitiveLoadFactors) {
+          preferences.cognitiveLoadFactors = {
+            exam: 1.5,
+            project: 1.3,
+            assignment: 1.0,
+            reading: 0.8,
+            homework: 1.1,
+            presentation: 1.3,
+            lab: 1.2
+          };
+        }
+        
+        if (!preferences.spacingPreference) {
+          preferences.spacingPreference = 'moderate';
+        }
+        
+        if (!preferences.productiveTimeOfDay) {
+          // Use morning as default if not specified
+          preferences.productiveTimeOfDay = 'morning';
+        }
+        
+        if (!preferences.procrastinationProfile) {
+          preferences.procrastinationProfile = 'moderate';
+        }
+        
         formData.append('preferences', JSON.stringify(preferences));
+        console.log('Using enhanced cognitive preferences for schedule generation');
       } catch (error) {
         console.warn('Error adding preferences to form data:', error);
       }
       
-      // Include class schedule data if available
+      // Include class schedule data for conflict avoidance
       try {
         const classSchedule = localStorage.getItem('scheduleRawClasses');
         if (classSchedule) {
           formData.append('classSchedule', classSchedule);
-          
-          // Add class tag information
-          const classes = JSON.parse(classSchedule);
-          classes.forEach((cls: any, index: number) => {
-            if (cls._id) {
-              formData.append(`classMetadata[${index}]`, JSON.stringify({
-                id: cls._id,
-                documentType: 'class',
-                courseCode: cls.courseCode || '',
-                courseName: cls.courseName || ''
-              }));
-            }
-          });
         }
       } catch (error) {
         console.warn('Error adding class schedule to form data:', error);
       }
+
+      // Add document type and cognitive optimization flags
+      formData.append('documentType', 'assignment');
+      formData.append('enableCognitiveOptimization', 'true');
 
       const response = await axios.post(`${BASE_URL}/process-pdfs`, formData, {
         headers: {
@@ -145,7 +157,8 @@ export const scheduleService = {
   },
 
   /**
-   * Get user preferences for study schedule generation
+   * Get user preferences
+   * @returns {Promise<Object>} User preferences
    */
   async getUserPreferences() {
     try {
@@ -162,9 +175,26 @@ export const scheduleService = {
       
       console.log('Preferences response:', response.data);
       if (response.data && response.data.preferences) {
-        // Cache preferences
-        localStorage.setItem('userPreferences', JSON.stringify(response.data.preferences));
-        return response.data.preferences;
+        // Enhance preferences with cognitive factors
+        const enhancedPreferences = {
+          ...response.data.preferences,
+          cognitiveLoadFactors: response.data.preferences.cognitiveLoadFactors || {
+            exam: 1.5,
+            project: 1.3,
+            assignment: 1.0,
+            reading: 0.8,
+            homework: 1.1,
+            presentation: 1.3,
+            lab: 1.2
+          },
+          spacingPreference: response.data.preferences.spacingPreference || 'moderate',
+          productiveTimeOfDay: response.data.preferences.productiveTimeOfDay || 'morning',
+          procrastinationProfile: response.data.preferences.procrastinationProfile || 'moderate'
+        };
+        
+        // Cache enhanced preferences
+        localStorage.setItem('userPreferences', JSON.stringify(enhancedPreferences));
+        return enhancedPreferences;
       }
       
       return this.getDefaultPreferences();
@@ -196,26 +226,32 @@ export const scheduleService = {
     return null;
   },
 
-  // Helper to get default preferences
+  // Helper to get default preferences with cognitive optimization factors
   getDefaultPreferences() {
-    const defaultPrefs = {
-      studyHoursPerDay: 4,
-      preferredStudyTimes: ['morning', 'evening'],
-      breakDuration: 15,
-      longBreakDuration: 30,
-      sessionsBeforeLongBreak: 4,
-      weekendStudy: true,
-      preferredSessionLength: 2,
-      wakeUpTime: '08:00',
-      sleepTime: '23:00',
-      preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    return {
+      studySessionLength: 60,
+      breaksEnabled: true,
+      breakLength: 15,
+      maxDailyStudyHours: 4,
+      preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+      preferredStudyTimeStart: '09:00',
+      preferredStudyTimeEnd: '18:00',
+      spacingPreference: 'moderate',
+      productiveTimeOfDay: 'morning',
+      procrastinationProfile: 'moderate',
+      cognitiveLoadFactors: {
+        exam: 1.5,
+        project: 1.3,
+        assignment: 1.0,
+        reading: 0.8,
+        homework: 1.1,
+        presentation: 1.3,
+        lab: 1.2
+      },
+      maxDailyCognitiveLoad: 5,
+      learningStyle: 'balanced',
+      weekendPreference: 'minimal'
     };
-    
-    // Save default preferences to localStorage
-    localStorage.setItem('userPreferences', JSON.stringify(defaultPrefs));
-    console.log('Using default preferences');
-    
-    return defaultPrefs;
   },
 
   /**

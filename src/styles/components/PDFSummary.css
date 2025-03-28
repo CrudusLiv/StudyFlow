@@ -1,0 +1,315 @@
+.pdf-summary {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.pdf-summary-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: #f9fafb;
+}
+
+.pdf-icon {
+  font-size: 24px;
+  color: #4f46e5;
+  margin-right: 12px;
+}
+
+.pdf-title {
+  flex: 1;
+}
+
+.pdf-title h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.pdf-filename {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.pdf-summary-content {
+  padding: 16px;
+}
+
+.summary-section {
+  margin-bottom: 20px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.section-header h4 {
+  margin: 0;
+  font-size: 16px;
+  color: #374151;
+  margin-left: 8px;
+}
+
+.section-content {
+  padding: 12px 0;
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.metadata-item {
+  display: flex;
+  align-items: flex-start;
+}
+
+.metadata-icon {
+  font-size: 16px;
+  color: #6b7280;
+  margin-top: 2px;
+  margin-right: 8px;
+}
+
+.metadata-label {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.metadata-value {
+  display: block;
+  font-size: 14px;
+  color: #111827;
+  font-weight: 500;
+}
+
+.complexity-meter {
+  display: flex;
+  align-items: center;
+}
+
+.complexity-bar {
+  width: 100px;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.complexity-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.complexity-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.assignments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.assignment-item {
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 6px;
+  border-left: 4px solid #4f46e5;
+}
+
+.assignment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.assignment-header h5 {
+  margin: 0;
+  font-size: 15px;
+  color: #111827;
+}
+
+.assignment-type {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.assignment-details {
+  margin-bottom: 10px;
+}
+
+.detail-row {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.detail-icon {
+  margin-right: 6px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.requirements-list h6 {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  color: #374151;
+}
+
+.requirements-list ul {
+  margin: 0;
+  padding: 0 0 0 8px;
+  list-style: none;
+}
+
+.requirements-list li {
+  display: flex;
+  align-items: flex-start;
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 4px;
+}
+
+.req-icon {
+  margin-right: 6px;
+  font-size: 12px;
+  color: #10b981;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.more-requirements {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.topics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.topic-item {
+  display: flex;
+  align-items: flex-start;
+  background-color: #f9fafb;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.topic-importance {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+.topic-details {
+  flex: 1;
+}
+
+.topic-details h5 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+.topic-context {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.dates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.date-item {
+  display: flex;
+  align-items: flex-start;
+  background-color: #f9fafb;
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.date-icon {
+  font-size: 16px;
+  color: #6b7280;
+  margin-right: 12px;
+  padding-top: 2px;
+}
+
+.date-details {
+  flex: 1;
+}
+
+.date-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+.date-context {
+  font-size: 12px;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
+
+.date-tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-right: 6px;
+  font-weight: 500;
+}
+
+.date-tag.deadline {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.date-tag.exam {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.no-data-message {
+  color: #6b7280;
+  font-style: italic;
+  text-align: center;
+  padding: 16px;
+}

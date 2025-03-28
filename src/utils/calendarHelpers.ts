@@ -1,420 +1,218 @@
-import { ScheduleTask, CalendarEvent } from '../types/types';
+import { CalendarEvent } from '../types/types';
 
 /**
- * Generates a unique color based on task title for visual identification
+ * Convert tasks to calendar events
+ * @param tasks Array of tasks or study sessions
+ * @returns Array of calendar events
  */
-export const getTaskColor = (task: ScheduleTask): string => {
-  let hash = 0;
-
-  // Generate a consistent hash from the task title
-  for (let i = 0; i < task.title.length; i++) {
-    hash = task.title.charCodeAt(i) + ((hash << 5) - hash);
+export function tasksToEvents(tasks: any): CalendarEvent[] {
+  // Safety check if tasks is not an array
+  if (!Array.isArray(tasks)) {
+    console.warn('tasksToEvents received non-array input:', typeof tasks);
+    return []; // Return empty array instead of failing
   }
 
-  // Convert the hash to a hue value (0-359)
-  const hue = hash % 360;
-
-  // Return HSL color with fixed saturation and lightness
-  return `hsl(${hue}, 70%, 85%)`;
-};
-
-/**
- * Parse time string to Date object
- */
-export const parseTime = (timeString: string): Date | null => {
-  try {
-    // Handle different formats like "9:00", "09:00", "9"
-    let hours = 0;
-    let minutes = 0;
-
-    if (timeString.includes(':')) {
-      [hours, minutes] = timeString.split(':').map(part => parseInt(part.trim(), 10));
-    } else {
-      hours = parseInt(timeString.trim(), 10);
-      minutes = 0;
-    }
-
-    if (isNaN(hours) || isNaN(minutes)) {
-      return null;
-    }
-
-    const date = new Date();
-    date.setHours(hours);
-    date.setMinutes(minutes);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-    return date;
-  } catch (error) {
-    console.error('Error parsing time:', error);
-    return null;
-  }
-};
-
-/**
- * Format Date to time string (HH:MM)
- */
-export const formatTime = (date: Date | null): string => {
-  if (!date) return '00:00';
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-};
-
-/**
- * Converts task time range to start and end Date objects
- * Handles various formats like "9:00 - 10:30", "9-10:30", etc.
- */
-export const parseTimeRange = (timeRange: string, dateStr: string): { start: Date, end: Date } | null => {
-  try {
-    // Replace any spaces around the dash
-    const cleanedRange = timeRange.replace(/\s*-\s*/g, '-');
-    const [startStr, endStr] = cleanedRange.split('-');
-
-    if (!startStr || !endStr) {
-      return null;
-    }
-
-    const baseDate = new Date(dateStr);
-    if (isNaN(baseDate.getTime())) {
-      return null;
-    }
-
-    const startTime = parseTime(startStr);
-    const endTime = parseTime(endStr);
-
-    if (!startTime || !endTime) {
-      return null;
-    }
-
-    const start = new Date(baseDate);
-    start.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
-
-    const end = new Date(baseDate);
-    end.setHours(endTime.getHours(), endTime.getMinutes(), 0, 0);
-
-    return { start, end };
-  } catch (error) {
-    console.error('Error parsing time range:', error, timeRange, dateStr);
-    return null;
-  }
-};
-
-/**
- * Convert schedule tasks to calendar events
- */
-export const tasksToEvents = (studyData: any[]): CalendarEvent[] => {
-  console.log('Converting study data to events with enhanced distribution:', studyData.slice(0, 2));
-
-  if (!Array.isArray(studyData)) {
-    console.warn('Study data is not an array');
+  // Handle empty array case
+  if (tasks.length === 0) {
     return [];
   }
 
-  // Enhanced task to event conversion with better distribution
-  const events: CalendarEvent[] = studyData.map(task => {
-    // Ensure start and end dates are proper Date objects
-    let start = task.start instanceof Date ? task.start : new Date(task.start);
-    let end = task.end instanceof Date ? task.end : new Date(task.end);
-
-    // Handle invalid dates
-    if (isNaN(start.getTime())) {
-      console.warn('Invalid start date for task:', task.title);
-      start = new Date();
-      start.setHours(10, 0, 0, 0);
-    }
-
-    if (isNaN(end.getTime())) {
-      console.warn('Invalid end date for task:', task.title);
-      end = new Date(start);
-      end.setHours(start.getHours() + (task.totalHours || 2));
-    }
-
-    return {
-      id: task.id || `task-${Math.random().toString(36).substr(2, 9)}`,
-      title: task.title,
-      start: start,
-      end: end,
-      description: task.description || '',
-      status: task.status || 'pending',
-      category: task.category || 'task',
-      courseCode: task.courseCode || '',
-      location: task.location || '',
-      resource: {
-        ...task.resource || {},
-        type: task.resource?.type || 'task',
-        details: {
-          ...(task.resource?.details || {}),
-          sessionNumber: task.sessionNumber,
-          totalSessions: task.totalSessions
-        }
-      }
-    };
-  });
-
-  console.log('Generated events with better distribution:', events.slice(0, 2));
-  return events;
-};
-
-/**
- * Convert university classes to calendar events
- */
-export const classesToEvents = (classes: any[]): CalendarEvent[] => {
-  console.log('Converting classes to events. Input:', classes);
+  console.log('Converting tasks to events, first task:', tasks[0]);
   
-  if (!Array.isArray(classes)) {
-    console.warn('Classes is not an array:', classes);
+  try {
+    return tasks.map((task: any) => {
+      // Check if task already has start/end properties
+      if (task.start && task.end) {
+        return {
+          ...task,
+          start: new Date(task.start),
+          end: new Date(task.end),
+          title: task.title || 'Untitled Task',
+          allDay: task.allDay || false
+        };
+      }
+      
+      // Handle case where task.dueDate is already a Date object
+      let dueDate;
+      if (task.dueDate instanceof Date) {
+        dueDate = task.dueDate;
+      } else if (typeof task.dueDate === 'string') {
+        dueDate = new Date(task.dueDate);
+      } else {
+        // Fallback to a future date if no valid date found
+        dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 14); // Two weeks from now
+      }
+
+      // Calculate sensible start time based on task properties
+      const startDate = task.startDate ? new Date(task.startDate) : 
+                       (task.start ? new Date(task.start) : calculateStartDate(dueDate, task));
+
+      return {
+        id: task.id || `task-${Math.random().toString(36).substring(2, 9)}`,
+        title: task.title || 'Untitled Task',
+        start: startDate,
+        end: dueDate,
+        allDay: false,
+        category: task.category || task.type || 'task',
+        courseCode: task.courseCode || '',
+        priority: task.priority || 'medium',
+        description: task.description || '',
+        resource: { ...task }
+      };
+    });
+  } catch (error) {
+    console.error('Error in tasksToEvents:', error);
+    return []; // Return empty array on error
+  }
+}
+
+/**
+ * Helper function to calculate start date based on due date and task properties
+ */
+function calculateStartDate(dueDate: Date, task: any): Date {
+  try {
+    // Start with a date 3 days before due date by default
+    const startDate = new Date(dueDate);
+    const daysOffset = task.daysNeeded || 3;
+    startDate.setDate(startDate.getDate() - daysOffset);
+    
+    // Set a reasonable time for the start date
+    startDate.setHours(10, 0, 0, 0); // Default to 10 AM
+    
+    return startDate;
+  } catch (error) {
+    console.error('Error calculating start date:', error);
+    // Fallback to 3 days before due date
+    const fallback = new Date(dueDate);
+    fallback.setDate(fallback.getDate() - 3);
+    return fallback;
+  }
+}
+
+/**
+ * Convert class schedules to calendar events
+ * @param {any} classes - Array of class schedules or object containing classes
+ * @returns {CalendarEvent[]} - Array of calendar events
+ */
+export function classesToEvents(classes: any): CalendarEvent[] {
+  console.log('Converting classes to events, input type:', typeof classes);
+  
+  // Check if input is null or undefined
+  if (!classes) {
+    console.warn('classesToEvents received null or undefined input');
     return [];
   }
-
-  if (classes.length === 0) {
-    console.log('No classes to convert');
+  
+  // Handle different input formats: direct array, object with data property, or nested weeklySchedule
+  let classArray: any[] = [];
+  
+  if (Array.isArray(classes)) {
+    classArray = classes;
+  } else if (classes.data && Array.isArray(classes.data)) {
+    // Handle response object with data property
+    classArray = classes.data;
+  } else if (classes.weeklySchedule && Array.isArray(classes.weeklySchedule)) {
+    // Handle university schedule format with weeklySchedule property
+    classArray = classes.weeklySchedule.flatMap((day: any) => {
+      if (!day.classes || !Array.isArray(day.classes)) return [];
+      
+      return day.classes.map((cls: any) => ({
+        ...cls,
+        day: day.day,
+        documentType: 'class'
+      }));
+    });
+  } else {
+    console.warn('classesToEvents received unknown format', classes);
     return [];
   }
-
+  
+  console.log('Normalized class array length:', classArray.length);
+  
+  // Process each class into recurring events
   const events: CalendarEvent[] = [];
-
-  classes.forEach(classItem => {
-    if (!classItem.courseName || !classItem.startTime || !classItem.endTime || !classItem.day) {
-      console.warn('Invalid class data:', classItem);
-      return;
-    }
-
+  const currentDate = new Date();
+  const semesterStart = new Date();
+  semesterStart.setDate(currentDate.getDate() - 14); // 2 weeks ago
+  
+  const semesterEnd = new Date();
+  semesterEnd.setMonth(currentDate.getMonth() + 3); // 3 months in the future
+  
+  // Process each class
+  classArray.forEach(classItem => {
     try {
+      // Get semesterDates if available or use defaults
       const startDate = classItem.semesterDates?.startDate 
-        ? new Date(classItem.semesterDates.startDate)
-        : new Date();
+        ? new Date(classItem.semesterDates.startDate) 
+        : semesterStart;
+        
       const endDate = classItem.semesterDates?.endDate
         ? new Date(classItem.semesterDates.endDate)
-        : new Date(startDate.getTime() + (12 * 7 * 24 * 60 * 60 * 1000));
-
-      let currentDay = new Date(startDate);
+        : semesterEnd;
+        
+      // Get the day name from the class
+      const dayName = classItem.day || '';
+      if (!dayName) {
+        console.warn('Class missing day name:', classItem);
+        return;
+      }
       
-      while (currentDay <= endDate) {
-        if (currentDay.toLocaleDateString('en-us', { weekday: 'long' }) === classItem.day) {
-          const eventStart = new Date(currentDay);
-          const [startHours, startMinutes] = classItem.startTime.split(':');
-          eventStart.setHours(parseInt(startHours, 10), parseInt(startMinutes, 10), 0);
-
-          const eventEnd = new Date(currentDay);
-          const [endHours, endMinutes] = classItem.endTime.split(':');
-          eventEnd.setHours(parseInt(endHours, 10), parseInt(endMinutes, 10), 0);
-
+      // Create events for each occurrence of this class
+      let currentRecurringDate = new Date(startDate);
+      while (currentRecurringDate <= endDate) {
+        // Check if current day matches class day
+        if (currentRecurringDate.toLocaleDateString('en-us', { weekday: 'long' }) === dayName) {
+          // Parse times with defaults
+          const startTime = classItem.startTime || '09:00';
+          const endTime = classItem.endTime || '10:00';
+          
+          // Extract hours and minutes
+          const [startHour, startMinute] = startTime.split(':').map(Number);
+          const [endHour, endMinute] = endTime.split(':').map(Number);
+          
+          // Create event start and end dates
+          const eventStart = new Date(currentRecurringDate);
+          eventStart.setHours(startHour || 9, startMinute || 0, 0, 0);
+          
+          const eventEnd = new Date(currentRecurringDate);
+          eventEnd.setHours(endHour || 10, endMinute || 0, 0, 0);
+          
+          // Generate a unique ID
+          const eventId = `class-${classItem._id || Math.random().toString(36).substring(2)}-${currentRecurringDate.toISOString()}`;
+          
+          // Create event with full data
           events.push({
-            id: `class-${classItem._id}-${currentDay.toISOString()}`,
-            title: `${classItem.courseName} (${classItem.courseCode})`,
+            id: eventId,
+            title: classItem.courseName || classItem.title || `Class on ${dayName}`,
             start: eventStart,
             end: eventEnd,
-            courseCode: classItem.courseCode,
-            location: classItem.location,
+            allDay: false,
             category: 'class',
+            courseCode: classItem.courseCode || '',
+            location: classItem.location || '',
             resource: {
               type: 'class',
-              courseCode: classItem.courseCode,
-              location: classItem.location,
+              courseCode: classItem.courseCode || '',
+              location: classItem.location || '',
               recurring: true,
-              day: classItem.day,
+              day: dayName,
               details: {
-                courseName: classItem.courseName,
-                professor: classItem.professor
+                courseName: classItem.courseName || '',
+                professor: classItem.professor || ''
               }
             }
           });
         }
-        currentDay.setDate(currentDay.getDate() + 1);
+        
+        // Move to next day
+        currentRecurringDate.setDate(currentRecurringDate.getDate() + 1);
       }
     } catch (error) {
       console.error('Error processing class:', classItem, error);
     }
   });
-
-  console.log('Generated events:', events.length, 'First event:', events[0]);
+  
+  console.log(`Generated ${events.length} class events`);
   return events;
-};
-
-export function convertClassesToEvents(classes: any) {
-  console.log("Converting classes to events. Input: ", classes);
-
-  // Accept both arrays and objects with weeklySchedule
-  if (Array.isArray(classes)) {
-    // ...existing code...
-  } else if (classes && Array.isArray(classes.weeklySchedule)) {
-    // Treat classes.weeklySchedule as the actual array of classes
-    classes = classes.weeklySchedule;
-    // ...existing code...
-  } else {
-    console.log("Classes is not an array: ", classes);
-    return [];
-  }
-
-
 }
-
-const getDayName = (date: Date): string => {
-  return date.toLocaleDateString('en-US', { weekday: 'long' });
-};
-
-/**
- * Validates if a weekly schedule has proper date and time formats
- * Returns detailed validation report
- */
-export const validateScheduleData = (schedule: any): {
-  valid: boolean;
-  errors: string[];
-  stats: {
-    totalWeeks: number;
-    totalDays: number;
-    totalTasks: number;
-    tasksWithValidTime: number;
-  };
-} => {
-  const errors: string[] = [];
-  let totalDays = 0;
-  let totalTasks = 0;
-  let tasksWithValidTime = 0;
-
-  if (!schedule || !Array.isArray(schedule)) {
-    errors.push('Schedule is not an array');
-    return {
-      valid: false,
-      errors,
-      stats: { totalWeeks: 0, totalDays: 0, totalTasks: 0, tasksWithValidTime: 0 }
-    };
-  }
-
-  schedule.forEach((week, weekIdx) => {
-    if (!week.days || !Array.isArray(week.days)) {
-      errors.push(`Week ${weekIdx + 1} has no days array`);
-      return;
-    }
-
-    week.days.forEach((day: any, dayIdx: number) => {
-      totalDays++;
-
-      if (!day.date) {
-        errors.push(`Week ${weekIdx + 1}, Day ${dayIdx + 1} has no date`);
-      }
-
-      if (!day.tasks || !Array.isArray(day.tasks)) {
-        errors.push(`Week ${weekIdx + 1}, Day ${dayIdx + 1} has no tasks array`);
-        return;
-      }
-
-      day.tasks.forEach((task: any, taskIdx: number) => {
-        totalTasks++;
-
-        if (!task.title) {
-          errors.push(`Week ${weekIdx + 1}, Day ${dayIdx + 1}, Task ${taskIdx + 1} has no title`);
-        }
-
-        if (!task.time) {
-          errors.push(`Week ${weekIdx + 1}, Day ${dayIdx + 1}, Task ${taskIdx + 1} has no time`);
-          return;
-        }
-
-        // Check time format (should be like "09:00-10:00" or "09:00 - 10:00")
-        const timeString = task.time.replace(/\s+/g, '');
-        const timeParts = timeString.split('-');
-
-        if (timeParts.length !== 2) {
-          errors.push(`Week ${weekIdx + 1}, Day ${dayIdx + 1}, Task "${task.title}" has invalid time format: ${task.time}`);
-          return;
-        }
-
-        tasksWithValidTime++;
-      });
-    });
-  });
-
-  return {
-    valid: errors.length === 0,
-    errors,
-    stats: {
-      totalWeeks: schedule.length,
-      totalDays,
-      totalTasks,
-      tasksWithValidTime
-    }
-  };
-};
-
-// Add a function to fix common time format issues
-export const normalizeTimeFormat = (time: string): string => {
-  if (!time) return '';
-
-  // Remove all spaces
-  let normalized = time.replace(/\s+/g, '');
-
-  // If there's no hyphen, it's not a range
-  if (!normalized.includes('-')) {
-    // Assume it's a start time and add a 1-hour duration
-    const startTime = normalized;
-    let [hours, minutes = '00'] = startTime.split(':').map(p => p.trim());
-
-    if (!minutes) minutes = '00';
-
-    let endHour = parseInt(hours, 10) + 1;
-    if (endHour > 23) endHour = 23;
-
-    normalized = `${hours.padStart(2, '0')}:${minutes}-${endHour.toString().padStart(2, '0')}:${minutes}`;
-  }
-
-  // Ensure both parts have proper HH:MM format
-  const parts = normalized.split('-');
-  if (parts.length !== 2) return normalized;
-
-  const [start, end] = parts;
-
-  // Format start time
-  let formattedStart = start;
-  if (!formattedStart.includes(':')) {
-    formattedStart = `${formattedStart.padStart(2, '0')}:00`;
-  }
-
-  // Format end time
-  let formattedEnd = end;
-  if (!formattedEnd.includes(':')) {
-    formattedEnd = `${formattedEnd.padStart(2, '0')}:00`;
-  }
-
-  return `${formattedStart}-${formattedEnd}`;
-};
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-}
-
-// Replace the useCallback version with a regular function
-const processEvents = (studyData: any[], classData: any) => {
-  console.log('Processing events with:', {
-    date: formatDate(new Date()),
-    studyData: studyData?.slice(0, 2),
-    classData: classData ? 'present' : 'absent'
-  });
-
-  try {
-    // Process class events
-    const classEvents = classData ? classesToEvents(classData) : [];
-    console.log('Processed class events:', classEvents.slice(0, 2));
-
-    // Process study events
-    const studyEvents = studyData ? tasksToEvents(studyData) : [];
-    console.log('Processed study events:', studyEvents.slice(0, 2));
-
-    // Combine all events
-    const combinedEvents = [...classEvents, ...studyEvents].map(event => ({
-      ...event,
-      id: event.id || `event-${Math.random().toString(36).substr(2, 9)}`,
-      title: event.title || 'Untitled Event'
-    }));
-
-    console.log('Combined events:', combinedEvents.slice(0, 2));
-    return combinedEvents;
-  } catch (error) {
-    console.error('Error processing events:', error);
-    return [];
-  }
-};
-
-// ...rest of existing code...

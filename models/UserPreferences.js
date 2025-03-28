@@ -4,102 +4,80 @@ const userPreferencesSchema = new mongoose.Schema({
   userId: {
     type: String,
     required: true,
-    unique: true,
     index: true
   },
-  // Study timing preferences
-  studyHoursPerDay: {
+  studySessionLength: {
     type: Number,
-    default: 4,
-    min: 1,
-    max: 12
+    default: 60 // minutes
   },
-  preferredStudyTimes: {
-    type: [String],
-    enum: ['morning', 'afternoon', 'evening', 'night'],
-    default: ['morning', 'evening']
-  },
-  preferredSessionLength: {
+  breakLength: {
     type: Number,
-    default: 2,
-    min: 0.5,
-    max: 4
+    default: 15 // minutes
   },
-  // Daily schedule preferences
-  wakeUpTime: {
-    type: String,
-    default: '08:00',
-    validate: {
-      validator: function(v) {
-        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-      },
-      message: props => `${props.value} is not a valid time format!`
-    }
-  },
-  sleepTime: {
-    type: String,
-    default: '23:00',
-    validate: {
-      validator: function(v) {
-        return /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
-      },
-      message: props => `${props.value} is not a valid time format!`
-    }
-  },
-  // Break preferences
-  breakDuration: {
+  maxDailyStudyHours: {
     type: Number,
-    default: 15,
-    min: 5,
-    max: 60
-  },
-  longBreakDuration: {
-    type: Number,
-    default: 30,
-    min: 15,
-    max: 120
-  },
-  sessionsBeforeLongBreak: {
-    type: Number,
-    default: 4,
-    min: 1,
-    max: 10
-  },
-  // Week preferences
-  weekendStudy: {
-    type: Boolean,
-    default: true
+    default: 4
   },
   preferredStudyDays: {
     type: [String],
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
   },
-  // Focus & productivity preferences
-  focusPeriods: {
-    type: [{
-      startTime: String,
-      endTime: String,
-      days: [String]
-    }],
-    default: []
+  preferredStudyTimeStart: {
+    type: String,
+    default: '09:00'
   },
-  restPeriods: {
-    type: [{
-      startTime: String,
-      endTime: String,
-      days: [String]
-    }],
-    default: []
+  preferredStudyTimeEnd: {
+    type: String,
+    default: '18:00'
   },
-  // Advanced settings
-  minimumDaysBetweenSessions: {
+  spacingPreference: {
+    type: String,
+    enum: ['intense', 'moderate', 'relaxed'],
+    default: 'moderate'
+  },
+  productiveTimeOfDay: {
+    type: String,
+    enum: ['morning', 'afternoon', 'evening', 'balanced'],
+    default: 'morning'
+  },
+  procrastinationProfile: {
+    type: String,
+    enum: ['prone', 'moderate', 'averse'],
+    default: 'moderate'
+  },
+  cognitiveLoadFactors: {
+    type: Map,
+    of: Number,
+    default: {
+      exam: 1.5,
+      project: 1.3,
+      assignment: 1.0,
+      reading: 0.8,
+      homework: 1.1,
+      presentation: 1.3,
+      lab: 1.2
+    }
+  },
+  maxDailyCognitiveLoad: {
     type: Number,
-    default: 1,
-    min: 0,
-    max: 7
+    default: 5
   },
-  preferSpacedRepetition: {
+  learningStyle: {
+    type: String,
+    enum: ['intensive', 'gradual', 'balanced'],
+    default: 'balanced'
+  },
+  weekendPreference: {
+    type: String,
+    enum: ['minimal', 'moderate', 'intensive'],
+    default: 'minimal'
+  },
+  subjectFamiliarity: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
+  breaksBetweenSessions: {
     type: Boolean,
     default: true
   },
@@ -113,19 +91,11 @@ const userPreferencesSchema = new mongoose.Schema({
   }
 });
 
-// Update the updatedAt field on save
+// Middleware to update the updatedAt field on save
 userPreferencesSchema.pre('save', function(next) {
-  try {
-    this.updatedAt = new Date();
-    next();
-  } catch (error) {
-    console.error('Error in UserPreferences pre-save hook:', error);
-    next(error);
-  }
+  this.updatedAt = new Date();
+  next();
 });
-
-// Add an index for faster lookups
-userPreferencesSchema.index({ userId: 1 }, { unique: true });
 
 const UserPreferences = mongoose.model('UserPreferences', userPreferencesSchema);
 export default UserPreferences;

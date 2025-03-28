@@ -244,97 +244,52 @@ function analyzeDocumentStructure(lines, sections, documentContent) {
 }
 
 /**
- * Extract rich assignment description
- */
-function extractDescription(text) {
-  // Look for explicit description sections
-  const descMatch = text.match(/Description:?\s*([^.]+(?:\.[^.]+){0,5})/i);
-  if (descMatch) return descMatch[1].trim();
-  
-  // Look for text after the title
-  const titleMatch = text.match(/^([^\n.]+)[.\n]+(.*)/s);
-  if (titleMatch && titleMatch[2]) {
-    // Return first 1-3 sentences as description
-    const sentences = titleMatch[2].split(/[.!?]\s+/).filter(s => s.trim().length > 0);
-    return sentences.slice(0, Math.min(3, sentences.length)).join('. ') + '.';
-  }
-  
-  // Fallback to first 100-200 characters if no clear description found
-  return text.substring(0, Math.min(200, text.length)).trim().replace(/[.!?].*$/, '.') + '...';
-}
-
-/**
- * Extract learning objectives from assignment text
- */
-function extractObjectives(text) {
-  const objectives = [];
-  
-  // Look for objective sections
-  const objectiveSection = text.match(/(?:Objectives|Goals|Learning\s+Outcomes|You\s+will\s+learn)[:\s]+(.*?)(?:\n\n|\n[A-Z]|$)/is);
-  
-  if (objectiveSection) {
-    // Split by bullet points or numbers
-    const bulletPoints = objectiveSection[1].split(/\n\s*[•\-*]\s*|\n\s*\d+[\.)]\s*/);
-    
-    for (const point of bulletPoints) {
-      const cleanPoint = point.trim();
-      if (cleanPoint.length > 10) {
-        objectives.push(cleanPoint);
-      }
-    }
-  }
-  
-  // Look for action verbs that typically indicate objectives
-  const actionVerbs = ['understand', 'learn', 'create', 'develop', 'design', 'analyze', 'evaluate', 'apply'];
-  const sentences = text.split(/[.!?]\s+/);
-  
-  for (const sentence of sentences) {
-    for (const verb of actionVerbs) {
-      if (sentence.toLowerCase().includes(verb) && 
-          !objectives.some(obj => obj.toLowerCase().includes(sentence.toLowerCase()))) {
-        const cleanSentence = sentence.trim();
-        if (cleanSentence.length > 15 && cleanSentence.length < 150) {
-          objectives.push(cleanSentence);
-        }
-        break;
-      }
-    }
-  }
-  
-  return objectives.slice(0, 5); // Return top 5 objectives
-}
-
-/**
- * Extract topics from assignment context
+ * Extract topics from the content
+ * @param {string} text - Text to extract topics from
+ * @returns {string[]} - Array of topics
  */
 function extractTopics(text) {
   const topics = [];
-  const lowerText = text.toLowerCase();
-  
-  // Common academic topics (expandable list)
-  const commonTopics = [
-    'algebra', 'calculus', 'statistics', 'probability', 'geometry', 'analysis', 
-    'programming', 'algorithms', 'data structures', 'databases', 'web development', 
-    'machine learning', 'artificial intelligence', 'networking', 'security',
-    'physics', 'mechanics', 'thermodynamics', 'electromagnetism', 'quantum', 
-    'chemistry', 'organic chemistry', 'biochemistry', 'biology', 'genetics',
-    'history', 'economics', 'psychology', 'sociology', 'literature'
+  const topicPatterns = [
+    /\b(?:Topic|Subject|Theme)s?(?:\s+covered|\s+include|\s+discussed)?(?:\s*:|include|covered|are)\s*([^.]+(?:\.|$))/i,
+    /\b(?:This\s+(?:assignment|paper|project)\s+covers)\s+([^.]+(?:\.|$))/i,
+    /\b(?:related\s+to|focus\s+on|about)\s+([^.]+(?:\.|$))/i,
+    /\b(?:knowledge\s+of|understand)\s+([^.]+(?:\.|$))/i
   ];
   
-  for (const topic of commonTopics) {
-    if (lowerText.includes(topic)) {
-      topics.push(topic);
+  // Try to find explicit topic mentions first
+  for (const pattern of topicPatterns) {
+    const match = text.match(pattern);
+    if (match && match[1]) {
+      // Split by common delimiters and filter empty strings
+      const topicList = match[1].split(/(?:,|;|and|\n|\r|\+)/);
+      topicList.forEach(topic => {
+        const cleanedTopic = topic.trim();
+        if (cleanedTopic && cleanedTopic.length > 3 && !topics.includes(cleanedTopic)) {
+          topics.push(cleanedTopic);
+        }
+      });
     }
   }
   
-  // Look for "topic" or "chapter" mentions
-  const topicMatches = text.match(/(?:topic|chapter|subject|module)s?:?\s*([^.\n]+)/gi);
-  if (topicMatches) {
-    for (const match of topicMatches) {
-      const topicText = match.replace(/(?:topic|chapter|subject|module)s?:?\s*/i, '').trim();
-      if (topicText && topicText.length > 2 && !topics.includes(topicText)) {
-        topics.push(topicText);
+  // If no topics found from explicit mentions, try to extract important phrases
+  if (topics.length === 0) {
+    // Look for phrases that are likely topics (nouns with optional adjectives)
+    const phraseMatches = text.match(/\b[A-Z][a-z]+(?:\s+[a-z]+){1,3}\b/g) || [];
+    
+    // Keep only unique phrases with reasonable length
+    const uniquePhrases = [...new Set(phraseMatches)];
+    uniquePhrases.forEach(phrase => {
+      // Filter out common non-topic phrases
+      if (phrase.length > 6 && 
+          !/\b(?:the|this|that|these|those|submission|deadline|due date|required|assignment)\b/i.test(phrase)) {
+        topics.push(phrase);
       }
+    });
+    
+    // Limit to top 5 topics if more were found
+    if (topics.length > 5) {
+      topics.splice(5);
     }
   }
   
@@ -342,93 +297,80 @@ function extractTopics(text) {
 }
 
 /**
- * Calculate topic importance for study prioritization
+ * Extract learning objectives from text
+ * @param {string} text - Text to analyze
+ * @returns {string[]} - List of learning objectives
  */
-function calculateTopicImportance(topic, context) {
-  let importance = 1; // Base importance
+function extractObjectives(text) {
+  const objectives = [];
   
-  // Check for emphasis indicators
-  if (/important|critical|essential|key|fundamental|core/i.test(context)) {
-    importance += 2;
+  // Check if there's a learning objectives section
+  const objectivesSection = text.match(/(?:learning\s+objectives|objectives|goals|outcomes|(?:you\s+will\s+learn|students\s+will\s+learn|by\s+the\s+end))(?:\s+include|\s+are)?(?:\s*:|\s*-|\s*–|\n)([\s\S]+?)(?=\n\s*\n|\n\s*[A-Z]|$)/i);
+  
+  if (objectivesSection && objectivesSection[1]) {
+    // Split by bullet points, numbers, or new lines
+    const lines = objectivesSection[1].split(/(?:\n•|\n\d+\.|\n-|\n)/);
+    
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed.length > 10) {
+        objectives.push(trimmed);
+      }
+    });
   }
   
-  // Check if topic appears in exam/test context
-  if (/exam|test|quiz|assessment|grade/i.test(context)) {
-    importance += 2;
-  }
-  
-  // Check frequency of topic mentions
-  const topicRegex = new RegExp(topic.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-  const matches = context.match(topicRegex) || [];
-  importance += Math.min(3, matches.length); // Add up to 3 points for repeated mentions
-  
-  return Math.min(10, importance); // Cap at 10
-}
-
-/**
- * Check if line is about a topic
- */
-function isTopicLine(text) {
-  return /(?:topic|chapter|subject|module)\s*\d*\s*[:.-]?\s*/i.test(text);
-}
-
-/**
- * Check if line is related to assignments
- */
-function isAssignmentLine(text) {
-  return /assignment|homework|project|lab|task|quiz|exam/i.test(text);
-}
-
-/**
- * Check if line contains date information
- */
-function isDateLine(text) {
-  return /\d{1,2}[-\/\.]\d{1,2}[-\/\.]\d{2,4}|(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\s+\d{1,2}/i.test(text);
-}
-
-/**
- * Extract dates with surrounding context for better understanding
- */
-function extractDatesWithContext(text) {
-  const results = [];
-  const datePatterns = [
-    // MM/DD/YYYY or DD/MM/YYYY
-    /(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4})/g,
-    // Month DD, YYYY
-    /(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}/gi,
-    // YYYY-MM-DD
-    /(\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/g
-  ];
-  
-  for (const pattern of datePatterns) {
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      // Get rich context around the date (50 chars before and after)
-      const start = Math.max(0, match.index - 50);
-      const end = Math.min(text.length, match.index + match[0].length + 50);
-      const context = text.substring(start, end);
-      
-      // Semantic classification of date context
-      const isDeadline = /due|deadline|submit|turn\s*in|before|by/i.test(context);
-      const isExam = /exam|test|quiz|final/i.test(context);
-      const isLecture = /lecture|class|session/i.test(context);
-      
-      results.push({
-        date: match[0],
-        context: context,
-        isDeadline,
-        isExam,
-        isLecture,
-        importance: isDeadline || isExam ? 'high' : (isLecture ? 'medium' : 'low')
-      });
+  // If still no objectives, look for sentences starting with action verbs common in learning objectives
+  if (objectives.length === 0) {
+    const actionVerbPattern = /\b(?:understand|learn|analyze|evaluate|create|apply|identify|describe|explain|compare|discuss|demonstrate|develop|design|implement)\b\s+[^.!?]+[.!?]/gi;
+    const verbMatches = text.match(actionVerbPattern) || [];
+    
+    verbMatches.forEach(match => {
+      if (match.length > 15 && match.length < 150) {
+        objectives.push(match.trim());
+      }
+    });
+    
+    // Limit to top 3 objectives if more were found
+    if (objectives.length > 3) {
+      objectives.splice(3);
     }
   }
   
-  return results;
+  return objectives;
+}
+
+/**
+ * Calculate topic importance based on content analysis
+ * @param {string} topic - Topic text
+ * @param {string} context - Surrounding context
+ * @returns {number} - Importance score 1-10
+ */
+function calculateTopicImportance(topic, context) {
+  let score = 5; // Default middle importance
+  
+  // Increase score based on emphasis indicators
+  if (/important|critical|essential|key|main|primary|focus|significant/i.test(context)) {
+    score += 2;
+  }
+  
+  // Increase score based on proximity to grading criteria
+  if (/grade|mark|assessment|evaluation|rubric/i.test(context)) {
+    score += 1;
+  }
+  
+  // Increase score based on repetition of the topic
+  const topicMentions = (context.match(new RegExp(topic, 'gi')) || []).length;
+  score += Math.min(2, topicMentions / 2);
+  
+  // Cap at 10
+  return Math.min(10, score);
 }
 
 /**
  * Extract detailed assignment information
+ * @param {string} lineText - The line containing assignment information
+ * @param {string} context - Surrounding text context
+ * @returns {Object} Extracted assignment details
  */
 function extractAssignmentDetails(lineText, context) {
   return {
@@ -441,75 +383,74 @@ function extractAssignmentDetails(lineText, context) {
     groupWork: isGroupWork(context),
     estimatedHours: estimateWorkHours(context),
     topics: extractTopics(context),
-    learningObjectives: extractObjectives(context)
+    learningObjectives: extractObjectives(context),
+    description: extractDescription(context)
   };
 }
 
 /**
- * Determine if a line is likely to be a header
+ * Extract rich assignment description
+ * @param {string} text - The text to extract description from
+ * @returns {string} - Extracted description
  */
-function isHeaderLine(text, index, lines) {
-  // Headers are typically shorter, in a specific format
-  if (text.length > 150) return false;
+function extractDescription(text) {
+  const descMatch = text.match(/Description:?\s*([^.]+(?:\.[^.]+){0,5})/i);
+  if (descMatch) return descMatch[1].trim();
   
-  // Check if all uppercase or standard header format
-  if (/^[A-Z0-9\s\-.:]{3,50}$/.test(text)) return true;
-  
-  // Check if numbered or bulleted format
-  if (/^\d+\.\s+[A-Z]/.test(text) || /^[•\-*]\s+[A-Z]/.test(text)) return true;
-  
-  // Check if followed by an empty line (common for headers)
-  const nextLine = index < lines.length - 1 ? lines[index + 1].trim() : '';
-  if (nextLine === '' && text.length < 100) return true;
-  
-  return false;
-}
-
-/**
- * Extract deadlines from a section of text
- */
-function extractDeadlinesFromSection(section, documentContent) {
-  const patterns = [
-    // Due date patterns
-    /(?:due|deadline|submit by)[:.\s]*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/gi,
-    // Submission deadline patterns
-    /(?:assignment|homework|project)[\s\S]*?(?:due|deadline|submit by)[:.\s]*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/gi
-  ];
-  
-  for (const pattern of patterns) {
-    let match;
-    while ((match = pattern.exec(section)) !== null) {
-      const deadline = {
-        date: match[1],
-        context: section.substring(Math.max(0, match.index - 50), match.index + match[0].length + 50)
-      };
-      
-      documentContent.deadlines.push(deadline);
-      documentContent.structuredContent.deadlines.push(deadline);
-    }
+  const titleMatch = text.match(/^([^\n.]+)[.\n]+(.*)/s);
+  if (titleMatch && titleMatch[2]) {
+    const sentences = titleMatch[2].split(/[.!?]\s+/).filter(s => s.trim().length > 0);
+    return sentences.slice(0, Math.min(3, sentences.length)).join('. ') + '.';
   }
+  
+  return text.substring(0, Math.min(200, text.length)).trim().replace(/[.!?].*$/, '.') + '...';
 }
 
 /**
  * Extract date from text using multiple patterns
+ * @param {string} text - Text to extract date from
+ * @returns {string|null} - Extracted date or null
  */
 function extractDate(text) {
   const patterns = [
-    // "Due by/on" followed by date
     /(?:due|deadline|submit(?:ted)?)\s*(?:by|on|date|before)?[\s:]*([a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/i,
-    // Date at end of sentence mentioning due/deadline
-    /(?:due|deadline|submission|submit).*?(?:is|will be|on|by)[\s:]*([a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/i
+    /due\s*date\s*[:.-]\s*(\d{1,2})(?:st|nd|rd|th)?\s*([a-z]+)\s*\d{4}/i,
+    /(?:due|deadline|submission)\s*(?:date|on)?[\s:]*\s*(\d{1,2})(?:st|nd|rd|th)?\s*([a-z]+)\s*\d{4}/i,
+    /(?:due|deadline|submission|submit).*?(?:is|will be|on|by)[\s:]*([a-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4}|\d{4}[\/\.-]\d{1,2}[\/\.-]\d{1,2})/i,
+    /(?:date|due|deadline)\s*[:.-]\s*(\d{1,2})(?:st|nd|rd|th)?\s*([a-z]+)\s*\d{4}/i,
+    /recommended\s*completion\s*[:.-]\s*(\d{1,2})(?:st|nd|rd|th)?\s*([a-z]+)\s*\d{4}/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    if (match) return match[1].trim();
+    if (match) {
+      if (match[1] && match[2] && /^[a-z]+$/i.test(match[2])) {
+        const day = match[1].replace(/(?:st|nd|rd|th)/, '');
+        const month = match[2];
+        const yearMatch = text.match(new RegExp(`${month}\\s*(\\d{4})`, 'i'));
+        if (yearMatch && yearMatch[1]) {
+          const year = yearMatch[1];
+          const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                             'july', 'august', 'september', 'october', 'november', 'december'];
+          const monthIndex = monthNames.findIndex(m => 
+            month.toLowerCase().includes(m.toLowerCase()));
+          
+          if (monthIndex !== -1) {
+            const dateStr = `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            return dateStr;
+          }
+        }
+      }
+      return match[1].trim();
+    }
   }
   return null;
 }
 
 /**
  * Extract assignment weight (percentage or points)
+ * @param {string} text - Text to extract weight from
+ * @returns {number|null} - Weight percentage or null
  */
 function extractWeight(text) {
   const weightPatterns = [
@@ -530,6 +471,8 @@ function extractWeight(text) {
 
 /**
  * Extract word count requirements
+ * @param {string} text - Text to extract word count from
+ * @returns {number|null} - Word count or null
  */
 function extractWordCount(text) {
   const wordCountPatterns = [
@@ -542,7 +485,6 @@ function extractWordCount(text) {
     const match = text.match(pattern);
     if (match) {
       if (match[2]) {
-        // If it's a range, use the average
         return Math.floor((parseInt(match[1]) + parseInt(match[2])) / 2);
       }
       return parseInt(match[1]);
@@ -553,6 +495,8 @@ function extractWordCount(text) {
 
 /**
  * Extract page count requirements
+ * @param {string} text - Text to extract page count from
+ * @returns {number|null} - Page count or null
  */
 function extractPageCount(text) {
   const pageCountPatterns = [
@@ -565,7 +509,6 @@ function extractPageCount(text) {
     const match = text.match(pattern);
     if (match) {
       if (match[2]) {
-        // If it's a range, use the average
         return Math.floor((parseInt(match[1]) + parseInt(match[2])) / 2);
       }
       return parseInt(match[1]);
@@ -576,6 +519,8 @@ function extractPageCount(text) {
 
 /**
  * Determine if assignment is group work
+ * @param {string} text - Text to analyze
+ * @returns {boolean} - True if group work
  */
 function isGroupWork(text) {
   return /\b(?:group|team|collaborate|partnership)\b/i.test(text);
@@ -583,6 +528,8 @@ function isGroupWork(text) {
 
 /**
  * Extract task requirements
+ * @param {string} text - Text to extract requirements from
+ * @returns {string[]} - Array of requirements
  */
 function extractRequirements(text) {
   const requirements = [];
@@ -590,13 +537,11 @@ function extractRequirements(text) {
   let inRequirements = false;
 
   for (const section of sections) {
-    // Check if this section starts requirements
     if (/\b(?:requirements?|specifications?|tasks?|instructions?|what\s+to\s+do)\b/i.test(section)) {
       inRequirements = true;
       continue;
     }
 
-    // If we're in a requirements section and line has bullet/number format
     if (inRequirements && /^[\s•\-\d\.*]\s*\w+/.test(section)) {
       const requirement = section.replace(/^[\s•\-\d\.*]\s*/, '').trim();
       if (requirement) {
@@ -604,7 +549,6 @@ function extractRequirements(text) {
       }
     }
 
-    // Stop collecting if we hit another section
     if (inRequirements && /^(?:submission|delivery|deadline|grading|marking)/i.test(section)) {
       inRequirements = false;
     }
@@ -615,6 +559,8 @@ function extractRequirements(text) {
 
 /**
  * Extract deliverables list
+ * @param {string} text - Text to extract deliverables from
+ * @returns {string[]} - Array of deliverables
  */
 function extractDeliverables(text) {
   const deliverables = [];
@@ -622,13 +568,11 @@ function extractDeliverables(text) {
   let inDeliverables = false;
 
   for (const section of sections) {
-    // Check if this section starts deliverables
     if (/\b(?:deliverables?|submit|submission|provide|include|hand\s+in)\b/i.test(section)) {
       inDeliverables = true;
       continue;
     }
 
-    // If we're in deliverables section and line has bullet/number format
     if (inDeliverables && /^[\s•\-\d\.*]\s*\w+/.test(section)) {
       const deliverable = section.replace(/^[\s•\-\d\.*]\s*/, '').trim();
       if (deliverable) {
@@ -636,7 +580,6 @@ function extractDeliverables(text) {
       }
     }
 
-    // Stop collecting if we hit another section
     if (inDeliverables && /^(?:grading|marking|requirements?|assessment)/i.test(section)) {
       inDeliverables = false;
     }
@@ -647,11 +590,11 @@ function extractDeliverables(text) {
 
 /**
  * Calculate complexity score for assignment
+ * @param {string} text - Text to analyze
+ * @returns {number} - Complexity score 1-10
  */
 function calculateComplexity(text) {
-  let complexity = 1; // Base complexity
-  
-  // Complexity indicators in text
+  let complexity = 1;
   const complexityKeywords = [
     'research', 'analysis', 'analyze', 'evaluate', 'critical', 
     'complex', 'comprehensive', 'develop', 'create', 'design',
@@ -660,14 +603,12 @@ function calculateComplexity(text) {
   
   const lowerText = text.toLowerCase();
   
-  // Count keywords
   complexityKeywords.forEach(keyword => {
     const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
     const matches = text.match(regex) || [];
     complexity += matches.length * 0.5;
   });
   
-  // Adjust for word count
   const wordCountMatch = lowerText.match(/(\d+)(?:\s*-\s*(\d+))?\s*words/i);
   if (wordCountMatch) {
     const wordCount = parseInt(wordCountMatch[1]);
@@ -678,7 +619,6 @@ function calculateComplexity(text) {
     }
   }
   
-  // Adjust for page count
   const pageCountMatch = lowerText.match(/(\d+)(?:\s*-\s*(\d+))?\s*pages/i);
   if (pageCountMatch) {
     const pageCount = parseInt(pageCountMatch[1]);
@@ -689,37 +629,34 @@ function calculateComplexity(text) {
     }
   }
   
-  return Math.min(10, complexity); // Cap at 10
+  return Math.min(10, complexity);
 }
 
 /**
  * Estimate work hours based on content analysis
+ * @param {string} text - Text to analyze
+ * @returns {number} - Estimated work hours
  */
 function estimateWorkHours(text) {
-  // Base hours depending on assignment type
   let baseHours = 2;
   const lowerText = text.toLowerCase();
   
-  // Adjust based on assignment type
   if (/\b(?:report|paper|essay|write-up)\b/i.test(lowerText)) baseHours = 4;
   if (/\b(?:research|analysis)\b/i.test(lowerText)) baseHours = 5;
   if (/\b(?:presentation|slides)\b/i.test(lowerText)) baseHours = 3;
   if (/\b(?:project|implementation)\b/i.test(lowerText)) baseHours = 6;
   
-  // Adjust for word count
   const wordCountMatch = lowerText.match(/(\d+)(?:\s*-\s*(\d+))?\s*words/i);
   if (wordCountMatch) {
     let wordCount;
     if (wordCountMatch[2]) {
-      // If it's a range, use the average
       wordCount = (parseInt(wordCountMatch[1]) + parseInt(wordCountMatch[2])) / 2;
     } else {
       wordCount = parseInt(wordCountMatch[1]);
     }
-    baseHours += wordCount / 500; // Add 1 hour per 500 words
+    baseHours += wordCount / 500;
   }
   
-  // Adjust for complexity keywords
   const complexityKeywords = [
     'research', 'analysis', 'analyze', 'evaluate', 'critical', 
     'complex', 'comprehensive', 'develop', 'create', 'design',
@@ -733,11 +670,10 @@ function estimateWorkHours(text) {
     keywordCount += matches.length;
   });
   
-  baseHours += keywordCount * 0.5; // Add 0.5 hours per complexity keyword
+  baseHours += keywordCount * 0.5;
   
-  // Reduce for group work
   if (/\b(?:group|team|collaborate)\b/i.test(lowerText)) {
-    baseHours *= 0.7; // 30% less time for group work
+    baseHours *= 0.7;
   }
   
   return Math.max(1, Math.round(baseHours));
@@ -745,6 +681,9 @@ function estimateWorkHours(text) {
 
 /**
  * Determine the type of assignment
+ * @param {string} lineText - Line with assignment information
+ * @param {string} context - Text context
+ * @returns {string} - Assignment type
  */
 function determineAssignmentType(lineText, context) {
   const combinedText = `${lineText} ${context}`.toLowerCase();
@@ -763,9 +702,11 @@ function determineAssignmentType(lineText, context) {
 
 /**
  * Extract title from context
+ * @param {string} lineText - Line with title information
+ * @param {string} context - Text context
+ * @returns {string} - Extracted title
  */
 function extractTitle(lineText, context) {
-  // Try patterns for explicitly labeled titles
   const titlePatterns = [
     /Assignment\s*(?:#|\d+)?:\s*([^.!?\n]+)/i,
     /Title\s*:\s*([^.!?\n]+)/i,
@@ -779,14 +720,99 @@ function extractTitle(lineText, context) {
     }
   }
   
-  // If no explicit title, use the first sentence of the context
   const firstSentence = context.split(/[.!?][\s\n]/)[0].trim();
   if (firstSentence.length < 100) {
     return firstSentence;
   }
   
-  // Fallback to the line text
   return lineText.trim();
+}
+
+/**
+ * Extract dates with contextual information
+ * @param {string} text - Text to extract dates from
+ * @returns {Array} - Array of date objects with context
+ */
+function extractDatesWithContext(text) {
+  const dateMatches = [];
+  const datePatterns = [
+    /(\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/g,
+    /(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?([A-Za-z]+)(?:\s*,?\s*(\d{4}))?/g,
+    /([A-Za-z]+)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/g
+  ];
+
+  datePatterns.forEach(pattern => {
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      // Get context around the date (up to 100 chars before and after)
+      const contextStart = Math.max(0, match.index - 100);
+      const contextEnd = Math.min(text.length, match.index + match[0].length + 100);
+      const context = text.substring(contextStart, contextEnd);
+      
+      // Determine if this is a deadline or exam date
+      const isDeadline = /(?:due|deadline|submit|assignment)/i.test(context);
+      const isExam = /(?:exam|test|quiz|midterm|final)/i.test(context);
+      
+      dateMatches.push({
+        date: match[0],
+        context: context,
+        isDeadline: isDeadline,
+        isExam: isExam,
+        importance: isDeadline || isExam ? 'high' : 'medium'
+      });
+    }
+  });
+
+  return dateMatches;
+}
+
+/**
+ * Extract deadlines from section and add to document content
+ * @param {string} section - Section text
+ * @param {Object} documentContent - Document content object to update
+ */
+function extractDeadlinesFromSection(section, documentContent) {
+  const deadlinePatterns = [
+    /(?:due|deadline|submission)\s*(?:date|on|by)?\s*:?\s*([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4})/i,
+    /(?:submit|turn\s+in|hand\s+in).*?(?:by|before|no\s+later\s+than)\s+([A-Za-z]+\s+\d{1,2}(?:st|nd|rd|th)?,?\s*\d{4}|\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{4})/i
+  ];
+
+  deadlinePatterns.forEach(pattern => {
+    const match = section.match(pattern);
+    if (match && match[1]) {
+      // Get 50 chars of context before the deadline
+      const contextStart = Math.max(0, match.index - 50);
+      const context = section.substring(contextStart, match.index + match[0].length);
+      
+      documentContent.structuredContent.deadlines.push({
+        date: match[1],
+        context: context,
+        priority: determinePriority(section)
+      });
+    }
+  });
+}
+
+/**
+ * Determine priority based on text content
+ * @param {string} text - Text to analyze
+ * @returns {string} - Priority level (high, medium, low)
+ */
+function determinePriority(text) {
+  const lowerText = text.toLowerCase();
+  
+  // Check for high priority indicators
+  if (/\b(?:critical|essential|important|major|significant|urgent|immediate)\b/i.test(lowerText)) {
+    return 'high';
+  }
+  
+  // Check for low priority indicators
+  if (/\b(?:minor|optional|suggested|recommended|if time permits|bonus)\b/i.test(lowerText)) {
+    return 'low';
+  }
+  
+  // Default to medium
+  return 'medium';
 }
 
 /**
@@ -817,15 +843,6 @@ export async function processDocuments(filePaths, userId, options = {}) {
       }
     };
 
-    // Load user preferences with defaults
-    const userPreferences = options.preferences || {
-      studyHoursPerDay: 4,
-      breakDuration: 15,
-      weekendStudy: true,
-      preferredStudyTimes: ['morning', 'evening'],
-      preferredSessionLength: 2
-    };
-
     // Process each document with proper assignment tagging
     for (const filePath of filePaths) {
       console.log('Processing file:', filePath);
@@ -840,78 +857,92 @@ export async function processDocuments(filePaths, userId, options = {}) {
 
       // Use enhanced PDF processor for rich data extraction
       const extractedData = await processPDF(dataBuffer, fileInfo);
+      console.log(`Extracted data for file ${fileInfo.name}:`, {
+        assignmentsFound: extractedData.structuredContent?.assignments?.length || 0,
+        datesFound: extractedData.structuredContent?.dates?.length || 0,
+        deadlinesFound: extractedData.structuredContent?.deadlines?.length || 0,
+        topicsFound: extractedData.structuredContent?.topics?.length || 0
+      });
       
       // Merge structured content with comprehensive metadata
       if (extractedData.structuredContent) {
         // Add assignments with assignment tag and detailed metadata
-        extractedData.structuredContent.assignments.forEach(assignment => {
-          allDocumentContent.assignments.push({
-            ...assignment,
-            source: 'pdf',
-            documentType: 'assignment',
-            sourceFile: filePath.split('/').pop()
+        if (Array.isArray(extractedData.structuredContent.assignments)) {
+          extractedData.structuredContent.assignments.forEach(assignment => {
+            allDocumentContent.assignments.push({
+              ...assignment,
+              source: 'pdf',
+              documentType: 'assignment',
+              sourceFile: filePath.split('/').pop()
+            });
           });
-        });
+        }
         
         // Add dates with context classification
-        extractedData.structuredContent.dates.forEach(date => {
-          allDocumentContent.dates.push({
-            ...date,
-            source: 'pdf',
-            sourceFile: filePath.split('/').pop()
+        if (Array.isArray(extractedData.structuredContent.dates)) {
+          extractedData.structuredContent.dates.forEach(date => {
+            allDocumentContent.dates.push({
+              ...date,
+              source: 'pdf',
+              sourceFile: filePath.split('/').pop()
+            });
           });
-        });
+        }
         
         // Add deadlines with priority info
-        extractedData.structuredContent.deadlines.forEach(deadline => {
-          allDocumentContent.deadlines.push({
-            ...deadline,
-            source: 'pdf',
-            sourceFile: filePath.split('/').pop()
+        if (Array.isArray(extractedData.structuredContent.deadlines)) {
+          extractedData.structuredContent.deadlines.forEach(deadline => {
+            allDocumentContent.deadlines.push({
+              ...deadline,
+              source: 'pdf',
+              sourceFile: filePath.split('/').pop()
+            });
           });
-        });
+        }
         
         // Add topics with importance ratings
-        extractedData.structuredContent.topics.forEach(topic => {
-          allDocumentContent.topics.push({
-            ...topic,
-            source: 'pdf',
-            sourceFile: filePath.split('/').pop()
+        if (Array.isArray(extractedData.structuredContent.topics)) {
+          extractedData.structuredContent.topics.forEach(topic => {
+            allDocumentContent.topics.push({
+              ...topic,
+              source: 'pdf',
+              sourceFile: filePath.split('/').pop()
+            });
           });
-        });
+        }
       }
       
       // Add assignments from raw extraction with enrichment
-      extractedData.assignments.forEach(assignment => {
-        // Check if this is a duplicate before adding
-        const isDuplicate = allDocumentContent.assignments.some(
-          a => a.title === assignment.title || 
-              (a.dueDate && assignment.details.dueDate && a.dueDate === assignment.details.dueDate)
-        );
-        
-        if (!isDuplicate) {
-          allDocumentContent.assignments.push({
-            title: assignment.title,
-            type: assignment.type,
-            dueDate: assignment.details.dueDate,
-            weight: assignment.details.weight,
-            wordCount: assignment.details.wordCount,
-            pageCount: assignment.details.pageCount,
-            groupWork: assignment.details.groupWork,
-            estimatedHours: assignment.details.estimatedHours,
-            requirements: assignment.details.requirements,
-            deliverables: assignment.details.deliverables,
-            description: extractDescription(assignment.details.requirements?.join(' ') || ''),
-            objectives: assignment.details.learningObjectives || [],
-            topics: assignment.details.topics || [],
-            complexity: assignment.complexity || 3,
-            source: 'pdf',
-            sourceFile: filePath.split('/').pop()
-          });
-        }
-      });
+      if (Array.isArray(extractedData.assignments)) {
+        extractedData.assignments.forEach(assignment => {
+          const isDuplicate = allDocumentContent.assignments.some(
+            a => a.title === assignment.title || 
+                (a.dueDate && assignment.details.dueDate && a.dueDate === assignment.details.dueDate)
+          );
+          
+          if (!isDuplicate) {
+            allDocumentContent.assignments.push({
+              title: assignment.title,
+              type: assignment.type,
+              dueDate: assignment.details.dueDate,
+              weight: assignment.details.weight,
+              wordCount: assignment.details.wordCount,
+              pageCount: assignment.details.pageCount,
+              groupWork: assignment.details.groupWork,
+              estimatedHours: assignment.details.estimatedHours,
+              requirements: assignment.details.requirements,
+              deliverables: assignment.details.deliverables,
+              description: extractDescription(assignment.details.requirements?.join(' ') || ''),
+              objectives: assignment.details.learningObjectives || [],
+              topics: assignment.details.topics || [],
+              complexity: assignment.complexity || 3,
+              source: 'pdf',
+              sourceFile: filePath.split('/').pop()
+            });
+          }
+        });
+      }
 
-      // Use metadata if available with fallbacks
       if (!allDocumentContent.metadata.courseTitle && extractedData.syllabus?.courseTitle) {
         allDocumentContent.metadata.courseTitle = extractedData.syllabus.courseTitle;
       }
@@ -924,28 +955,26 @@ export async function processDocuments(filePaths, userId, options = {}) {
       if (!allDocumentContent.metadata.semester && extractedData.syllabus?.semester) {
         allDocumentContent.metadata.semester = extractedData.syllabus.semester;
       }
-
-      // Clean up temp file after processing
-      fs.unlinkSync(filePath);
     }
 
-    console.log('Extracted comprehensive data:', {
+    console.log('Extracted comprehensive data from all PDFs:', {
       numberOfAssignments: allDocumentContent.assignments.length,
       numberOfTopics: allDocumentContent.topics.length,
-      userPreferences: userPreferences
+      numberOfDeadlines: allDocumentContent.deadlines.length,
+      numberOfFiles: filePaths.length
     });
 
-    // Get class schedule with proper class tagging
     const classSchedule = options.classSchedule || [];
     
-    // Tag each class entry with class type
     const taggedClassSchedule = classSchedule.map(cls => ({
       ...cls,
       documentType: 'class'
     }));
 
-    // Generate optimized schedule with human-friendly pacing using preferences and class schedule
-    console.log('Generating optimized human-friendly schedule with user preferences...');
+    console.log('Generating optimized human-friendly schedule with user preferences:', 
+      JSON.stringify(Object.keys(options.preferences || {}))
+    );
+    
     const schedule = generateSchedule(
       allDocumentContent.assignments, 
       allDocumentContent.dates, 
@@ -953,7 +982,8 @@ export async function processDocuments(filePaths, userId, options = {}) {
       { 
         ...allDocumentContent.metadata, 
         topics: allDocumentContent.topics,
-        userPreferences: { ...userPreferences, classSchedule: taggedClassSchedule }
+        deadlines: allDocumentContent.deadlines,
+        userPreferences: { ...options.preferences, classSchedule: taggedClassSchedule }
       }
     );
 
@@ -962,11 +992,79 @@ export async function processDocuments(filePaths, userId, options = {}) {
       firstEventType: schedule[0]?.category
     });
 
+    try {
+      for (const filePath of filePaths) {
+        fs.unlinkSync(filePath);
+      }
+    } catch (cleanupError) {
+      console.error('Warning: Error cleaning up temp files:', cleanupError);
+    }
+
     return schedule;
   } catch (error) {
     console.error('Error processing PDFs:', error);
-    throw new Error('Failed to process PDF documents');
+    try {
+      for (const filePath of filePaths) {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    } catch (cleanupError) {
+      console.error('Error cleaning up after processing failure:', cleanupError);
+    }
+    throw new Error('Failed to process PDF documents: ' + error.message);
   }
 }
 
-// ... other helper functions ...
+/**
+ * Check if a line is likely to be a header
+ * @param {string} text - The line text to check
+ * @param {number} index - Current line index
+ * @param {string[]} allLines - All lines in the document
+ * @returns {boolean} - True if the line is likely a header
+ */
+function isHeaderLine(text, index, allLines) {
+  const isAllCaps = text === text.toUpperCase() && text.length > 3;
+  const hasSectionPrefix = /^(?:SECTION|PART|CHAPTER|UNIT)\s+\d+/i.test(text);
+  const hasNumberingPrefix = /^\d+[\.\)]\s+[A-Z]/.test(text);
+  const hasAssignmentPrefix = /^(?:Assignment|Task|Project)\s+\d+/i.test(text);
+  
+  const nextLine = index < allLines.length - 1 ? allLines[index + 1] : '';
+  const isPreviousLineEmpty = index > 0 ? !allLines[index - 1].trim() : true;
+  
+  const isShortLine = text.length > 0 && text.length < 100;
+  
+  const hasFormattingChars = /[=\-_*]{3,}/.test(text);
+  
+  return (isAllCaps || hasSectionPrefix || hasNumberingPrefix || hasAssignmentPrefix || hasFormattingChars) && 
+         isShortLine && 
+         (isPreviousLineEmpty || index === 0 || hasFormattingChars);
+}
+
+/**
+ * Check if a line contains assignment information
+ * @param {string} text - Line to check
+ * @returns {boolean} - True if contains assignment info
+ */
+function isAssignmentLine(text) {
+  return /\b(?:assignment|homework|project|task|submission|deliverable|due|deadline)\b/i.test(text);
+}
+
+/**
+ * Check if a line contains date information
+ * @param {string} text - Line to check
+ * @returns {boolean} - True if contains date info
+ */
+function isDateLine(text) {
+  return /\b(?:date|due|deadline|submit|submission)\b|(?:\d{1,2}[\/\.-]\d{1,2}[\/\.-]\d{2,4})/i.test(text);
+}
+
+/**
+ * Check if a line contains a topic reference
+ * @param {string} text - Line to check
+ * @returns {boolean} - True if contains topic
+ */
+function isTopicLine(text) {
+  return /\b(?:topic|subject|theme|area)\b/i.test(text);
+}
+

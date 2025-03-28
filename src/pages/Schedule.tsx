@@ -27,8 +27,8 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import TaskModal from '../components/TaskModal';
 import ClassModal from '../components/ClassModal';
 import { scheduleService } from '../services/scheduleService';
-import DebugCalendar from '../components/DebugCalendar';
 import PreferencesPanel from '../components/PreferencesPanel';                
+import { pdfService } from '../services/pdfService';
 
 // Set up the moment localizer properly
 const localizer = momentLocalizer(moment);
@@ -85,8 +85,8 @@ const CustomEventComponent = ({ event }) => {
   );
 };
 
-// Add this function to organize classes by day 
-const organizeClassesByDay = (classes: any[]) => {
+// Fix the organizeClassesByDay function to handle different input formats
+const organizeClassesByDay = (classes: any): { [key: string]: any[] } => {
   const dayMap: { [key: string]: any[] } = {
     'Monday': [],
     'Tuesday': [],
@@ -97,8 +97,15 @@ const organizeClassesByDay = (classes: any[]) => {
     'Sunday': []
   };
   
-  classes.forEach(cls => {
-    if (cls.day && dayMap[cls.day]) {
+  // Handle different input formats
+  const classArray = Array.isArray(classes) 
+    ? classes 
+    : (classes && classes.data && Array.isArray(classes.data) 
+        ? classes.data 
+        : []);
+  
+  classArray.forEach(cls => {
+    if (cls && cls.day && dayMap[cls.day]) {
       dayMap[cls.day].push(cls);
     }
   });
@@ -191,8 +198,6 @@ const Schedule: React.FC = () => {
 
   const [classSchedules, setClassSchedules] = useState<any[]>([]);
 
-  const [showDebugCalendar, setShowDebugCalendar] = useState(true);
-
   const [schedule, setSchedule] = useState<any>(null);
 
   // Add a key to force re-renders when events change
@@ -230,6 +235,7 @@ const Schedule: React.FC = () => {
     fetchScheduleData();
     fetchClassSchedules();
     loadPreferences();
+    loadPDFDocuments();
   }, []);
 
   // Fetch schedule data from the API
@@ -265,22 +271,74 @@ const Schedule: React.FC = () => {
     }
   };
 
+  // Fix fetchClassSchedules function to properly handle the response format
   const fetchClassSchedules = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/schedule/classes', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setClassSchedules(response.data);
+      setLoading(true);
+      const response = await scheduleService.fetchClasses();
       
-      // Convert class schedules to events and add to calendar
-      const classEvents = convertClassSchedulesToEvents(response.data);
-      setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...classEvents]);
+      // Check if response has data and it's an array
+      if (response && response.data && Array.isArray(response.data)) {
+        setClassSchedules(response.data);
+        
+        if (response.data.length > 0) {
+          console.log(`Processing ${response.data.length} classes for calendar`);
+          // Convert class schedules to events and add to calendar
+          const classEvents = generateRecurringEvents(response.data);
+          setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...classEvents]);
+        } else {
+          console.log('No classes found in response');
+        }
+      } else {
+        console.log('No class data received from API or invalid format:', response);
+        setClassSchedules([]);
+      }
     } catch (error) {
-      console.error('Error fetching class schedules:', error);
-      toast.error('Failed to fetch class schedules');
+      console.error('Error fetching schedules:', error);
+      toast.error('Failed to load schedule');
+      // Set empty array to prevent undefined errors
+      setClassSchedules([]);
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Fix other functions that fetch classes to use the consistent format
+  const fetchAndSetClasses = async () => {
+    try {
+      const classesData = await scheduleService.fetchClasses();
+      console.log('Fetched classes in component:', classesData);
+      
+      if (Array.isArray(classesData) && classesData.length > 0) {
+        const classEvents = generateRecurringEvents(classesData);
+        console.log('Generated class events:', classEvents);
+        
+        setEvents(prev => {
+          // Filter out existing class events and add the new ones
+          const nonClassEvents = prev.filter(event => event.category !== 'class');
+          return [...nonClassEvents, ...classEvents];
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      toast.error('Failed to load class schedule');
+    }
+  };
+
+  // Simplify and improve the useEffect hooks
+  useEffect(() => {
+    // Call a single function to fetch all data needed
+    const loadInitialData = async () => {
+      await fetchScheduleData();
+      await fetchClassSchedules(); // This will set up class events
+      await loadPreferences();
+      await loadPDFDocuments();
+    };
+    
+    loadInitialData();
+    
+    // Clean up redundant fetch class calls in other useEffect hooks
+  }, []);
 
   // Update the processEvents function with better debugging
   const processEvents = useCallback((studyData: any, classData: any) => {
@@ -443,66 +501,7 @@ const Schedule: React.FC = () => {
       console.log('Added class, received all classes:', allClasses);
       
       // Use the same direct conversion method as in the fetchClasses function
-      const formattedEvents = allClasses.flatMap(classItem => {
-        const events = [];
-        try {
-          // Get semester dates or use defaults
-          const startDate = classItem.semesterDates?.startDate 
-            ? new Date(classItem.semesterDates.startDate)
-            : new Date();
-            
-          const endDate = classItem.semesterDates?.endDate
-            ? new Date(classItem.semesterDates.endDate)
-            : new Date(new Date().setMonth(new Date().getMonth() + 3));
-          
-          let currentDate = new Date(startDate);
-          
-          // Create recurring events for each class day
-          while (currentDate <= endDate) {
-            // Check if current day matches class day
-            if (currentDate.toLocaleDateString('en-us', { weekday: 'long' }) === classItem.day) {
-              // Parse class times
-              const [startHour, startMinute] = classItem.startTime.split(':').map(Number);
-              const [endHour, endMinute] = classItem.endTime.split(':').map(Number);
-              
-              // Create event start and end times
-              const eventStart = new Date(currentDate);
-              eventStart.setHours(startHour, startMinute, 0);
-              
-              const eventEnd = new Date(currentDate);
-              eventEnd.setHours(endHour, endMinute, 0);
-              
-              events.push({
-                id: `class-${classItem._id}-${currentDate.toISOString()}`,
-                title: `${classItem.courseName} (${classItem.courseCode})`,
-                start: eventStart,
-                end: eventEnd,
-                allDay: false,
-                category: 'class',
-                courseCode: classItem.courseCode,
-                location: classItem.location,
-                resource: {
-                  type: 'class',
-                  courseCode: classItem.courseCode,
-                  location: classItem.location,
-                  recurring: true,
-                  day: classItem.day,
-                  details: {
-                    courseName: classItem.courseName,
-                    professor: classItem.professor
-                  }
-                }
-              });
-            }
-            
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-        } catch (err) {
-          console.error('Error processing class:', classItem, err);
-        }
-        return events;
-      });
+      const formattedEvents = generateRecurringEvents(allClasses);
       
       console.log('Formatted class events for normal calendar:', formattedEvents);
       
@@ -565,47 +564,72 @@ const Schedule: React.FC = () => {
     }
   };
 
-  const convertClassSchedulesToEvents = (classes: any[]) => {
-    const events: CalendarEvent[] = [];
-    const currentDate = new Date();
+  // Replace the generateRecurringEvents function to handle single class or array
+  const generateRecurringEvents = (classItems) => {
+    if (!Array.isArray(classItems)) {
+      console.warn('generateRecurringEvents: Input is not an array:', classItems);
+      return [];
+    }
     
-    classes.forEach(classItem => {
-      const { startDate, endDate } = classItem.semesterDates;
-      let currentDay = new Date(startDate);
+    const events = [];
+    
+    classItems.forEach(classData => {
+      if (!classData || !classData.semesterDates) {
+        console.warn('Invalid class data:', classData);
+        return;
+      }
       
-      while (currentDay <= new Date(endDate)) {
-        if (currentDay.toLocaleString('en-us', { weekday: 'long' }) === classItem.day) {
-          const eventStart = new Date(currentDay);
-          const [startHours, startMinutes] = classItem.startTime.split(':');
-          eventStart.setHours(parseInt(startHours), parseInt(startMinutes), 0);
-
-          const eventEnd = new Date(currentDay);
-          const [endHours, endMinutes] = classItem.endTime.split(':');
-          eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
-
-          events.push({
-            id: `class-${classItem._id}-${currentDay.toISOString()}`,
-            title: `${classItem.courseName} (${classItem.courseCode})`,
-            start: eventStart,
-            end: eventEnd,
-            courseCode: classItem.courseCode,
-            location: classItem.location,
-            category: 'class',
-            resource: {
-              type: 'class',
-              courseCode: classItem.courseCode,
-              location: classItem.location,
-              details: {
-                courseName: classItem.courseName,
-                professor: classItem.professor
+      const startDate = new Date(classData.semesterDates.startDate);
+      const endDate = new Date(classData.semesterDates.endDate);
+      let currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        if (currentDate.toLocaleString('en-us', { weekday: 'long' }) === classData.day) {
+          // Skip if missing critical time values
+          if (!classData.startTime || !classData.endTime) {
+            console.warn('Missing time values in class item:', classData);
+            break;
+          }
+          
+          try {
+            const [startHours, startMinutes] = classData.startTime.split(':');
+            const [endHours, endMinutes] = classData.endTime.split(':');
+            
+            const eventStart = new Date(currentDate);
+            eventStart.setHours(parseInt(startHours), parseInt(startMinutes), 0);
+            
+            const eventEnd = new Date(currentDate);
+            eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
+            
+            events.push({
+              id: `class-${classData._id || Math.random().toString(36).substring(2)}-${currentDate.toISOString()}`,
+              title: `${classData.courseName} (${classData.courseCode || 'No Code'})`,
+              start: eventStart,
+              end: eventEnd,
+              allDay: false,
+              category: 'class',
+              courseCode: classData.courseCode,
+              location: classData.location,
+              resource: {
+                type: 'class',
+                courseCode: classData.courseCode,
+                location: classData.location,
+                recurring: true,
+                day: classData.day,
+                details: {
+                  courseName: classData.courseName,
+                  professor: classData.professor
+                }
               }
-            }
-          });
+            });
+          } catch (err) {
+            console.error('Error creating event for class:', err, classData);
+          }
         }
-        currentDay.setDate(currentDay.getDate() + 1);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
     });
-
+    
     return events;
   };
 
@@ -1036,31 +1060,18 @@ const Schedule: React.FC = () => {
     
     for (const file of newFiles) {
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        
         setParsedDocuments(prev => [...prev, {
           title: file.name,
           content: null,
           status: 'parsing'
         }]);
   
-        const token = localStorage.getItem('token');
-        const response = await axios.post(
-          'http://localhost:5000/api/parse-pdf',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              'Authorization': `Bearer ${token}`
-            },
-            timeout: 30000 // 30 second timeout
-          }
-        );
+        // Use the service to upload and parse the PDF
+        const result = await pdfService.uploadAndParsePDF(file);
   
         setParsedDocuments(prev => prev.map(doc => 
           doc.title === file.name 
-            ? { ...doc, content: response.data.data, status: 'done' }
+            ? { ...doc, content: result.data, status: 'done' }
             : doc
         ));
   
@@ -1408,29 +1419,40 @@ const Schedule: React.FC = () => {
         status: doc.status === 'done' ? 'generating' : doc.status
       })));
   
-      const formData = new FormData();
-      files.forEach((file, index) => {
-        formData.append('pdfFiles', file);
-      });
+      // Use the service to generate a schedule
+      const response = await pdfService.generateSchedule(files);
   
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:5000/ai/generate-schedule',
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+      // Add better error handling and response validation
+      if (!response) {
+        throw new Error('Empty response from server');
+      }
+  
+      console.log('Schedule generation response:', response);
+  
+      // Check if schedule exists and is valid
+      if (response.success && response.schedule) {
+        // Ensure schedule is an array before converting
+        const schedule = Array.isArray(response.schedule) ? response.schedule : [];
+        
+        if (schedule.length === 0) {
+          toast.warning('No events could be generated from your documents');
+        } else {
+          // Convert dates from strings to Date objects
+          const processedSchedule = schedule.map(event => ({
+            ...event,
+            start: new Date(event.start),
+            end: new Date(event.end)
+          }));
+          
+          setStudyData(processedSchedule);
+          processEvents(processedSchedule, classData);
+          toast.success(`Generated ${processedSchedule.length} study events`);
         }
-      );
-  
-      // Convert schedule data to calendar events
-      if (response.data) {
-        const calendarEvents = tasksToEvents(response.data);
-        setEvents(prev => [...prev, ...calendarEvents]);
-        setShowUploadModal(false);
-        toast.success('Schedule generated successfully!');
+      } else if (response.error) {
+        // Show specific error from server if present
+        toast.error(response.error || 'Failed to generate schedule');
+      } else {
+        toast.warning(response.message || 'No schedulable assignments found. Check for valid due dates in your documents.');
       }
     } catch (error) {
       console.error('Error generating schedule:', error);
@@ -1476,7 +1498,7 @@ const Schedule: React.FC = () => {
         console.log('Fetched classes:', classes);
         
         // Convert classes to calendar events
-        const classEvents = classesToEvents(classes);
+        const classEvents = generateRecurringEvents(classes);
         setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...classEvents]);
       } catch (error) {
         console.error('Error fetching schedules:', error);
@@ -1491,71 +1513,6 @@ const Schedule: React.FC = () => {
     fetchAndSetClasses();
   }, []);
 
-  const fetchAndSetClasses = async () => {
-    try {
-      const classes = await scheduleService.fetchClasses();
-      console.log('Fetched classes in component:', classes);
-      
-      if (classes && classes.length > 0) {
-        const classEvents = classesToEvents(classes);
-        console.log('Generated class events:', classEvents);
-        
-        setEvents(prev => {
-          const nonClassEvents = prev.filter(e => e.category !== 'class');
-          return [...nonClassEvents, ...classEvents];
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-      toast.error('Failed to load class schedule');
-    }
-  };
-
-  // Add this helper function
-  const generateRecurringEvents = (classData: any) => {
-    const events: CalendarEvent[] = [];
-    const startDate = new Date(classData.semesterDates.startDate);
-    const endDate = new Date(classData.semesterDates.endDate);
-    let currentDate = new Date(startDate);
-
-    while (currentDate <= endDate) {
-      if (currentDate.toLocaleDateString('en-us', { weekday: 'long' }) === classData.day) {
-        const [startHours, startMinutes] = classData.startTime.split(':');
-        const [endHours, endMinutes] = classData.endTime.split(':');
-
-        const eventStart = new Date(currentDate);
-        eventStart.setHours(parseInt(startHours), parseInt(startMinutes), 0);
-
-        const eventEnd = new Date(currentDate);
-        eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
-
-        events.push({
-          id: `class-${classData._id}-${currentDate.toISOString()}`,
-          title: `${classData.courseName} (${classData.courseCode})`,
-          start: eventStart,
-          end: eventEnd,
-          allDay: false,
-          category: 'class',
-          courseCode: classData.courseCode,
-          location: classData.location,
-          resource: {
-            type: 'class',
-            courseCode: classData.courseCode,
-            location: classData.location,
-            recurring: true,
-            day: classData.day,
-            details: {
-              courseName: classData.courseName,
-              professor: classData.professor
-            }
-          }
-        });
-      }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-    return events;
-  };
-
   useEffect(() => {
     const fetchClasses = async () => {
       try {
@@ -1564,9 +1521,12 @@ const Schedule: React.FC = () => {
         console.log('Fetched classes:', response);
 
         if (Array.isArray(response)) {
-          const allEvents = response.flatMap(classData => generateRecurringEvents(classData));
-          console.log('Generated events:', allEvents);
-          setEvents(allEvents);
+          // Process classes directly using the existing helper function
+          const events = generateRecurringEvents(response);
+          setEvents(prevEvents => [...prevEvents, ...events]);
+          console.log('Class events generated:', events.length);
+        } else {
+          console.warn('fetchClasses did not return an array:', response);
         }
       } catch (error) {
         console.error('Error fetching classes:', error);
@@ -1580,526 +1540,13 @@ const Schedule: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    fetchClassData();
-  }, []);
-
-  const fetchClassData = async () => {
-    try {
-      const classes = await scheduleService.fetchClasses();
-      console.log('Classes for normal calendar:', classes);
-      
-      if (classes && classes.length > 0) {
-        // Create events in the exact format needed by the calendar
-        const formattedEvents = classes.flatMap(classItem => {
-          const events = [];
-          
-          // Get semester dates or use defaults
-          const startDate = classItem.semesterDates?.startDate 
-            ? new Date(classItem.semesterDates.startDate)
-            : new Date();
-          const endDate = classItem.semesterDates?.endDate
-            ? new Date(classItem.semesterDates.endDate)
-            : new Date(new Date().setMonth(new Date().getMonth() + 3));
-          
-          let currentDate = new Date(startDate);
-          
-          // Create recurring events for each class day
-          while (currentDate <= endDate) {
-            // Check if current day matches class day
-            if (currentDate.toLocaleDateString('en-us', { weekday: 'long' }) === classItem.day) {
-              // Parse class times
-              const [startHour, startMinute] = classItem.startTime.split(':').map(Number);
-              const [endHour, endMinute] = classItem.endTime.split(':').map(Number);
-              
-              // Create event start and end times
-              const eventStart = new Date(currentDate);
-              eventStart.setHours(startHour, startMinute, 0);
-              
-              const eventEnd = new Date(currentDate);
-              eventEnd.setHours(endHour, endMinute, 0);
-              
-              events.push({
-                id: `class-${classItem._id}-${currentDate.toISOString()}`,
-                title: `${classItem.courseName} (${classItem.courseCode})`,
-                start: eventStart,
-                end: eventEnd,
-                allDay: false,
-                category: 'class',
-                courseCode: classItem.courseCode,
-                location: classItem.location,
-                resource: {
-                  type: 'class',
-                  courseCode: classItem.courseCode,
-                  location: classItem.location,
-                  courseName: classItem.courseName,
-                  professor: classItem.professor || ''
-                }
-              });
-            }
-            
-            // Move to next day
-            currentDate.setDate(currentDate.getDate() + 1);
-          }
-          
-          return events;
-        });
-        
-        console.log('Formatted class events for normal calendar:', formattedEvents);
-        setEvents(formattedEvents);
-      }
-    } catch (error) {
-      console.error('Error fetching classes for normal calendar:', error);
-      toast.error('Failed to load classes');
-    }
-  };
-
-  // Custom event component to ensure proper rendering
-  const EventComponent = ({ event }: any) => {
-    console.log('Rendering event:', event);
-    
-    return (
-      <div className={`calendar-event ${event.category === 'class' ? 'class-event' : ''}`}>
-        <div className="event-title">{event.title}</div>
-        {event.location && <div className="event-location">📍 {event.location}</div>}
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    async function loadClasses() {
-      try {
-        setLoading(true);
-        const fetchedClasses = await scheduleService.fetchClasses();
-        // Debug log
-        console.log("Fetched classes:", fetchedClasses);
-
-        // Flatten each class into recurring events
-        const classEvents = fetchedClasses.flatMap(cls => {
-          const events = [];
-          // ...existing code...
-          const semesterStart = cls.semesterDates?.startDate
-            ? new Date(cls.semesterDates.startDate)
-            : new Date();
-          const semesterEnd = cls.semesterDates?.endDate
-            ? new Date(cls.semesterDates.endDate)
-            : new Date(new Date().setMonth(new Date().getMonth() + 3));
-          let current = new Date(semesterStart);
-          while (current <= semesterEnd) {
-            if (current.toLocaleDateString('en-US', { weekday: 'long' }) === cls.day) {
-              // ...existing code...
-              const [sh, sm] = cls.startTime.split(':').map(Number);
-              const [eh, em] = cls.endTime.split(':').map(Number);
-              const startTime = new Date(current);
-              startTime.setHours(sh, sm, 0);
-              const endTime = new Date(current);
-              endTime.setHours(eh, em, 0);
-              events.push({
-                id: `cls-${cls._id}-${current.toISOString()}`,
-                title: `${cls.courseName} (${cls.courseCode})`,
-                start: startTime,
-                end: endTime,
-                location: cls.location,
-                resource: { courseCode: cls.courseCode, type: 'class' },
-              });
-            }
-            current.setDate(current.getDate() + 1);
-          }
-          return events;
-        });
-        // Set fully populated events
-        setEvents(classEvents);
-      } catch (err) {
-        console.error("Failed to load classes:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadClasses();
-  }, []);
-
-  useEffect(() => {
-    fetchClassesAlternate();
-  }, []);
-
-  const fetchClassesAlternate = async () => {
-    console.log('fetchClassesAlternate: A new approach');
-    try {
-      const classesData = await scheduleService.fetchClasses();
-      if (!classesData || classesData.length === 0) {
-        console.log('No classes found with alternate method');
-        return;
-      }
-      const altEvents = classesData.flatMap(cls => {
-        const eventsArr = [];
-        try {
-          const semStart = cls.semesterDates?.startDate ? new Date(cls.semesterDates.startDate) : new Date();
-          const semEnd = cls.semesterDates?.endDate ? new Date(cls.semesterDates.endDate) : new Date(new Date().setMonth(new Date().getMonth() + 3));
-          let current = new Date(semStart);
-          while (current <= semEnd) {
-            if (current.toLocaleDateString('en-us', { weekday: 'long' }) === cls.day) {
-              const [sh, sm] = cls.startTime.split(':').map(Number);
-              const [eh, em] = cls.endTime.split(':').map(Number);
-              const evtStart = new Date(current);
-              evtStart.setHours(sh, sm, 0);
-              const evtEnd = new Date(current);
-              evtEnd.setHours(eh, em, 0);
-              eventsArr.push({
-                id: `alternate-${cls._id}-${current.toISOString()}`,
-                title: `${cls.courseName} (${cls.courseCode})`,
-                start: evtStart,
-                end: evtEnd,
-                location: cls.location,
-                resource: { type: 'class', courseCode: cls.courseCode },
-              });
-            }
-            current.setDate(current.getDate() + 1);
-          }
-        } catch (e) {
-          console.error('Error processing class in alternate method:', cls, e);
-        }
-        return eventsArr;
-      });
-      console.log('Alternate events:', altEvents);
-      setEvents(prevEvents => [...prevEvents, ...altEvents]);
-    } catch (err) {
-      console.error('Alternate fetch failed:', err);
-    }
-  };
-
-  useEffect(() => {
-    async function loadAlternateEvents() {
-      try {
-        const classes = await scheduleService.fetchClasses();
-        console.log("Alternate fetch for main calendar:", classes);
-
-        if (!classes || classes.length === 0) {
-          console.log("No classes for main calendar in alternate method");
-          return;
-        }
-
-        const altEvents = classes.flatMap((cls) => {
-          const events = [];
-          // ...existing code...
-          const start = cls.semesterDates?.startDate ? new Date(cls.semesterDates.startDate) : new Date();
-          const end = cls.semesterDates?.endDate ? new Date(cls.semesterDates.endDate) : new Date(new Date().setMonth(new Date().getMonth() + 3));
-          let current = new Date(start);
-          while (current <= end) {
-            if (current.toLocaleDateString('en-us', { weekday: 'long' }) === cls.day) {
-              const [sh, sm] = cls.startTime.split(':').map(Number);
-              const [eh, em] = cls.endTime.split(':').map(Number);
-              const evtStart = new Date(current);
-              evtStart.setHours(sh, sm, 0);
-              const evtEnd = new Date(current);
-              evtEnd.setHours(eh, em, 0);
-              events.push({
-                id: `alt-${cls._id}-${cls.day}-${evtStart.toISOString()}`,
-                title: `${cls.courseName} (${cls.courseCode})`,
-                start: evtStart,
-                end: evtEnd,
-                resource: { type: 'class', location: cls.location },
-              });
-            }
-            current.setDate(current.getDate() + 1);
-          }
-          return events;
-        });
-
-        console.log("Alternate events for main calendar:", altEvents);
-        setEvents(prev => [...prev, ...altEvents]);
-      } catch (err) {
-        console.error("Error in alternate fetch for main calendar:", err);
-      }
-    }
-
-    loadAlternateEvents();
-  }, []);
-
-  useEffect(() => {
-    async function fallbackIfScheduleNull() {
-      try {
-        console.log("Checking schedule fallback...");
-        // Assume you already have a 'schedule' variable
-        if (!schedule) {
-          const classes = await scheduleService.fetchClasses();
-          console.log("Fallback classes:", classes);
-          // Flatten classes into recurring events
-          const fallbackEvents = classes.flatMap(cls => {
-            // ...existing code...
-            // Return an array of fully formed event objects
-          });
-          setEvents(prev => [...prev, ...fallbackEvents]);
-        }
-      } catch (err) {
-        console.error("Fallback schedule fetch error:", err);
-      }
-    }
-    fallbackIfScheduleNull();
-  }, []);
-
-  useEffect(() => {
-    async function fetchCalendarEvents() {
-      try {
-        const classes = await scheduleService.fetchClasses();
-        if (!classes || classes.length === 0) return;
-        console.log("Fetched classes for normal schedule:", classes);
-  
-        const newEvents = classes.flatMap((cls) => {
-          const events = [];
-          // ...existing code...
-          // Use same logic as DebugCalendar to create recurring events
-          // for startDate -> endDate, matching cls.day
-          return events;
-        });
-  
-        console.log("Generated normal schedule events:", newEvents);
-        setEvents(newEvents); // Replace or merge existing
-      } catch (err) {
-        console.error("Error fetching schedule events:", err);
-      }
-    }
-    fetchCalendarEvents();
-  }, []);
-
-  useEffect(() => {
-    async function fetchAndDebugFormat() {
-      try {
-        const classes = await scheduleService.fetchClasses();
-        console.log("Debug-style classes in Schedule:", classes);
-        if (!Array.isArray(classes) || classes.length === 0) return;
-  
-        const debugEvents = classes.flatMap((cls) => {
-          const events = [];
-          // ...copy recurring logic from DebugCalendar...
-          // (Generate events for each day in the date range)
-          return events;
-        });
-  
-        console.log("Debug-style events in Schedule:", debugEvents);
-        setEvents(debugEvents); // Replace or append as needed
-      } catch (err) {
-        console.error("Error in debug approach for Schedule:", err);
-      }
-    }
-    fetchAndDebugFormat();
-  }, []);
-
-  // Add a function to fetch generated assignments/tasks
-  const fetchAssignmentsAndTasks = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/schedule/tasks', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('Fetched assignments/tasks:', response.data);
-      
-      if (response.data && Array.isArray(response.data)) {
-        // Map the tasks to the format expected by react-big-calendar
-        const taskEvents = response.data.map(task => ({
-          id: task._id || task.id || `task-${Math.random().toString(36).substring(7)}`,
-          title: task.title,
-          start: new Date(task.start),
-          end: new Date(task.end),
-          allDay: false,
-          resource: {
-            type: 'task',
-            ...task
-          },
-          courseCode: task.courseCode,
-          location: task.location,
-          category: task.category || 'task',
-          priority: task.priority || 'medium'
-        }));
-        
-        console.log('Mapped task events:', taskEvents);
-        
-        // Add these events to the state
-        setEvents(prevEvents => [...prevEvents, ...taskEvents]);
-      }
-    } catch (error) {
-      console.error('Error fetching assignments/tasks:', error);
-      toast.error('Failed to load assignments');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Call this function after PDF upload
-  const handlePdfUploadSuccess = () => {
-    toast.success('PDF processed successfully!');
-    fetchAssignmentsAndTasks();
-  };
-
-  // Add this to the PDF upload handling code
-  const handlePdfUpload = async (files) => {
-    // ...existing code...
-    
-    try {
-      // ...existing upload code...
-      
-      // After successful upload and processing
-      handlePdfUploadSuccess();
-    } catch (error) {
-      // ...existing error handling...
-    }
-  };
-
-  // Add debug output to check what events are being provided to the calendar
-  const EventDebugger = () => {
-    // First check if events array exists and has items
-    if (!events || events.length === 0) {
-      return (
-        <div className="calendar-debug-info">
-          <p>No events in state. Check if:</p>
-          <ol>
-            <li>Classes are being fetched from the server (see logs)</li>
-            <li>Classes are being converted to events correctly</li>
-            <li>Events are being set in state</li>
-          </ol>
-          <div>
-            <button 
-              onClick={async () => {
-                const classes = await scheduleService.fetchClasses();
-                if (classes && classes.length > 0) {
-                  console.log("Reload attempt - Classes found:", classes.length);
-                  // Manually create events
-                  const manualEvents = [];
-                  for (const cls of classes) {
-                    try {
-                      const startDate = cls.semesterDates?.startDate 
-                        ? new Date(cls.semesterDates.startDate) 
-                        : new Date();
-                      const endDate = cls.semesterDates?.endDate 
-                        ? new Date(cls.semesterDates.endDate) 
-                        : new Date(new Date().setMonth(new Date().getMonth() + 3));
-                      
-                      let currentDate = new Date(startDate);
-                      while (currentDate <= endDate) {
-                        if (currentDate.toLocaleDateString('en-us', { weekday: 'long' }) === cls.day) {
-                          const [startHour, startMinute] = cls.startTime.split(':').map(Number);
-                          const [endHour, endMinute] = cls.endTime.split(':').map(Number);
-                          
-                          const eventStart = new Date(currentDate);
-                          eventStart.setHours(startHour, startMinute, 0);
-                          
-                          const eventEnd = new Date(currentDate);
-                          eventEnd.setHours(endHour, endMinute, 0);
-                          
-                          manualEvents.push({
-                            id: `class-${cls._id}-${currentDate.toISOString()}`,
-                            title: `${cls.courseName} (${cls.courseCode})`,
-                            start: eventStart,
-                            end: eventEnd,
-                            allDay: false,
-                            category: 'class',
-                            resource: { type: 'class', courseCode: cls.courseCode, location: cls.location }
-                          });
-                        }
-                        currentDate.setDate(currentDate.getDate() + 1);
-                      }
-                    } catch (err) {
-                      console.error("Error creating event:", err);
-                    }
-                  }
-                  console.log("Manual events created:", manualEvents.length);
-                  if (manualEvents.length > 0) {
-                    setEvents(manualEvents);
-                  }
-                }
-              }}
-              className="debug-reload-button"
-            >
-              Attempt Manual Reload
-            </button>
-          </div>
-        </div>
-      );
-    }
-    
-    // Only access events[0] if we know it exists
-    return (
-      <div className="calendar-debug-info">
-        <p>Events in state: {events.length}</p>
-        <p>First event: {events[0]?.title || 'No title'}</p>
-        <p>Type: {events[0]?.resource?.type || 'Unknown'}</p>
-        <p>Start: {events[0]?.start?.toString() || 'No start date'}</p>
-      </div>
-    );
-  };
-
-  // Add a simple custom event component that ensures visibility
-  const VisibleEventComponent = ({ event }) => {
-    console.log("Rendering event:", event);
-    return (
-      <div
-        style={{
-          backgroundColor: event.priority === 'high' ? '#ef4444' : 
-                           event.priority === 'medium' ? '#f59e0b' : '#10b981',
-          color: 'white',
-          padding: '4px 8px',
-          borderRadius: '4px',
-          fontWeight: 'bold',
-          border: '2px solid black',
-          height: '100%',
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden'
-        }}
-      >
-        <div style={{ fontWeight: 'bold' }}>{event.title}</div>
-        {event.location && <div>📍 {event.location}</div>}
-      </div>
-    );
-  };
-
-  // Add a separate debugger component specifically for event rendering
-  const RenderDebugger = () => {
-    if (events.length === 0) return null;
-    
-    // Get the first event's date in YYYY-MM-DD format for comparison
-    const firstEventDate = events[0]?.start instanceof Date 
-      ? `${events[0].start.getFullYear()}-${String(events[0].start.getMonth() + 1).padStart(2, '0')}-${String(events[0].start.getDate()).padStart(2, '0')}`
-      : 'Invalid date';
-    
-    return (
-      <div className="calendar-debug-info">
-        <h4>Render Debugging</h4>
-        <p>Current view: {calendarView}</p>
-        <p>First event date: {firstEventDate}</p>
-        <button 
-          onClick={() => {
-            // Force navigate to the first event's month
-            if (events.length > 0 && events[0].start instanceof Date) {
-              setCalendarView("month");
-              // You'd need to update the Calendar's date prop or ref
-            }
-          }}
-          style={{
-            padding: '8px 16px',
-            background: '#4f46e5',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Go to Event Date
-        </button>
-      </div>
-    );
-  };
-
-  // Modify your fetchAndConvertClasses function to ensure proper state updates
-  useEffect(() => {
     async function fetchAndConvertClasses() {
       try {
         const classes = await scheduleService.fetchClasses();
-        console.log("Classes fetched for initial load:", classes);
+        console.log('Classes fetched for initial load:', classes);
         
         if (!classes || classes.length === 0) {
-          console.log("No classes returned from fetchClasses()");
+          console.log('No classes returned from fetchClasses()');
           setEvents([]);
           setRawClasses([]);
           setClassesByDay({});
@@ -2113,12 +1560,13 @@ const Schedule: React.FC = () => {
         setClassesByDay(organizeClassesByDay(classes));
         
         // Convert classes to calendar events as before
-        // ...existing event creation code...
+        const events = generateRecurringEvents(classes);
+        setEvents(events);
         
         // Important: Force state update and re-render
         setRenderKey(prev => prev + 1);
       } catch (err) {
-        console.error("Error in fetchAndConvertClasses:", err);
+        console.error('Error in fetchAndConvertClasses:', err);
         setEvents([]);
         setRawClasses([]);
         setClassesByDay({});
@@ -2332,19 +1780,16 @@ const Schedule: React.FC = () => {
       }
       
       try {
-        const classes = await scheduleService.fetchClasses();
-        console.log("Classes fetched in Schedule.tsx:", classes);
+        const response = await scheduleService.fetchClasses();
+        console.log("Classes fetched in Schedule.tsx:", response);
+        
+        // Extract classes array from response
+        const classes = response && response.data ? response.data : [];
         
         if (!classes || classes.length === 0) {
-          console.log("No classes returned from fetchClasses()");
-          
-          // Only clear the state if we don't have cached data
-          if (!hasCachedData) {
-            setEvents([]);
-            setRawClasses([]);
-            setClassesByDay({});
-          }
-          setLoading(false);
+          console.log("No valid classes found");
+          setRawClasses([]);
+          setClassesByDay({});
           return;
         }
 
@@ -2352,23 +1797,13 @@ const Schedule: React.FC = () => {
         setRawClasses(classes);
         localStorage.setItem('scheduleRawClasses', JSON.stringify(classes));
         
-        // Organize classes by day for grid/list views
+        // Organize classes by day for grid/list views - pass the extracted array
         const classesByDayObject = organizeClassesByDay(classes);
         setClassesByDay(classesByDayObject);
         localStorage.setItem('scheduleClassesByDay', JSON.stringify(classesByDayObject));
         
-        // Convert classes to calendar events
-        const convertedEvents = classesToEvents(classes);
-        setEvents(convertedEvents);
-        
-        // Store events in localStorage (with dates converted to strings)
-        const serializedEvents = convertedEvents.map(event => ({
-          ...event,
-          start: event.start.toISOString(),
-          end: event.end.toISOString()
-        }));
-        localStorage.setItem('scheduleEvents', JSON.stringify(serializedEvents));
-        
+        // Important: Force state update and re-render
+        setRenderKey(prev => prev + 1);
       } catch (err) {
         console.error("Error in fetchAndConvertClasses:", err);
         // Only clear if we don't have cached data
@@ -2544,9 +1979,50 @@ const savePreferences = async () => {
     }
   }, [classData, processEvents]);
 
+  const loadPDFDocuments = async () => {
+    try {
+      setLoading(true);
+      const documents = await pdfService.getPDFDocuments();
+      
+      if (documents && documents.length > 0) {
+        // Set parsed documents
+        setParsedDocuments(documents.map(doc => ({
+          title: doc.title,
+          content: doc.extractedData,
+          status: 'done'
+        })));
+        
+        // If any document has a generated schedule, use it
+        const documentsWithSchedule = documents.filter(doc => 
+          doc.generatedSchedule && doc.generatedSchedule.length > 0
+        );
+        
+        if (documentsWithSchedule.length > 0) {
+          const latestDocument = documentsWithSchedule.sort((a, b) => 
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          )[0];
+          
+          // Convert date strings to Date objects for schedule events
+          const schedule = latestDocument.generatedSchedule.map(event => ({
+            ...event,
+            start: new Date(event.start),
+            end: new Date(event.end)
+          }));
+          
+          setStudyData(schedule);
+          processEvents(schedule, classData);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading PDF documents:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="schedule-container">
-      <ToastContainer /> {/* Add this near the top of your JSX */}
+      <ToastContainer />
       {renderOnboardingGuide()}
       <header className="schedule-header">
         <div className="header-left">
@@ -2594,12 +2070,6 @@ const savePreferences = async () => {
             <FiSettings className="button-icon" />
             Preferences
           </button>
-          <button 
-            className="header-button" 
-            onClick={() => setShowDebugCalendar(!showDebugCalendar)}
-          >
-            {showDebugCalendar ? 'Hide Debug View' : 'Show Debug View'}
-          </button>
         </div>
       </header>
 
@@ -2613,12 +2083,6 @@ const savePreferences = async () => {
         <FiUpload className="button-icon" />
         Upload PDFs
       </button>
-
-      {/* Add the debugger before the calendar */}
-      <EventDebugger />
-
-      {/* Add this component before the Calendar */}
-      <RenderDebugger />
 
       {/* Render appropriate view based on active view state */}
       {loading ? (
@@ -2757,7 +2221,6 @@ const savePreferences = async () => {
       )}
 
       {renderUploadModal()}
-      {showDebugCalendar && <DebugCalendar />}
     </div>
   );
 };
