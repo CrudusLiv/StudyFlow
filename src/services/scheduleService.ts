@@ -23,18 +23,12 @@ export const scheduleService = {
 
       console.log('Raw API response from fetchClasses:', response.data);
       
-      // Ensure we always return an array, even if the API returns an object with a data property
-      if (response.data && Array.isArray(response.data)) {
-        return response.data; // Return direct array
-      } else if (response.data && Array.isArray(response.data.data)) {
-        return response.data.data; // Return the data array property
-      } else {
-        console.warn('Unexpected format in API response:', response.data);
-        return []; // Return empty array as fallback
-      }
+      // Return the array directly - the server is already returning the correct format
+      return response.data;
     } catch (error) {
       console.error('Error fetching classes:', error);
-      throw error;
+      // Return empty array on error instead of throwing
+      return [];
     }
   },
 
@@ -158,99 +152,75 @@ export const scheduleService = {
 
   /**
    * Get user preferences
-   * @returns {Promise<Object>} User preferences
    */
   async getUserPreferences() {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        console.warn('No authentication token found');
+        console.log('No token found, returning default preferences');
         return this.getDefaultPreferences();
       }
 
-      console.log('Fetching user preferences from:', `${BASE_URL}/preferences`);
-      const response = await axios.get(`${BASE_URL}/preferences`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      console.log('Preferences response:', response.data);
-      if (response.data && response.data.preferences) {
-        // Enhance preferences with cognitive factors
-        const enhancedPreferences = {
-          ...response.data.preferences,
-          cognitiveLoadFactors: response.data.preferences.cognitiveLoadFactors || {
-            exam: 1.5,
-            project: 1.3,
-            assignment: 1.0,
-            reading: 0.8,
-            homework: 1.1,
-            presentation: 1.3,
-            lab: 1.2
-          },
-          spacingPreference: response.data.preferences.spacingPreference || 'moderate',
-          productiveTimeOfDay: response.data.preferences.productiveTimeOfDay || 'morning',
-          procrastinationProfile: response.data.preferences.procrastinationProfile || 'moderate'
-        };
-        
-        // Cache enhanced preferences
-        localStorage.setItem('userPreferences', JSON.stringify(enhancedPreferences));
-        return enhancedPreferences;
+      // Add token debug logging (only for development, remove in production)
+      try {
+        const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+        console.log('Token payload for debug:', {
+          hasId: !!tokenPayload.id,
+          hasUserId: !!tokenPayload.userId,
+          has_id: !!tokenPayload._id,
+          fields: Object.keys(tokenPayload).join(', ')
+        });
+      } catch (e) {
+        console.warn('Could not decode token for debug:', e);
       }
-      
-      return this.getDefaultPreferences();
+
+      const response = await axios.get(`${BASE_URL}/preferences`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // If we have preferences from the server, return them
+      if (response.data && response.data.preferences) {
+        console.log('Successfully loaded user preferences from server');
+        return response.data.preferences;
+      } else {
+        // If no preferences in response, return defaults
+        console.log('No preferences in response, using defaults');
+        return this.getDefaultPreferences();
+      }
     } catch (error) {
       console.error('Error fetching user preferences:', error);
       
-      // Get cached preferences if available
-      const cachedPrefs = this.getCachedPreferences();
-      if (cachedPrefs) {
-        return cachedPrefs;
+      // On authentication error, try clearing the token
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        console.warn('Authentication error (401) when fetching preferences, token may be invalid');
+        // Optionally refresh the token or redirect to login
+        // window.location.href = '/login';
       }
       
-      // Return default preferences as fallback
+      // Fall back to default preferences
       return this.getDefaultPreferences();
     }
   },
 
-  // Helper to get cached preferences
-  getCachedPreferences() {
-    try {
-      const cachedPreferences = localStorage.getItem('userPreferences');
-      if (cachedPreferences) {
-        console.log('Using cached preferences');
-        return JSON.parse(cachedPreferences);
-      }
-    } catch (e) {
-      console.warn('Error reading cached preferences:', e);
-    }
-    return null;
-  },
-
-  // Helper to get default preferences with cognitive optimization factors
+  /**
+   * Get default user preferences
+   */
   getDefaultPreferences() {
     return {
-      studySessionLength: 60,
-      breaksEnabled: true,
-      breakLength: 15,
-      maxDailyStudyHours: 4,
+      studyHoursPerDay: 4,
+      preferredStudyTimes: ['morning', 'evening'],
+      breakDuration: 15,
+      longBreakDuration: 30,
+      sessionsBeforeLongBreak: 4,
+      weekendStudy: true,
+      preferredSessionLength: 2,
+      wakeUpTime: '08:00',
+      sleepTime: '23:00',
       preferredStudyDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-      preferredStudyTimeStart: '09:00',
-      preferredStudyTimeEnd: '18:00',
-      spacingPreference: 'moderate',
-      productiveTimeOfDay: 'morning',
-      procrastinationProfile: 'moderate',
-      cognitiveLoadFactors: {
-        exam: 1.5,
-        project: 1.3,
-        assignment: 1.0,
-        reading: 0.8,
-        homework: 1.1,
-        presentation: 1.3,
-        lab: 1.2
-      },
-      maxDailyCognitiveLoad: 5,
-      learningStyle: 'balanced',
-      weekendPreference: 'minimal'
+      minimumDaysBetweenSessions: 1,
+      preferSpacedRepetition: true
     };
   },
 

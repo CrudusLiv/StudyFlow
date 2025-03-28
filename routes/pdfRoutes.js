@@ -2,7 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { validateToken } from '../middleware/auth.js';
+import mongoose from 'mongoose';
+import { validateToken } from './auth.js';
 import { processPDF } from '../utils/pdfProcessor.js';
 import { sanitizePdfData } from '../utils/pdfDataHandler.js';
 
@@ -77,6 +78,60 @@ router.post('/parse-pdf', upload.single('file'), async (req, res) => {
       error: 'Server error processing PDF',
       details: error.message
     });
+  }
+});
+
+// Add route for saving schedule to a PDF document
+router.post('/pdf-documents/:id/schedule', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    const { schedule } = req.body;
+    
+    // Input validation
+    if (!documentId || !mongoose.Types.ObjectId.isValid(documentId)) {
+      return res.status(400).json({ error: 'Invalid document ID format' });
+    }
+    
+    if (!schedule || !Array.isArray(schedule)) {
+      return res.status(400).json({ error: 'Schedule data must be an array' });
+    }
+    
+    console.log(`Updating document ${documentId} with ${schedule.length} schedule items`);
+    
+    // Find the document and ensure it belongs to the user
+    const PDFDocument = mongoose.model('PDFDocument');
+    const document = await PDFDocument.findOne({ 
+      _id: documentId, 
+      userId: userId 
+    });
+    
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    // Process schedule items to ensure they have proper date formats
+    const processedSchedule = schedule.map(item => {
+      // Ensure start and end are Date objects
+      return {
+        ...item,
+        start: item.start ? new Date(item.start) : new Date(),
+        end: item.end ? new Date(item.end) : new Date(new Date().getTime() + 60 * 60 * 1000)
+      };
+    });
+    
+    // Update the document with the new schedule
+    document.generatedSchedule = processedSchedule;
+    await document.save();
+    
+    res.status(200).json({ 
+      message: 'Schedule updated successfully',
+      documentId,
+      scheduleCount: schedule.length
+    });
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    res.status(500).json({ error: 'Error updating schedule: ' + error.message });
   }
 });
 

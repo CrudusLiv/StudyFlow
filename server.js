@@ -31,10 +31,11 @@ import UserPreferences from './models/UserPreferences.js';
 import PDFDocument from './models/PDFDocument.js';
 
 // Import routes
-import authRoutes from './routes/authRoutes.js';
-import userRoutes from './routes/userRoutes.js';
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
-import pdfRoutes from './routes/pdfRoutes.js'; // Add this line
+import pdfRoutes from './routes/pdfRoutes.js';
+import pdfDocumentRoutes from './routes/pdfdocumentRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -65,11 +66,13 @@ if (!process.env.JWT_SECRET) {
   process.env.JWT_SECRET = 'development_fallback_secret_do_not_use_in_production';
 }
 
+// Middleware setup
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase JSON payload limit to 10MB
+app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Increase URL encoded payload limit too
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
@@ -1650,7 +1653,11 @@ app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) =
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/schedule', scheduleRoutes);
-app.use('/api', pdfRoutes); // Add this line to include PDF routes
+app.use('/api/parse', pdfRoutes);
+app.use('/api/pdf-documents', pdfDocumentRoutes);
+
+// Schedule routes should come after PDFDocument routes to avoid conflicts
+app.use('/api', scheduleRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

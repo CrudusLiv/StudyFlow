@@ -15,7 +15,9 @@ import {
   FiFile,
   FiAlertCircle,
   FiInfo,  
-  FiCheck  
+  FiCheck,
+  FiPlus,
+  FiUser
 } from 'react-icons/fi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -1142,9 +1144,15 @@ const Schedule: React.FC = () => {
       );
 
       if (response.data && response.data.weeklySchedule) {
+        // Store current class events before updating
+        const classEvents = events.filter(event => event.category === 'class');
+        
         // Update schedule with the newly generated data
         setMultiWeekSchedule(response.data.weeklySchedule);
-        processEvents(response.data.weeklySchedule, universitySchedule);
+        
+        // Merge new study events with existing class events
+        const newStudyEvents = tasksToEvents(response.data.weeklySchedule);
+        processEvents([...newStudyEvents, ...classEvents], universitySchedule);
 
         setUploadStatus('success');
         setUploadMessage('Schedule successfully generated from your documents!');
@@ -1173,31 +1181,72 @@ const Schedule: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const handleUniversityScheduleUpdate = () => {
-      console.log('UniversitySchedule update detected - refreshing data');
-      fetchScheduleData(); // Call your existing fetchScheduleData function
-    };
-
-    window.addEventListener('universityScheduleUpdated', handleUniversityScheduleUpdate);
-
-    return () => {
-      window.removeEventListener('universityScheduleUpdated', handleUniversityScheduleUpdate);
-    };
-  }, [fetchScheduleData]);
-
-  useEffect(() => {
-    const handleClassAddedEvent = (event) => {
-      console.log('Detected class addition event, refreshing calendar');
-      fetchUniversitySchedule();
-    };
-
-    window.addEventListener('classAdded', handleClassAddedEvent);
-
-    return () => {
-      window.removeEventListener('classAdded', handleClassAddedEvent);
-    };
-  }, [fetchUniversitySchedule]);
+  const handleGenerateSchedule = async () => {
+    try {
+      setParsedDocuments(prev => prev.map(doc => ({
+        ...doc,
+        status: doc.status === 'done' ? 'generating' : doc.status
+      })));
+  
+      // Use the service to generate a schedule
+      const response = await pdfService.generateSchedule(files);
+  
+      // Add better error handling and response validation
+      if (!response) {
+        throw new Error('Empty response from server');
+      }
+  
+      console.log('Schedule generation response:', response);
+  
+      // Check if schedule exists and is valid
+      if (response.success && response.schedule) {
+        // Ensure schedule is an array before converting
+        const schedule = Array.isArray(response.schedule) ? response.schedule : [];
+        
+        if (schedule.length === 0) {
+          toast.warning('No study events were generated. Try uploading more detailed PDFs.');
+        } else {
+          // Convert the schedule to calendar-compatible events
+          const scheduleEvents = pdfService.convertScheduleToEvents(schedule);
+          console.log(`Converted ${scheduleEvents.length} schedule events`);
+          
+          // Get current class events before setting the new events
+          const currentClassEvents = events.filter(event => event.category === 'class');
+          console.log(`Preserving ${currentClassEvents.length} existing class events`);
+          
+          // Combine the study schedule with existing class events
+          setEvents([...currentClassEvents, ...scheduleEvents]);
+          
+          // Save the document ID for reference
+          if (response.documentId) {
+            localStorage.setItem('lastScheduleDocumentId', response.documentId);
+          }
+          
+          // If saving was done locally only, show a warning
+          if (response.localOnly) {
+            toast.warning('Schedule was saved locally due to size limitations.');
+          } else {
+            toast.success(`Generated ${scheduleEvents.length} study events successfully!`);
+          }
+          
+          setShowUploadModal(false);
+        }
+      } else if (response.error) {
+        // Show specific error from server if present
+        toast.error(response.error || 'Failed to generate schedule');
+      } else {
+        toast.warning(response.message || 'No schedulable assignments found. Check for valid due dates in your documents.');
+      }
+    } catch (error) {
+      console.error('Error generating schedule:', error);
+      toast.error('Failed to generate schedule. Please try again.');
+    } finally {
+      setParsedDocuments(prev => prev.map(doc => ({
+        ...doc,
+        status: 'done'
+      })));
+    }
+  };
 
   const handleModalSubmit = async () => {
     // Validate form
@@ -1412,56 +1461,53 @@ const Schedule: React.FC = () => {
     );
   };
 
-  const handleGenerateSchedule = async () => {
+  const loadPDFDocuments = async () => {
     try {
-      setParsedDocuments(prev => prev.map(doc => ({
-        ...doc,
-        status: doc.status === 'done' ? 'generating' : doc.status
-      })));
-  
-      // Use the service to generate a schedule
-      const response = await pdfService.generateSchedule(files);
-  
-      // Add better error handling and response validation
-      if (!response) {
-        throw new Error('Empty response from server');
-      }
-  
-      console.log('Schedule generation response:', response);
-  
-      // Check if schedule exists and is valid
-      if (response.success && response.schedule) {
-        // Ensure schedule is an array before converting
-        const schedule = Array.isArray(response.schedule) ? response.schedule : [];
+      setLoading(true);
+      const documents = await pdfService.getPDFDocuments();
+      
+      if (documents && documents.length > 0) {
+        // Set parsed documents
+        setParsedDocuments(documents.map(doc => ({
+          title: doc.title,
+          content: doc.extractedData,
+          status: 'done'
+        })));
         
-        if (schedule.length === 0) {
-          toast.warning('No events could be generated from your documents');
-        } else {
-          // Convert dates from strings to Date objects
-          const processedSchedule = schedule.map(event => ({
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-          }));
+        // If any document has a generated schedule, use it
+        const documentsWithSchedule = documents.filter(doc => 
+          doc.generatedSchedule && doc.generatedSchedule.length > 0
+        );
+        
+        if (documentsWithSchedule.length > 0) {
+          // Get the most recent document with a schedule
+          const latestDocument = documentsWithSchedule.sort((a, b) => 
+            new Date(b.uploadDate).getTime() - new Date(a.uploadDate).getTime()
+          )[0];
           
-          setStudyData(processedSchedule);
-          processEvents(processedSchedule, classData);
-          toast.success(`Generated ${processedSchedule.length} study events`);
+          console.log('Found document with schedule:', latestDocument.title);
+          console.log('Schedule items:', latestDocument.generatedSchedule.length);
+          
+          // Get current class events before setting the new events
+          const classEvents = events.filter(event => event.category === 'class');
+          
+          // Convert the schedule to calendar events
+          const scheduleEvents = pdfService.convertScheduleToEvents(latestDocument.generatedSchedule);
+          
+          // Set events, combining schedule with classes
+          if (scheduleEvents.length > 0) {
+            console.log(`Setting ${scheduleEvents.length} study events and ${classEvents.length} class events`);
+            setEvents([...classEvents, ...scheduleEvents]);
+            
+            // Save document ID for reference
+            localStorage.setItem('lastScheduleDocumentId', latestDocument._id);
+          }
         }
-      } else if (response.error) {
-        // Show specific error from server if present
-        toast.error(response.error || 'Failed to generate schedule');
-      } else {
-        toast.warning(response.message || 'No schedulable assignments found. Check for valid due dates in your documents.');
       }
     } catch (error) {
-      console.error('Error generating schedule:', error);
-      toast.error('Failed to generate schedule. Please try again.');
+      console.error('Error loading PDF documents:', error);
     } finally {
-      setParsedDocuments(prev => prev.map(doc => ({
-        ...doc,
-        status: 'done'
-      })));
+      setLoading(false);
     }
   };
 
@@ -1606,65 +1652,59 @@ const Schedule: React.FC = () => {
   const GridView = () => {
     const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => {
+      const hour = i + 8; // Start at 8 AM
+      return `${hour}:00`;
     });
+    
+    // Generate time slot labels
+    const renderTimeSlots = () => {
+      return TIME_SLOTS.map((time, index) => (
+        <div key={`time-${index}`} className="time-slot-label">
+          {time}
+        </div>
+      ));
+    };
+    
+    // Generate empty grid cells
+    const renderEmptyCells = (day: string) => {
+      return TIME_SLOTS.map((time, index) => {
+        const hour = index + 8;
+        const dayClasses = classesByDay[day] || [];
+        
+        // Find classes that occur during this hour
+        const classesInThisHour = dayClasses.filter(cls => {
+          const startHour = parseInt(cls.startTime.split(':')[0]);
+          const endHour = parseInt(cls.endTime.split(':')[0]);
+          return startHour <= hour && endHour > hour;
+        });
+        
+        return (
+          <div key={`${day}-${index}`} className="grid-cell">
+            {classesInThisHour.map((cls, idx) => (
+              <div key={`class-${idx}`} className="grid-class-item">
+                {cls.courseName || cls.courseCode || 'Class'}
+              </div>
+            ))}
+          </div>
+        );
+      });
+    };
 
     return (
-      <div className="schedule-table-container">
-        <table className="schedule-table">
-          <thead className="table-header">
-            <tr>
-              <th>Time</th>
-              {DAYS.map(day => (
-                <th key={day}>{day}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {TIME_SLOTS.map(timeSlot => (
-              <tr key={timeSlot}>
-                <td className="time-cell">{timeSlot}</td>
-                {DAYS.map(day => {
-                  const classes = classesByDay[day] || [];
-                  const classAtTime = classes.find(c => 
-                    timeSlot >= c.startTime && timeSlot < c.endTime
-                  );
-
-                  return (
-                    <td key={`${day}-${timeSlot}`} className="schedule-cell">
-                      {classAtTime && (
-                        <div className="class-card" 
-                          style={{
-                            backgroundColor: `var(--priority-medium-bg)`,
-                            borderLeftColor: `var(--priority-medium-border)`
-                          }}
-                          onClick={() => {
-                            setSelectedEvent({
-                              title: `${classAtTime.courseName} (${classAtTime.courseCode})`,
-                              resource: { 
-                                type: 'class',
-                                ...classAtTime
-                              }
-                            });
-                            setShowClassModal(true);
-                          }}
-                        >
-                          <div className="class-title" 
-                            style={{ color: `var(--priority-medium-text)` }}>
-                            {classAtTime.courseName}
-                          </div>
-                          <div className="class-details">
-                            <div>{classAtTime.location}</div>
-                            <div>{formatClassTime(classAtTime.startTime, classAtTime.endTime)}</div>
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="schedule-grid-container">
+        <div className="schedule-grid">
+          <div className="time-column">
+            <div className="time-header"></div>
+            {renderTimeSlots()}
+          </div>
+          
+          {DAYS.map(day => (
+            <div key={day} className="day-column">
+              <div className="day-header">{day}</div>
+              {renderEmptyCells(day)}
+            </div>
+          ))}
+        </div>
       </div>
     );
   };
@@ -1673,52 +1713,47 @@ const Schedule: React.FC = () => {
   const ListView = () => {
     const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
+    const renderClasses = (day: string) => {
+      const dayClasses = classesByDay[day] || [];
+      
+      if (dayClasses.length === 0) {
+        return <p className="no-classes">No classes scheduled</p>;
+      }
+      
+      return dayClasses
+        .sort((a, b) => {
+          // Sort by start time
+          const aStart = a.startTime.split(':').map(Number);
+          const bStart = b.startTime.split(':').map(Number);
+          
+          if (aStart[0] !== bStart[0]) {
+            return aStart[0] - bStart[0]; // Sort by hour
+          }
+          return aStart[1] - bStart[1]; // Sort by minute
+        })
+        .map((cls, index) => (
+          <div key={`${day}-${index}`} className="list-class-item">
+            <div className="list-class-time">
+              {cls.startTime} - {cls.endTime}
+            </div>
+            <div className="list-class-info">
+              <h4>{cls.courseName || 'Class'}</h4>
+              {cls.courseCode && <p className="list-course-code">{cls.courseCode}</p>}
+              {cls.location && <p className="list-location">{cls.location}</p>}
+              {cls.professor && <p className="list-professor">Prof. {cls.professor}</p>}
+            </div>
+          </div>
+        ));
+    };
+
     return (
-      <div className="schedule-list">
+      <div className="schedule-list-container">
         {DAYS.map(day => (
-          <div key={day} className="schedule-list-item">
-            <h3>{day}</h3>
-            {classesByDay[day]?.length > 0 ? (
-              <ul>
-                {classesByDay[day]
-                  .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                  .map((classItem, index) => (
-                    <li key={`${classItem.courseCode}-${index}`}
-                      onClick={() => {
-                        setSelectedEvent({
-                          title: `${classItem.courseName} (${classItem.courseCode})`,
-                          resource: { 
-                            type: 'class',
-                            ...classItem
-                          }
-                        });
-                        setShowClassModal(true);
-                      }}
-                    >
-                      <div className="class-card"
-                        style={{
-                          backgroundColor: `var(--priority-medium-bg)`,
-                          borderLeftColor: `var(--priority-medium-border)`
-                        }}
-                      >
-                        <div className="class-title"
-                          style={{ color: `var(--priority-medium-text)` }}>
-                          {classItem.courseName} ({classItem.courseCode})
-                        </div>
-                        <div className="class-details">
-                          <div><FiClock className="icon" /> {formatClassTime(classItem.startTime, classItem.endTime)}</div>
-                          <div><FiMapPin className="icon" /> {classItem.location}</div>
-                          {classItem.professor && (
-                            <div><FiUser className="icon" /> {classItem.professor}</div>
-                          )}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-              </ul>
-            ) : (
-              <div className="no-classes">No classes scheduled</div>
-            )}
+          <div key={day} className="list-day-section">
+            <h3 className="list-day-header">{day}</h3>
+            <div className="list-classes">
+              {renderClasses(day)}
+            </div>
           </div>
         ))}
       </div>
@@ -1978,47 +2013,6 @@ const savePreferences = async () => {
       setLoading(false);
     }
   }, [classData, processEvents]);
-
-  const loadPDFDocuments = async () => {
-    try {
-      setLoading(true);
-      const documents = await pdfService.getPDFDocuments();
-      
-      if (documents && documents.length > 0) {
-        // Set parsed documents
-        setParsedDocuments(documents.map(doc => ({
-          title: doc.title,
-          content: doc.extractedData,
-          status: 'done'
-        })));
-        
-        // If any document has a generated schedule, use it
-        const documentsWithSchedule = documents.filter(doc => 
-          doc.generatedSchedule && doc.generatedSchedule.length > 0
-        );
-        
-        if (documentsWithSchedule.length > 0) {
-          const latestDocument = documentsWithSchedule.sort((a, b) => 
-            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-          )[0];
-          
-          // Convert date strings to Date objects for schedule events
-          const schedule = latestDocument.generatedSchedule.map(event => ({
-            ...event,
-            start: new Date(event.start),
-            end: new Date(event.end)
-          }));
-          
-          setStudyData(schedule);
-          processEvents(schedule, classData);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading PDF documents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="schedule-container">

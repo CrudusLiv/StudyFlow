@@ -143,10 +143,22 @@ export const pdfService = {
         filesProcessed: response.data?.message
       });
       
+      // Save the generated schedule explicitly to the document
+      if (response.data.studySchedule && response.data.documentId) {
+        try {
+          await this.saveScheduleToDocument(response.data.documentId, response.data.studySchedule);
+          console.log('Schedule successfully saved to document:', response.data.documentId);
+        } catch (saveError) {
+          console.error('Error saving schedule to document:', saveError);
+        }
+      }
+      
+      // Standardize the response format
       return {
         success: true,
-        schedule: response.data.studySchedule || [],
-        message: response.data.message || 'Schedule generated successfully'
+        schedule: response.data.studySchedule || [], 
+        message: response.data.message || 'Schedule generated successfully',
+        documentId: response.data.documentId
       };
     } catch (error: any) {
       console.error('Error generating schedule:', error);
@@ -161,6 +173,107 @@ export const pdfService = {
   },
   
   /**
+   * Save generated schedule to a PDF document
+   */
+  async saveScheduleToDocument(documentId: string, schedule: any[]) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      // Ensure we have a valid document ID
+      if (!documentId) {
+        throw new Error('Document ID is required');
+      }
+      
+      console.log(`Saving schedule with ${schedule.length} events to document ${documentId}`);
+      
+      // Create a copy of the schedule with dates converted to ISO strings
+      // to avoid date serialization issues
+      const preparedSchedule = schedule.map(item => ({
+        ...item,
+        start: item.start instanceof Date ? item.start.toISOString() : item.start,
+        end: item.end instanceof Date ? item.end.toISOString() : item.end
+      }));
+
+      // Check if payload is larger than 1MB
+      const estimatedSize = JSON.stringify(preparedSchedule).length;
+      if (estimatedSize > 1000000) { // 1MB
+        console.log(`Large schedule detected (${Math.round(estimatedSize/1024)}KB). Using optimized saving method.`);
+        
+        // Remove verbose data to reduce payload size
+        const lightweightSchedule = preparedSchedule.map(item => ({
+          id: item.id,
+          title: item.title,
+          start: item.start,
+          end: item.end,
+          category: item.category,
+          priority: item.priority,
+          courseCode: item.courseCode,
+          // Include only essential resource data
+          resource: item.resource ? {
+            type: item.resource.type,
+            courseCode: item.resource.courseCode,
+            stage: item.resource.stage,
+            sourceFile: item.resource.sourceFile
+          } : {}
+        }));
+        
+        // Send to separate PDF document endpoint to avoid route conflicts
+        const response = await axios.post(
+          `${API_URL}/pdf-documents/${documentId}/schedule-optimized`,
+          { schedule: lightweightSchedule },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        console.log('Schedule saved successfully (optimized):', response.data);
+        return response.data;
+      } else {
+        // Send to separate PDF document endpoint to avoid route conflicts
+        const response = await axios.post(
+          `${API_URL}/pdf-documents/${documentId}/schedule`,
+          { schedule: preparedSchedule },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            }
+          }
+        );
+        
+        console.log('Schedule saved successfully:', response.data);
+        return response.data;
+      }
+    } catch (error) {
+      console.error('Error saving schedule to document:', error);
+      
+      // Handle specific error cases
+      if (axios.isAxiosError(error) && error.response?.status === 413) {
+        console.error('Payload too large. Try reducing the schedule size or use the optimized endpoint.');
+        // Fallback to local storage if server can't handle it
+        try {
+          localStorage.setItem(`schedule_${documentId}`, JSON.stringify(schedule));
+          return { 
+            message: 'Schedule saved locally due to size limitations',
+            localOnly: true,
+            documentId 
+          };
+        } catch (localError) {
+          console.error('Failed to save schedule locally:', localError);
+        }
+      }
+      
+      throw error;
+    }
+  },
+  
+  /**
    * Convert server schedule format to calendar events
    */
   convertScheduleToEvents(schedule: any[]) {
@@ -169,10 +282,23 @@ export const pdfService = {
       return [];
     }
     
+    console.log('Converting schedule to events format, count:', schedule.length);
+    
     return schedule.map(item => {
       // Ensure start and end are Date objects
-      const start = new Date(item.start || item.startTime);
-      const end = new Date(item.end || item.endTime || start.getTime() + 60*60*1000);
+      let start, end;
+      try {
+        start = new Date(item.start || item.startTime);
+        // If end time is missing, create a default 1-hour event
+        end = item.end || item.endTime ? 
+          new Date(item.end || item.endTime) : 
+          new Date(start.getTime() + 60 * 60 * 1000);
+      } catch (e) {
+        console.error('Error parsing dates for item:', item, e);
+        // Use fallback dates
+        start = new Date();
+        end = new Date(start.getTime() + 60 * 60 * 1000);
+      }
       
       return {
         id: item.id || `event-${Math.random().toString(36).substring(2)}`,

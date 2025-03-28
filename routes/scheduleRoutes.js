@@ -6,7 +6,7 @@ import { processDocuments } from '../utils/pdfProcessor.js';
 import ClassSchedule from '../models/ClassSchedule.js';
 import UserPreferences from '../models/UserPreferences.js';
 import PDFDocument from '../models/PDFDocument.js';
-import { validateToken } from '../middleware/auth.js';
+import { validateToken } from './auth.js';
 
 const router = express.Router();
 router.use(validateToken);
@@ -185,37 +185,44 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
     const studySchedule = await processDocuments(filePaths, userId, options);
     console.log(`processDocuments completed - generated ${studySchedule.length} schedule items`);
     
+    // Create a new PDF document entry to store the extracted data and schedule
+    let documentId = null;
+    
     // After processing and generating a schedule, save to database
     if (studySchedule && studySchedule.length > 0) {
       try {
-        // Save processed PDFs to database
-        for (let i = 0; i < files.length; i++) {
-          const pdfDoc = new PDFDocument({
-            userId,
-            title: fileMetadata[i].name.replace(/\.[^/.]+$/, ""), // Remove file extension
-            fileName: fileMetadata[i].name,
-            originalName: fileMetadata[i].name,
-            // Add extracted data and generated schedule
-            extractedData: {
-              // Add extracted data if available
-              // This will be populated in a future update
-            },
-            generatedSchedule: studySchedule
-          });
-          
-          await pdfDoc.save();
-          console.log(`Saved PDF document: ${pdfDoc._id}`);
-        }
+        // Create new document with first file's name as title
+        const newDocument = new PDFDocument({
+          userId,
+          title: fileMetadata[0].name.replace(/\.[^/.]+$/, ""), // Remove file extension
+          fileName: fileMetadata[0].name,
+          originalName: fileMetadata[0].name,
+          extractedData: {
+            // Add extracted data from first file
+            courseCode: options.preferences.courseCode || '',
+            instructor: options.preferences.instructor || '',
+            semester: options.preferences.semester || '',
+            assignments: [], // Will be populated later
+            dates: [],
+            topics: [],
+            complexity: 0
+          },
+          generatedSchedule: studySchedule // Save the study schedule here
+        });
+        
+        await newDocument.save();
+        documentId = newDocument._id;
+        console.log(`Saved document with schedule to database, ID: ${documentId}`);
       } catch (dbError) {
-        console.error('Error saving PDF documents to database:', dbError);
-        // Continue despite database error - we'll still return the schedule
+        console.error('Error saving document to database:', dbError);
       }
     }
     
     res.status(200).json({
       message: `${files.length} files processed successfully`,
       studySchedule,
-      count: studySchedule.length
+      count: studySchedule.length,
+      documentId // Return the document ID to the client
     });
   } catch (error) {
     console.error('Error processing PDFs:', error);
@@ -223,109 +230,114 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
   }
 });
 
-// Get user preferences
-router.get('/preferences', async (req, res, next) => {
+// Add a new route to save/update a schedule for a specific document
+router.post('/pdf-documents/:id/schedule', async (req, res) => {
   try {
-    // Validate user ID existence
-    const userId = req.user?.id;
+    const userId = req.user.id;
+    const documentId = req.params.id;
+    const { schedule } = req.body;
+    
+    if (!schedule || !Array.isArray(schedule)) {
+      return res.status(400).json({ error: 'Invalid schedule data' });
+    }
+    
+    // Find the document and ensure it belongs to the user
+    const document = await PDFDocument.findOne({ _id: documentId, userId });
+    
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+    
+    // Update the document with the new schedule
+    document.generatedSchedule = schedule;
+    await document.save();
+    
+    res.status(200).json({ 
+      message: 'Schedule updated successfully',
+      documentId,
+      scheduleCount: schedule.length
+    });
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    res.status(500).json({ error: 'Error updating schedule: ' + error.message });
+  }
+});
+
+// Get user preferences
+router.get('/preferences', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Log the user ID for debugging
+    console.log('Getting preferences for user ID:', userId);
+    
     if (!userId) {
-      console.error('Missing user ID in token');
-      return res.status(401).json({ error: 'Invalid user authentication' });
+      return res.status(400).json({ error: 'User ID is missing from request' });
     }
     
-    console.log('Getting preferences for user:', userId);
-    
-    // Find or create user preferences with better error handling
-    let userPreferences;
-    try {
-      userPreferences = await UserPreferences.findOne({ userId });
-      console.log('User preferences found:', !!userPreferences);
-    } catch (dbError) {
-      console.error('Database error finding preferences:', dbError);
-      return res.status(500).json({ error: 'Database error', details: dbError.message });
-    }
+    // Try to find the user preferences
+    const userPreferences = await UserPreferences.findOne({ userId });
     
     if (!userPreferences) {
-      console.log('Creating default preferences for user:', userId);
-      // Create default preferences with required userId field
-      try {
-        userPreferences = new UserPreferences({ 
-          userId,
-          studyHoursPerDay: 4,
-          preferredStudyTimes: ['morning', 'evening'],
-          breakDuration: 15,
-          preferredSessionLength: 2,
-          wakeUpTime: '08:00',
-          sleepTime: '23:00',
-          weekendStudy: true
-        });
-        await userPreferences.save();
-        console.log('Default preferences created successfully');
-      } catch (createError) {
-        console.error('Error creating default preferences:', createError);
-        return res.status(500).json({ error: 'Failed to create default preferences', details: createError.message });
-      }
+      // Return empty preferences if none found
+      return res.status(200).json({ 
+        message: 'No preferences found for user',
+        preferences: {} 
+      });
     }
     
-    // Send preferences with extra validation
-    if (userPreferences) {
-      res.status(200).json({
-        preferences: userPreferences
-      });
-    } else {
-      // Final fallback if somehow userPreferences is still undefined
-      res.status(500).json({ error: 'Failed to retrieve or create preferences' });
-    }
+    // Return the found preferences
+    res.status(200).json({ 
+      preferences: userPreferences 
+    });
   } catch (error) {
-    console.error('Uncaught error in preferences route:', error);
-    next(error); // Pass to error handling middleware
+    console.error('Error fetching user preferences:', error);
+    res.status(500).json({ 
+      error: 'Error fetching preferences',
+      details: error.message
+    });
   }
 });
 
 // Update user preferences
 router.post('/preferences', async (req, res) => {
   try {
-    // Validate user ID existence with enhanced debugging
-    const userId = req.user?.id;
-    console.log('User object from token:', req.user);
+    const userId = req.user.id;
+    const preferences = req.body;
+    
+    // Log the incoming data for debugging
+    console.log('Updating preferences for user ID:', userId);
+    console.log('New preferences:', JSON.stringify(preferences).substring(0, 200) + '...');
     
     if (!userId) {
-      console.error('Missing user ID in token');
-      return res.status(401).json({ error: 'Invalid user authentication' });
+      return res.status(400).json({ error: 'User ID is missing from request' });
     }
     
-    console.log('Updating preferences for user:', userId, 'with data:', req.body);
-    
-    // Find or create user preferences
-    let userPreferences = await UserPreferences.findOne({ userId });
-    
-    if (!userPreferences) {
-      // Create new preferences with explicit userId
-      userPreferences = new UserPreferences({
-        userId,
-        ...req.body
-      });
-    } else {
-      // Update existing preferences
-      Object.keys(req.body).forEach(key => {
-        if (key !== 'userId' && key !== '_id') {
-          userPreferences[key] = req.body[key];
-        }
-      });
-    }
-    
-    await userPreferences.save();
-    console.log('Preferences updated successfully:', userPreferences._id);
+    // Find and update or create new preferences
+    const result = await UserPreferences.findOneAndUpdate(
+      { userId },
+      { 
+        $set: { 
+          ...preferences,
+          updatedAt: new Date() 
+        } 
+      },
+      { 
+        new: true,
+        upsert: true, // Create if doesn't exist
+        runValidators: true
+      }
+    );
     
     res.status(200).json({
       message: 'Preferences updated successfully',
-      preferences: userPreferences
+      preferences: result
     });
   } catch (error) {
-    console.error('Error updating preferences:', error);
+    console.error('Error updating user preferences:', error);
     res.status(500).json({ 
       error: 'Error updating preferences',
-      message: error.message
+      details: error.message
     });
   }
 });

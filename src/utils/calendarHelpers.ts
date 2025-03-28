@@ -91,7 +91,7 @@ function calculateStartDate(dueDate: Date, task: any): Date {
 }
 
 /**
- * Convert class schedules to calendar events
+ * Convert classes to calendar events
  * @param {any} classes - Array of class schedules or object containing classes
  * @returns {CalendarEvent[]} - Array of calendar events
  */
@@ -124,8 +124,14 @@ export function classesToEvents(classes: any): CalendarEvent[] {
       }));
     });
   } else {
-    console.warn('classesToEvents received unknown format', classes);
-    return [];
+    console.warn('classesToEvents received unknown format, trying to access data property', classes);
+    // Additional fallback: try to extract .data.data if that exists
+    if (classes.data?.data && Array.isArray(classes.data.data)) {
+      classArray = classes.data.data;
+    } else {
+      console.error('Unable to extract class array from input:', classes);
+      return [];
+    }
   }
   
   console.log('Normalized class array length:', classArray.length);
@@ -163,46 +169,55 @@ export function classesToEvents(classes: any): CalendarEvent[] {
       while (currentRecurringDate <= endDate) {
         // Check if current day matches class day
         if (currentRecurringDate.toLocaleDateString('en-us', { weekday: 'long' }) === dayName) {
-          // Parse times with defaults
-          const startTime = classItem.startTime || '09:00';
-          const endTime = classItem.endTime || '10:00';
+          // Skip if missing critical time values
+          if (!classItem.startTime || !classItem.endTime) {
+            console.warn('Missing time values in class item:', classItem);
+            break;
+          }
           
-          // Extract hours and minutes
-          const [startHour, startMinute] = startTime.split(':').map(Number);
-          const [endHour, endMinute] = endTime.split(':').map(Number);
-          
-          // Create event start and end dates
-          const eventStart = new Date(currentRecurringDate);
-          eventStart.setHours(startHour || 9, startMinute || 0, 0, 0);
-          
-          const eventEnd = new Date(currentRecurringDate);
-          eventEnd.setHours(endHour || 10, endMinute || 0, 0, 0);
-          
-          // Generate a unique ID
-          const eventId = `class-${classItem._id || Math.random().toString(36).substring(2)}-${currentRecurringDate.toISOString()}`;
-          
-          // Create event with full data
-          events.push({
-            id: eventId,
-            title: classItem.courseName || classItem.title || `Class on ${dayName}`,
-            start: eventStart,
-            end: eventEnd,
-            allDay: false,
-            category: 'class',
-            courseCode: classItem.courseCode || '',
-            location: classItem.location || '',
-            resource: {
-              type: 'class',
+          try {
+            // Extract hours and minutes
+            const [startHour, startMinute] = classItem.startTime.split(':').map(Number);
+            const [endHour, endMinute] = classItem.endTime.split(':').map(Number);
+            
+            // Create event start and end dates
+            const eventStart = new Date(currentRecurringDate);
+            eventStart.setHours(startHour || 9, startMinute || 0, 0, 0);
+            
+            const eventEnd = new Date(currentRecurringDate);
+            eventEnd.setHours(endHour || 10, endMinute || 0, 0, 0);
+            
+            // Generate a unique ID
+            const eventId = `class-${classItem._id || Math.random().toString(36).substring(2)}-${currentRecurringDate.toISOString()}`;
+            
+            // Log this event to verify correct creation
+            console.log(`Creating class event: ${classItem.courseName || 'Unnamed Class'} on ${dayName} at ${classItem.startTime}-${classItem.endTime}`);
+            
+            // Create event with full data
+            events.push({
+              id: eventId,
+              title: classItem.courseName || classItem.title || `Class on ${dayName}`,
+              start: eventStart,
+              end: eventEnd,
+              allDay: false,
+              category: 'class', // Use consistent category name 
               courseCode: classItem.courseCode || '',
               location: classItem.location || '',
-              recurring: true,
-              day: dayName,
-              details: {
-                courseName: classItem.courseName || '',
-                professor: classItem.professor || ''
+              resource: {
+                type: 'class',
+                courseCode: classItem.courseCode || '',
+                location: classItem.location || '',
+                recurring: true,
+                day: dayName,
+                details: {
+                  courseName: classItem.courseName || '',
+                  professor: classItem.professor || ''
+                }
               }
-            }
-          });
+            });
+          } catch (err) {
+            console.error('Error creating event for class:', err, classItem);
+          }
         }
         
         // Move to next day
