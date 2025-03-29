@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BsMicrosoft } from 'react-icons/bs';
+import { BsMicrosoft, BsGoogle } from 'react-icons/bs';
 import { FcGoogle } from 'react-icons/fc';
 import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -130,9 +130,8 @@ const Access: React.FC = () => {
                 whileTap="tap"
                 disabled={loading}
               >
-                <FcGoogle className="auth-icon" />
-                {loading ? 'Signing in...' : 'Sign in with Google'}
-              </motion.button>
+                Sign in with Google
+              </button>
 
               <motion.button
                 onClick={handleMicrosoftAuth}
