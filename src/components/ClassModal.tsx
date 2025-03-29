@@ -1,16 +1,62 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { CalendarEvent } from '../types/types';
-import { FiClock, FiCalendar, FiBook, FiMapPin, FiUser } from 'react-icons/fi';
+import { FiClock, FiCalendar, FiBook, FiMapPin, FiUser, FiX, FiTag, FiRepeat, FiSave } from 'react-icons/fi';
+import { modalVariants } from '../utils/animationConfig';
+import '../styles/components/ClassModal.css';
 
 interface ClassModalProps {
   event: CalendarEvent;
   onClose: () => void;
+  isNewEvent?: boolean;
+  onSave?: (updatedEvent: CalendarEvent) => void;
 }
 
-const ClassModal: React.FC<ClassModalProps> = ({ event, onClose }) => {
-  // Add debugging log to verify the modal is receiving data
-  console.log('ClassModal receiving event:', event);
+const ClassModal: React.FC<ClassModalProps> = ({ 
+  event, 
+  onClose, 
+  isNewEvent = false,
+  onSave 
+}) => {
+  const [formData, setFormData] = useState<Partial<CalendarEvent>>({
+    title: event.title || '',
+    courseCode: event.courseCode || '',
+    location: event.location || '',
+    start: event.start || new Date(),
+    end: event.end || new Date(Date.now() + 60 * 60 * 1000),
+    description: event.description || ''
+  });
 
+  // Handle form input changes
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  // Handle date/time changes
+  const handleDateTimeChange = (name: string, value: Date) => {
+    setFormData({
+      ...formData,
+      [name]: value
+    });
+  };
+
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onSave) {
+      onSave({
+        ...event,
+        ...formData
+      });
+    }
+    onClose();
+  };
+
+  // Format time for display
   const formatTime = (date: Date) => {
     if (!date) return '';
     return date.toLocaleTimeString('en-US', {
@@ -20,6 +66,7 @@ const ClassModal: React.FC<ClassModalProps> = ({ event, onClose }) => {
     });
   };
 
+  // Format date for display
   const formatDate = (date: Date) => {
     if (!date) return '';
     return date.toLocaleDateString('en-GB', {
@@ -30,87 +77,201 @@ const ClassModal: React.FC<ClassModalProps> = ({ event, onClose }) => {
     });
   };
 
-  // Get necessary data with fallbacks for all properties
-  const title = event?.title || 'Untitled Class';
-  const startTime = event?.start ? formatTime(event.start) : '';
-  const endTime = event?.end ? formatTime(event.end) : '';
-  const date = event?.start ? formatDate(event.start) : '';
-  const courseCode = event?.courseCode || event?.resource?.courseCode || '';
-  const location = event?.location || event?.resource?.location || '';
-  const professor = event?.resource?.details?.professor || '';
-  const day = event?.resource?.day || '';
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2>{title}</h2>
-          <button className="close-button" onClick={onClose}>×</button>
+    <motion.div 
+      className="class-modal-backdrop" 
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="class-modal"
+        onClick={(e) => e.stopPropagation()}
+        variants={modalVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
+        <div className="class-modal-header">
+          <h2>
+            <FiBook /> 
+            {isNewEvent ? 'Add New Class' : event.title || 'Class Details'}
+          </h2>
+          <button className="close-button" onClick={onClose}><FiX /></button>
         </div>
 
-        <div className="class-details">
-          {date && (
-            <div className="class-detail-item">
-              <FiCalendar className="detail-icon" />
-              <div>
-                <strong>Date:</strong> {date}
+        {isNewEvent || onSave ? (
+          <form onSubmit={handleSubmit}>
+            <div className="class-modal-body">
+              <div className="class-form-group">
+                <label className="class-form-label">Class Title</label>
+                <input
+                  type="text"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  className="class-form-input"
+                  placeholder="Enter class title"
+                  required
+                />
               </div>
-            </div>
-          )}
 
-          {day && (
-            <div className="class-detail-item">
-              <FiCalendar className="detail-icon" />
-              <div>
-                <strong>Day:</strong> {day}
-              </div>
-            </div>
-          )}
+              <div className="class-form-grid">
+                <div className="class-form-group">
+                  <label className="class-form-label">Course Code</label>
+                  <input
+                    type="text"
+                    name="courseCode"
+                    value={formData.courseCode}
+                    onChange={handleChange}
+                    className="class-form-input"
+                    placeholder="E.g., CS101"
+                  />
+                </div>
 
-          {(startTime && endTime) && (
-            <div className="class-detail-item">
-              <FiClock className="detail-icon" />
-              <div>
-                <strong>Time:</strong> {startTime} - {endTime}
+                <div className="class-form-group">
+                  <label className="class-form-label">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    className="class-form-input"
+                    placeholder="Room number or building"
+                  />
+                </div>
               </div>
-            </div>
-          )}
 
-          {courseCode && (
-            <div className="class-detail-item">
-              <FiBook className="detail-icon" />
-              <div>
-                <strong>Course:</strong> {courseCode}
+              <div className="class-form-group">
+                <label className="class-form-label">Date & Time</label>
+                <div className="class-form-grid">
+                  <div className="class-form-group">
+                    <input
+                      type="datetime-local"
+                      name="start"
+                      value={formData.start instanceof Date ? formData.start.toISOString().slice(0, 16) : ''}
+                      onChange={(e) => handleDateTimeChange('start', new Date(e.target.value))}
+                      className="class-form-input"
+                      required
+                    />
+                  </div>
+                  <div className="class-form-group">
+                    <input
+                      type="datetime-local"
+                      name="end"
+                      value={formData.end instanceof Date ? formData.end.toISOString().slice(0, 16) : ''}
+                      onChange={(e) => handleDateTimeChange('end', new Date(e.target.value))}
+                      className="class-form-input"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
 
-          {location && (
-            <div className="class-detail-item">
-              <FiMapPin className="detail-icon" />
-              <div>
-                <strong>Location:</strong> {location}
+              <div className="class-form-group">
+                <label className="class-form-label">Description</label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleChange}
+                  className="class-form-textarea"
+                  placeholder="Add any additional details about this class"
+                  rows={4}
+                ></textarea>
               </div>
             </div>
-          )}
-          
-          {professor && (
-            <div className="class-detail-item">
-              <FiUser className="detail-icon" />
-              <div>
-                <strong>Professor:</strong> {professor}
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div className="modal-footer">
-          <button className="modal-button close-modal-button" onClick={onClose}>
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="class-modal-actions">
+              <div className="class-modal-buttons">
+                <button type="button" className="class-modal-cancel-btn" onClick={onClose}>Cancel</button>
+              </div>
+              <div className="class-modal-buttons">
+                <button type="submit" className="class-modal-save-btn">
+                  <FiSave style={{ marginRight: '8px' }} />
+                  {isNewEvent ? 'Add Class' : 'Save Changes'}
+                </button>
+              </div>
+            </div>
+          </form>
+        ) : (
+          <>
+            <div className="class-modal-body">
+              <div className="class-details">
+                {event.start && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiCalendar />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Date</div>
+                      <div className="class-detail-value">{formatDate(event.start)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {event.start && event.end && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiClock />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Time</div>
+                      <div className="class-detail-value">{formatTime(event.start)} - {formatTime(event.end)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {event.courseCode && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiTag />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Course</div>
+                      <div className="class-detail-value">{event.courseCode}</div>
+                    </div>
+                  </div>
+                )}
+
+                {event.location && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiMapPin />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Location</div>
+                      <div className="class-detail-value">{event.location}</div>
+                    </div>
+                  </div>
+                )}
+                
+                {event.description && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiBook />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Description</div>
+                      <div className="class-detail-value">{event.description}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="class-modal-actions">
+              <div className="class-modal-buttons">
+                <button className="class-modal-cancel-btn" onClick={onClose}>Close</button>
+              </div>
+              <div className="class-modal-buttons">
+                <button className="class-modal-save-btn">Add to Calendar</button>
+              </div>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaClock, FaChartLine, FaTasks, FaCalendarAlt, FaExclamationTriangle, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line
 } from 'recharts';
 import '../styles/pages/Tracker.css';
+import { 
+  pageVariants, 
+  containerVariants, 
+  listVariants, 
+  listItemVariants,
+  staggeredGrid,
+  gridItemVariants
+} from '../utils/animationConfig';
 
 interface Assignment {
   _id: string;
@@ -234,75 +243,118 @@ const Tracker: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="tracker-container">
-        <div className="tracker-wrapper">
+      <motion.div 
+        className="tracker-container"
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        variants={pageVariants}
+      >
+        <motion.div 
+          className="tracker-wrapper"
+          variants={containerVariants}
+        >
           <div className="loading">Loading assignments...</div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
   // Show error state
   if (error) {
     return (
-      <div className="tracker-container">
-        <div className="tracker-wrapper">
+      <motion.div 
+        className="tracker-container"
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        variants={pageVariants}
+      >
+        <motion.div 
+          className="tracker-wrapper"
+          variants={containerVariants}
+        >
           <div className="error">{error}</div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="tracker-container">
-      <div className="tracker-wrapper">
-        <div className="tracker-header">
+    <motion.div 
+      className="tracker-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
+      <motion.div 
+        className="tracker-wrapper"
+        variants={containerVariants}
+      >
+        <motion.div 
+          className="tracker-header"
+          variants={containerVariants}
+        >
           <h2 className="tracker-title">Progress Tracker</h2>
           <p className="tracker-subtitle">Track your assignment progress and completion status</p>
-        </div>
+        </motion.div>
         
-        <div className="stats-grid">
-          <div className="stat-card">
+        <motion.div 
+          className="stats-grid"
+          variants={staggeredGrid}
+          initial="hidden"
+          animate="visible"
+        >
+          <motion.div 
+            className="stat-card"
+            variants={gridItemVariants}
+            whileHover="hover"
+          >
             <FaChartLine className="stat-icon" />
             <h3 className="stat-title">Overall Progress</h3>
             <div className="stat-value">
               {stats.overallProgress.toFixed(1)}%
             </div>
             <div className="progress-bar">
-              <div 
+              <motion.div 
                 className="progress-fill" 
-                style={{ 
-                  width: `${Math.min(Math.max(stats.overallProgress, 0), 100)}%` 
-                }} 
+                initial={{ width: 0 }}
+                animate={{ width: `${stats.overallProgress}%` }}
+                transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
               />
             </div>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div 
+            className="stat-card"
+            variants={gridItemVariants}
+            whileHover="hover"
+          >
             <FaTasks className="stat-icon" />
             <h3 className="stat-title">Assignments</h3>
             <div className="stat-value">
               {stats.completedAssignments}/{stats.totalAssignments}
             </div>
             <p className="stat-label">Completed Tasks</p>
-          </div>
+          </motion.div>
 
-          <div className="stat-card">
+          <motion.div 
+            className="stat-card"
+            variants={gridItemVariants}
+            whileHover="hover"
+          >
             <FaClock className="stat-icon" />
             <h3 className="stat-title">Time Remaining</h3>
             <div className="stat-value">{stats.timeRemaining.toFixed(1)}</div>
             <p className="stat-label">Days Average</p>
-          </div>
+          </motion.div>
+        </motion.div>
 
-          {/* <div className="stat-card">
-            <FaExclamationTriangle className="stat-icon warning" />
-            <h3 className="stat-title">Upcoming Deadlines</h3>
-            <div className="stat-value">{stats.upcomingDeadlines}</div>
-            <p className="stat-label">Due in 3 days</p>
-          </div> */}
-        </div>
-
-        <div className="chart-section">
+        <motion.div 
+          className="chart-section"
+          variants={containerVariants}
+        >
           <h3 className="section-title"><FaChartLine className="section-icon" />Assignment Progress</h3>
           <div className="chart-wrapper" style={{ height: getChartDimensions().height }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -398,11 +450,10 @@ const Tracker: React.FC = () => {
                 In Progress Assignments
               </h4>
             </div>
-            </div>
           </div>
-        </div>
-      </div>
-    
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BsMicrosoft } from 'react-icons/bs';
+import { FcGoogle } from 'react-icons/fc';
 import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  pageVariants, 
+  containerVariants, 
+  buttonVariants,
+  fadeIn
+} from '../utils/animationConfig';
 import '../styles/pages/Access.css';
 
-export function AuthForm() {
+const Access: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -31,7 +39,12 @@ export function AuthForm() {
           });
 
           if (response.data.token) {
-            login(response.data.token, response.data.userKey);
+            // Pass the user role to the login function
+            login(
+              response.data.token, 
+              response.data.userKey, 
+              response.data.role || 'user' // Use returned role or default to 'user'
+            );
             navigate('/schedule');
           }
         }
@@ -59,59 +72,117 @@ export function AuthForm() {
     try {
       setError(null);
       setLoading(true);
+      localStorage.setItem('authInProgress', 'true');
       await signInWithMicrosoft();
     } catch (err) {
       console.error('Microsoft auth error:', err);
       setError('Failed to start authentication');
+      localStorage.removeItem('authInProgress');
       setLoading(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <div className="auth-content">
+    <motion.div 
+      className="access-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
+      <motion.div 
+        className="auth-card"
+        variants={containerVariants}
+      >
+        <motion.div 
+          className="auth-content"
+          variants={fadeIn}
+        >
           <div className="form-section">
-            <h1 className="form-title">Welcome to StudyFlow</h1>
+            <motion.h1 
+              className="form-title"
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              Welcome to StudyFlow
+            </motion.h1>
 
-            {error && <div className="error-message">{error}</div>}
+            {error && (
+              <motion.div 
+                className="error-message"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                {error}
+              </motion.div>
+            )}
 
-            <div className="auth-buttons">
-              <button
+            <motion.div 
+              className="auth-buttons"
+              variants={containerVariants}
+            >
+              <motion.button
                 onClick={handleGoogleAuth}
                 className="auth-button google-button"
-              >
-                Sign in with Google
-              </button>
-
-              <button
-                onClick={handleMicrosoftAuth}
-                className="auth-button microsoft-button"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
                 disabled={loading}
               >
-                <BsMicrosoft />
+                <FcGoogle className="auth-icon" />
+                {loading ? 'Signing in...' : 'Sign in with Google'}
+              </motion.button>
+
+              <motion.button
+                onClick={handleMicrosoftAuth}
+                className="auth-button microsoft-button"
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+                disabled={loading}
+              >
+                <BsMicrosoft className="auth-icon" />
                 {loading ? 'Signing in...' : 'Sign in with Microsoft'}
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
           </div>
 
-          <div className="info-section">
+          <motion.div 
+            className="info-section"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+          >
             <h2 className="info-title">Join StudyFlow</h2>
             <ul className="feature-list">
-              <li>Track your progress</li>
-              <li>Manage your schedule</li>
-              <li>Connect with peers</li>
+              <motion.li 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                Track your progress
+              </motion.li>
+              <motion.li 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+              >
+                Manage your schedule
+              </motion.li>
+              <motion.li 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
+              >
+                Connect with peers
+              </motion.li>
             </ul>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
-}
-
-// Add default export
-const Access = () => {
-  return <AuthForm />;
 };
 
 export default Access;

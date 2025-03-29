@@ -67,3 +67,262 @@ h1 {
   text-align: center;
   margin: 0;
 }
+
+.app-header {
+  background-color: var(--header-bg, #ffffff);
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  padding: 0.75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  width: 100%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mobile-menu-button {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--text, #374151);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: none;
+  color: var(--text, #374151);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.theme-toggle:hover {
+  background-color: var(--hover-bg, #f3f4f6);
+}
+
+/* Notification styles */
+.notifications-dropdown,
+.profile-dropdown {
+  position: relative;
+}
+
+.notifications-button,
+.profile-button {
+  background: none;
+  border: none;
+  color: var(--text, #374151);
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  position: relative;
+}
+
+.notifications-button:hover,
+.profile-button:hover {
+  background-color: var(--hover-bg, #f3f4f6);
+}
+
+.notification-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background-color: var(--primary, #4f46e5);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  width: 280px;
+  z-index: 101;
+  overflow: hidden;
+}
+
+.profile-menu {
+  width: 200px;
+}
+
+.notifications-menu h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.notification-items {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+  transition: background-color 0.2s;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: var(--hover-bg, #f9fafb);
+}
+
+.notification-item p {
+  margin: 0 0 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text, #374151);
+}
+
+.notification-item small {
+  color: var(--text-muted, #6b7280);
+  font-size: 0.75rem;
+}
+
+.view-all {
+  display: block;
+  text-align: center;
+  padding: 0.75rem;
+  color: var(--primary, #4f46e5);
+  font-size: 0.875rem;
+  text-decoration: none;
+  font-weight: 500;
+  border-top: 1px solid var(--border, #e5e7eb);
+  transition: background-color 0.2s;
+}
+
+.view-all:hover {
+  background-color: var(--hover-bg, #f9fafb);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text, #374151);
+  font-size: 0.875rem;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+}
+
+.dropdown-item:hover {
+  background-color: var(--hover-bg, #f9fafb);
+}
+
+.dropdown-item svg {
+  font-size: 1rem;
+  color: var(--text-muted, #6b7280);
+}
+
+.logout-button {
+  color: var(--danger, #ef4444);
+}
+
+.logout-button svg {
+  color: var(--danger, #ef4444);
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .app-header {
+    background-color: var(--header-bg, #1f2937);
+    border-bottom-color: var(--border, #374151);
+  }
+  
+  .dropdown-menu {
+    background-color: var(--card-bg, #1f2937);
+    border-color: var(--border, #4b5563);
+  }
+  
+  .notification-item {
+    border-color: var(--border, #4b5563);
+  }
+  
+  .view-all {
+    border-color: var(--border, #4b5563);
+  }
+  
+  .notification-item:hover,
+  .dropdown-item:hover,
+  .view-all:hover {
+    background-color: var(--hover-bg, #374151);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 0.5rem 1rem;
+  }
+  
+  .header-right {
+    gap: 0.5rem;
+  }
+  
+  .dropdown-menu {
+    width: 250px;
+    right: -0.5rem;
+  }
+  
+  .profile-menu {
+    width: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dropdown-menu {
+    width: 220px;
+  }
+}

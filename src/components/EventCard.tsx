@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { 
   FiBookOpen, 
   FiClock, 
@@ -15,10 +16,11 @@ import {
   FiFlag
 } from 'react-icons/fi';
 import '../styles/components/EventCard.css';
+import { gridItemVariants } from '../utils/animationConfig';
 
 interface EventCardProps {
   event: any;
-  onViewDetails?: (event: any) => void;
+  onViewDetails: (event: any) => void;
 }
 
 const EventCard: React.FC<EventCardProps> = ({ event, onViewDetails }) => {
@@ -34,139 +36,109 @@ const EventCard: React.FC<EventCardProps> = ({ event, onViewDetails }) => {
   const isMilestone = event.category === 'milestone';
   
   // Format date and time
-  const formatTime = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    });
   };
   
-  const formatDate = (date) => {
-    if (!date) return '';
-    const d = new Date(date);
-    return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
   };
-  
+
   // Get icon based on event type
   const getEventIcon = () => {
-    if (isClassEvent) return <FiBookOpen className="event-type-icon class" />;
-    if (isStudyEvent) return <FiEdit3 className="event-type-icon study" />;
-    if (isTopicEvent) return <FiBook className="event-type-icon topic" />;
-    if (isRevisionEvent) return <FiLayers className="event-type-icon revision" />;
-    if (isPracticeEvent) return <FiCheckSquare className="event-type-icon practice" />;
-    if (isKnowledgeCheck) return <FiAward className="event-type-icon check" />;
-    if (isMilestone) return <FiFlag className="event-type-icon milestone" />;
-    
-    return <FiClipboard className="event-type-icon default" />;
+    if (isClassEvent) return <FiBookOpen className="event-icon class" />;
+    if (isStudyEvent) return <FiBook className="event-icon study" />;
+    if (isTopicEvent) return <FiLayers className="event-icon topic" />;
+    if (isRevisionEvent) return <FiEdit3 className="event-icon revision" />;
+    if (isPracticeEvent) return <FiClipboard className="event-icon practice" />;
+    if (isKnowledgeCheck) return <FiCheckSquare className="event-icon knowledge-check" />;
+    if (isMilestone) return <FiFlag className="event-icon milestone" />;
+    return <FiFileText className="event-icon" />;
   };
-  
-  // Get priority class name
-  const getPriorityClass = () => {
-    switch (event.priority) {
-      case 'high': return 'priority-high';
-      case 'medium': return 'priority-medium';
-      case 'low': return 'priority-low';
-      default: return 'priority-medium';
-    }
-  };
-  
-  // Get event category class name
-  const getCategoryClass = () => {
-    return `category-${event.category || 'default'}`;
-  };
-  
-  // Handle click
-  const handleCardClick = () => {
-    if (onViewDetails) {
-      onViewDetails(event);
-    }
+
+  // Get event type name for display
+  const getEventTypeName = () => {
+    if (isClassEvent) return "Class";
+    if (isStudyEvent) return "Study Session";
+    if (isTopicEvent) return "Topic Study";
+    if (isRevisionEvent) return "Revision";
+    if (isPracticeEvent) return "Practice";
+    if (isKnowledgeCheck) return "Knowledge Check";
+    if (isMilestone) return "Milestone";
+    return "Task";
   };
 
   return (
-    <div 
-      className={`event-card ${getPriorityClass()} ${getCategoryClass()}`}
-      onClick={handleCardClick}
+    <motion.div 
+      className="event-card"
+      onClick={() => onViewDetails(event)}
+      variants={gridItemVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
     >
-      <div className="event-card-header">
+      <div className="event-header">
         {getEventIcon()}
-        <h3 className="event-title">{event.title}</h3>
-        {event.priority && (
-          <div className={`priority-badge ${getPriorityClass()}`}>
-            {event.priority}
-          </div>
-        )}
+        <div className="event-title-section">
+          <h3 className="event-title">{event.title}</h3>
+          <span className="event-type">{getEventTypeName()}</span>
+        </div>
       </div>
       
-      <div className="event-card-content">
-        <div className="event-time-location">
-          <div className="event-time">
-            <FiClock className="icon" />
-            <span>{formatTime(event.start)} - {formatTime(event.end)}</span>
-          </div>
-          
+      <div className="event-details">
+        {event.start && (
           <div className="event-date">
             <FiCalendar className="icon" />
-            <span>{formatDate(event.start)}</span>
-          </div>
-          
-          {event.courseCode && (
-            <div className="event-course">
-              <FiTag className="icon" />
-              <span>{event.courseCode}</span>
-            </div>
-          )}
-          
-          {(event.location || event.resource?.location) && (
-            <div className="event-location">
-              <FiMapPin className="icon" />
-              <span>{event.location || event.resource?.location}</span>
-            </div>
-          )}
-        </div>
-        
-        {event.description && (
-          <div className="event-description">
-            <p>{event.description}</p>
+            {formatDate(event.start)}
           </div>
         )}
         
-        {/* Show additional details based on event type */}
-        {isStudyEvent && event.resource?.originalEvent && (
-          <div className="event-detail">
-            <FiFileText className="icon" />
-            <span>Assignment: {event.resource.originalEvent.title}</span>
+        {event.start && event.end && (
+          <div className="event-time">
+            <FiClock className="icon" />
+            {formatTime(event.start)} - {formatTime(event.end)}
           </div>
         )}
         
-        {isKnowledgeCheck && event.resource?.questions && (
-          <div className="event-questions">
-            <strong>Topics to review:</strong>
-            <ul>
-              {event.resource.questions.map((q, i) => (
-                <li key={i}>{q.questionText}</li>
-              ))}
-            </ul>
+        {event.courseCode && (
+          <div className="event-course">
+            <FiBook className="icon" />
+            {event.courseCode}
           </div>
         )}
         
-        {isMilestone && event.resource?.checklistItems && (
-          <div className="event-checklist">
-            <strong>Checklist:</strong>
-            <ul>
-              {event.resource.checklistItems.map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
+        {event.location && (
+          <div className="event-location">
+            <FiMapPin className="icon" />
+            {event.location}
           </div>
         )}
       </div>
       
-      {/* Action buttons */}
-      <div className="event-card-actions">
-        <button className="action-button details-button" onClick={handleCardClick}>
+      {event.description && (
+        <div className="event-description">
+          <p>{event.description}</p>
+        </div>
+      )}
+      
+      <motion.div 
+        className="event-footer"
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <motion.button className="view-details-button">
           View Details
-        </button>
-      </div>
-    </div>
+        </motion.button>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/pages/Admin.css';
+import { 
+  pageVariants, 
+  containerVariants, 
+  listVariants, 
+  listItemVariants,
+  staggeredGrid,
+  gridItemVariants
+} from '../utils/animationConfig';
 
 interface UserActivity {
   _id: string;
@@ -37,12 +46,11 @@ const Admin: React.FC = () => {
 
         console.log("API Response:", response.data); // Debugging
 
-        // Ensure correct mapping of API response
         const formattedData: Analytics = {
           totalUsers: response.data.userCount || 0,
           activeToday: response.data.activeToday || 0,
           averageSessionDuration: response.data.averageSessionDuration || 0,
-          userActivity: response.data.userData || [], // Use an empty array if undefined
+          userActivity: response.data.userData || [],
         };
 
         setAnalytics(formattedData);
@@ -62,35 +70,66 @@ const Admin: React.FC = () => {
   if (!analytics) return <div>No data available</div>;
 
   const activityData = analytics.userActivity.map(user => ({
-    name: user.name.split(' ')[0], // Use first name only
-    'Study Time': user.averageSessionDuration, // Use actual session duration
+    name: user.name.split(' ')[0],
+    'Study Time': user.averageSessionDuration,
   }));
 
   return (
-    <div className="admin-container">
-      <h1 className="admin-title">Admin Dashboard</h1>
-
-      <div className="overview-grid">
-        <div className="stat-card">
+    <motion.div 
+      className="admin-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
+      <motion.header 
+        className="admin-header"
+        variants={containerVariants}
+      >
+        <h1 className="admin-title">Admin Dashboard</h1>
+      </motion.header>
+      
+      <motion.div 
+        className="overview-grid"
+        variants={staggeredGrid}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div 
+          className="stat-card"
+          variants={gridItemVariants}
+          whileHover="hover"
+        >
           <h2 className="stat-title">Total Users</h2>
           <p className="stat-description">Active accounts on the platform</p>
           <p className="stat-value">{analytics.totalUsers}</p>
-        </div>
+        </motion.div>
 
-        <div className="stat-card">
+        <motion.div 
+          className="stat-card"
+          variants={gridItemVariants}
+          whileHover="hover"
+        >
           <h2 className="stat-title">Active Today</h2>
           <p className="stat-description">Users active in the last 24 hours</p>
           <p className="stat-value">{analytics.activeToday}</p>
-        </div>
+        </motion.div>
 
-        <div className="stat-card">
+        <motion.div 
+          className="stat-card"
+          variants={gridItemVariants}
+          whileHover="hover"
+        >
           <h2 className="stat-title">Avg. Session Duration</h2>
           <p className="stat-description">In minutes per user</p>
           <p className="stat-value">{Math.round(analytics.averageSessionDuration)}m</p>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
 
-      <div className="chart-container">
+      <motion.div 
+        className="chart-container"
+        variants={containerVariants}
+      >
         <div className="chart-header">
           <h2 className="chart-title">User Activity</h2>
           <p className="chart-description">Sessions and average duration by user</p>
@@ -107,14 +146,20 @@ const Admin: React.FC = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="table-container">
+      <motion.div 
+        className="table-container"
+        variants={containerVariants}
+      >
         <div className="table-header">
           <h2 className="chart-title">User Details</h2>
           <p className="chart-description">Detailed view of user activity</p>
         </div>
-        <table className="data-table">
+        <motion.table 
+          className="data-table"
+          variants={containerVariants}
+        >
           <thead className="table-head">
             <tr>
               <th>Name</th>
@@ -125,21 +170,29 @@ const Admin: React.FC = () => {
               <th>Avg. Duration</th>
             </tr>
           </thead>
-          <tbody className="table-body">
+          <motion.tbody
+            initial="hidden"
+            animate="visible"
+            variants={listVariants}
+          >
             {analytics.userActivity.map(user => (
-              <tr key={user._id}>
+              <motion.tr 
+                key={user._id}
+                variants={listItemVariants}
+                whileHover={{ backgroundColor: '#f9fafb' }}
+              >
                 <td>{user.name}</td>
                 <td>{user.email}</td>
                 <td>{user.role}</td>
                 <td>{new Date(user.lastLogin).toLocaleDateString()}</td>
                 <td>{user.totalSessions}</td>
                 <td>{Math.round(user.averageSessionDuration)}m</td>
-              </tr>
+              </motion.tr>
             ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </motion.tbody>
+        </motion.table>
+      </motion.div>
+    </motion.div>
   );
 };
 

@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   FiEdit3, FiUser, FiMail, FiLogOut, FiCheck, FiX,
   FiUserCheck, FiUpload, FiTrash2
 } from 'react-icons/fi';
 import '../styles/pages/Profile.css';
+import {
+  pageVariants,
+  containerVariants,
+  listVariants,
+  listItemVariants,
+  buttonVariants,
+  fadeIn
+} from '../utils/animationConfig';
 
 interface UserProfile {
   name: string;
@@ -52,9 +61,6 @@ const Profile: React.FC = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Add console.log to debug the response
-      console.log('Profile response:', response.data);
-
       setProfile({
         name: response.data.name || '',
         email: response.data.email || '',
@@ -62,7 +68,6 @@ const Profile: React.FC = () => {
         profilePicture: response.data.profilePicture || ''
       });
 
-      // Set profile picture if it exists in the response
       if (response.data.profilePicture) {
         const fullImageUrl = getFullImageUrl(response.data.profilePicture);
         setProfilePicture(fullImageUrl);
@@ -105,13 +110,12 @@ const Profile: React.FC = () => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type and size
     if (!file.type.startsWith('image/')) {
       setMessage({ text: 'Please upload an image file', type: 'error' });
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
       setMessage({ text: 'Image size should be less than 5MB', type: 'error' });
       return;
     }
@@ -160,10 +164,21 @@ const Profile: React.FC = () => {
   if (loading) return <div>Loading...</div>;
 
   return (
-    <div className="profile-container">
-      <div className="profile-wrapper">
-        {/* Profile Picture Section */}
-        <div className="profile-picture-section">
+    <motion.div
+      className="profile-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
+      <motion.div
+        className="profile-wrapper"
+        variants={containerVariants}
+      >
+        <motion.div
+          className="profile-picture-section"
+          variants={fadeIn}
+        >
           <div className="profile-picture-container">
             {profilePicture ? (
               <img
@@ -202,23 +217,35 @@ const Profile: React.FC = () => {
             accept="image/*"
             style={{ display: 'none' }}
           />
-        </div>
-        <div className="profile-header">
+        </motion.div>
+        <motion.div
+          className="profile-header"
+          variants={fadeIn}
+        >
           <h1 className="profile-title">
             <FiUser className="profile-icon" />
             Profile
           </h1>
-        </div>
+        </motion.div>
 
         {message && (
-          <div className={`message ${message.type === 'success' ? 'message-success' : 'message-error'}`}>
+          <motion.div
+            className={`message ${message.type === 'success' ? 'message-success' : 'message-error'}`}
+            variants={fadeIn}
+          >
             {message.type === 'success' ? <FiCheck /> : <FiX />}
             {message.text}
-          </div>
+          </motion.div>
         )}
 
-        <div className="profile-card">
-          <div className="card-header">
+        <motion.div
+          className="profile-card"
+          variants={containerVariants}
+        >
+          <motion.div
+            className="card-header"
+            variants={fadeIn}
+          >
             <h2 className="card-title">
               <FiUser className="card-icon" />
               User Information
@@ -230,9 +257,12 @@ const Profile: React.FC = () => {
               <FiEdit3 className="button-icon" />
               {isEditing ? 'Cancel' : 'Edit'}
             </button>
-          </div>
+          </motion.div>
 
-          <div className="form-group">
+          <motion.div
+            className="form-group"
+            variants={listItemVariants}
+          >
             <label className="form-label">
               <FiMail className="input-icon" />
               Email (Google Account)
@@ -243,9 +273,12 @@ const Profile: React.FC = () => {
               disabled={true}
               className="form-input readonly"
             />
-          </div>
+          </motion.div>
 
-          <div className="form-group">
+          <motion.div
+            className="form-group"
+            variants={listItemVariants}
+          >
             <label className="form-label">
               <FiUserCheck className="input-icon" />
               Username
@@ -257,21 +290,33 @@ const Profile: React.FC = () => {
               disabled={!isEditing}
               className="form-input"
             />
-          </div>
+          </motion.div>
 
           {isEditing && (
-            <button onClick={handleProfileUpdate} className="save-button">
+            <motion.button
+              onClick={handleProfileUpdate}
+              className="save-button"
+              variants={buttonVariants}
+              whileHover="hover"
+              whileTap="tap"
+            >
               <FiCheck className="button-icon" />
               Save Changes
-            </button>
+            </motion.button>
           )}
-        </div>
-      </div>
-      <button onClick={handleLogout} className="logout-button">
+        </motion.div>
+      </motion.div>
+      <motion.button
+        onClick={handleLogout}
+        className="logout-button"
+        variants={buttonVariants}
+        whileHover="hover"
+        whileTap="tap"
+      >
         <FiLogOut className="button-icon" />
         Logout
-      </button>
-    </div>
+      </motion.button>
+    </motion.div>
   );
 };
 

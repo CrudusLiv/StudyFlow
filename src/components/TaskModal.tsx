@@ -1,6 +1,8 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { CalendarEvent } from '../types/types';
 import { FiClock, FiCalendar, FiBook, FiTag, FiInfo, FiMapPin } from 'react-icons/fi';
+import { modalVariants } from '../utils/animationConfig';
 
 interface TaskModalProps {
   task: CalendarEvent;
@@ -48,73 +50,119 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
   const isClassEvent = task?.category === 'class';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content task-modal" onClick={(e) => e.stopPropagation()}>
+    <motion.div 
+      className="modal-overlay" 
+      onClick={onClose}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <motion.div 
+        className="modal-content task-modal"
+        onClick={(e) => e.stopPropagation()}
+        variants={modalVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+      >
         <div className="modal-header">
           <h2>{task?.title || 'Untitled Event'}</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
-        <div className="task-details">
+        <motion.div 
+          className="task-details"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           {task?.start && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.2 }}
+            >
               <FiCalendar className="detail-icon" />
               <div>
                 <strong>Date:</strong> {formatDate(task.start)}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {task?.start && task?.end && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3 }}
+            >
               <FiClock className="detail-icon" />
               <div>
                 <strong>Time:</strong> {formatTime(task.start)} - {formatTime(task.end)}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {task?.category && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
               <FiTag className="detail-icon" />
               <div>
                 <strong>Type:</strong> {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
               </div>
-            </div>
+            </motion.div>
           )}
 
-          {/* Remove priority section */}
-
           {(task?.courseCode || task?.resource?.courseCode) && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+            >
               <FiBook className="detail-icon" />
               <div>
                 <strong>Course:</strong> {task.courseCode || task.resource?.courseCode}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {(task?.location || task?.resource?.location) && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6 }}
+            >
               <FiMapPin className="detail-icon" />
               <div>
                 <strong>Location:</strong> {task.location || task.resource?.location}
               </div>
-            </div>
+            </motion.div>
           )}
 
           {task?.description && (
-            <div className="task-detail-item">
+            <motion.div 
+              className="task-detail-item"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+            >
               <FiInfo className="detail-icon" />
               <div>
                 <strong>Description:</strong>
                 <p>{task.description}</p>
               </div>
-            </div>
+            </motion.div>
           )}
-        </div>
-      </div>
-    </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 };
 

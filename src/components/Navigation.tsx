@@ -1,95 +1,225 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import {
-  FiHome,
-  FiCalendar,
-  FiBook,
-  FiClock,
+import React, { useState, useEffect, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  FiHome, 
+  FiCalendar, 
+  FiBarChart2, 
+  FiBell, 
+  FiSettings, 
+  FiMenu, 
+  FiX, 
+  FiCheckSquare, 
   FiUser,
-  FiLogOut,
-  FiSun,
-  FiMoon
+  FiShield // Added Shield icon for admin
 } from 'react-icons/fi';
-import { ROUTES } from '../lib/routes';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/components/Navigation.css';
+import { useAuth } from '../contexts/AuthContext';
+import { rightSideNavVariants, rightSideItemVariants } from '../utils/rightSideNavigation';
 
-interface NavigationProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
-
-const Navigation = ({ isOpen, onClose }: NavigationProps) => {
+const Navigation: React.FC = () => {
   const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { isAuthenticated, userRole } = useAuth(); // Get userRole from context
+  const menuRef = useRef<HTMLDivElement>(null);
 
-  const navigationItems = [
-    {
-      path: ROUTES.HOME,
-      icon: <FiHome size={22} />,
-      label: 'Home'
-    },
-    {
-      path: ROUTES.SCHEDULE,
-      icon: <FiCalendar size={22} />,
-      label: 'Study Schedule'
-    },
-    {
-      path: ROUTES.REMINDERS,
-      icon: <FiClock size={22} />,
-      label: 'Reminders'
-    },
-    {
-      path: ROUTES.TRACKER,
-      icon: <FiBook size={22} />,
-      label: 'Progress Tracker'
-    },
-    {
-      path: ROUTES.PROFILE,
-      icon: <FiUser size={22} />,
-      label: 'Profile'
-    },
-    ...(user?.role === 'admin' ? [
-      {
-        path: ROUTES.ADMIN,
-        icon: <FiLogOut size={22} />,
-        label: 'Admin Dashboard'
+  // Check if user is admin
+  const isAdmin = userRole === 'admin';
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false);
       }
-    ] : [])
-  ];
+    };
+
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Close mobile menu on navigation
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [location.pathname]);
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
-    <>
-      {isOpen && <div className="nav-backdrop" onClick={onClose}></div>}
-      <nav className={`nav-container ${isOpen ? 'open' : ''}`}>
-        <div className="nav-header">
-          <span className="logo">StudyFlow</span>
-          <button className="close-button" onClick={onClose}></button>
-        </div>
-        <div className="nav-items">
-          {navigationItems.map(({ path, icon, label }) => (
-            <Link
-              key={path}
-              to={path}
-              onClick={onClose}
-              className={`nav-item ${location.pathname === path ? 'active' : ''}`}
-            >
-              <span className="nav-icon">{icon}</span>
-              <span className="nav-label">{label}</span>
+    <nav className="navigation">
+      <div className="nav-container">
+        <div className="nav-left">
+          <div className="logo">
+            <Link to="/">
+              <motion.div 
+                initial={{ scale: 0.9, rotate: -5 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                StudyFlow
+              </motion.div>
             </Link>
-          ))}
+          </div>
         </div>
-        <button
-          onClick={toggleTheme}
-          className="theme-toggle"
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        >
-          {theme === 'dark' ? <FiSun size={20} /> : <FiMoon size={20} />}
-        </button>
-      </nav>
-    </>
+
+        <div className="nav-right">
+          <motion.button 
+            className="menu-toggle" 
+            onClick={toggleMenu}
+            whileTap={{ scale: 0.9 }}
+            aria-label="Toggle navigation menu"
+          >
+            {isMenuOpen ? <FiX /> : <FiMenu />}
+          </motion.button>
+        </div>
+
+        <div className="nav-desktop">
+          <motion.div 
+            className="nav-items"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 0 },
+              visible: {
+                opacity: 1,
+                transition: { 
+                  staggerChildren: 0.1,
+                  delayChildren: 0.3
+                }
+              }
+            }}
+          >
+            <motion.div variants={rightSideItemVariants}>
+              <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+                <FiHome className="nav-icon" />
+                <span>Home</span>
+              </Link>
+            </motion.div>
+            
+            <motion.div variants={rightSideItemVariants}>
+              <Link to="/schedule" className={location.pathname === '/schedule' ? 'active' : ''}>
+                <FiCalendar className="nav-icon" />
+                <span>Schedule</span>
+              </Link>
+            </motion.div>
+            
+            <motion.div variants={rightSideItemVariants}>
+              <Link to="/tracker" className={location.pathname === '/tracker' ? 'active' : ''}>
+                <FiBarChart2 className="nav-icon" />
+                <span>Progress</span>
+              </Link>
+            </motion.div>
+            
+            <motion.div variants={rightSideItemVariants}>
+              <Link to="/reminders" className={location.pathname === '/reminders' ? 'active' : ''}>
+                <FiCheckSquare className="nav-icon" />
+                <span>Reminders</span>
+              </Link>
+            </motion.div>
+            
+            <motion.div variants={rightSideItemVariants}>
+              <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
+                <FiUser className="nav-icon" />
+                <span>Profile</span>
+              </Link>
+            </motion.div>
+
+            {/* Admin link - only visible to admin users */}
+            {isAdmin && (
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+                  <FiShield className="nav-icon" />
+                  <span>Admin</span>
+                </Link>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            className="mobile-menu"
+            variants={rightSideNavVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            ref={menuRef}
+          >
+            <div className="mobile-menu-header">
+              <div className="logo">StudyFlow</div>
+              <motion.button 
+                className="close-menu" 
+                onClick={() => setIsMenuOpen(false)}
+                whileTap={{ scale: 0.9 }}
+                aria-label="Close menu"
+              >
+                <FiX />
+              </motion.button>
+            </div>
+            
+            <motion.div className="mobile-nav-items">
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/" className={location.pathname === '/' ? 'active' : ''}>
+                  <FiHome className="nav-icon" />
+                  <span>Home</span>
+                </Link>
+              </motion.div>
+              
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/schedule" className={location.pathname === '/schedule' ? 'active' : ''}>
+                  <FiCalendar className="nav-icon" />
+                  <span>Schedule</span>
+                </Link>
+              </motion.div>
+              
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/tracker" className={location.pathname === '/tracker' ? 'active' : ''}>
+                  <FiBarChart2 className="nav-icon" />
+                  <span>Progress</span>
+                </Link>
+              </motion.div>
+              
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/reminders" className={location.pathname === '/reminders' ? 'active' : ''}>
+                  <FiCheckSquare className="nav-icon" />
+                  <span>Reminders</span>
+                </Link>
+              </motion.div>
+              
+              <motion.div variants={rightSideItemVariants}>
+                <Link to="/profile" className={location.pathname === '/profile' ? 'active' : ''}>
+                  <FiUser className="nav-icon" />
+                  <span>Profile</span>
+                </Link>
+              </motion.div>
+
+              {/* Admin link in mobile menu - only visible to admin users */}
+              {isAdmin && (
+                <motion.div variants={rightSideItemVariants}>
+                  <Link to="/admin" className={location.pathname === '/admin' ? 'active' : ''}>
+                    <FiShield className="nav-icon" />
+                    <span>Admin</span>
+                  </Link>
+                </motion.div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
   );
 };
 

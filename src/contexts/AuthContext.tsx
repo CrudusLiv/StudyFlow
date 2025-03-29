@@ -28,7 +28,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Initialize auth state from localStorage on mount
   useEffect(() => {
+    const initializeAuthState = () => {
+      const token = localStorage.getItem('token');
+      const savedRole = localStorage.getItem('userRole');
+      
+      if (token) {
+        // Check token expiry time
+        const tokenExpiry = localStorage.getItem('tokenExpiry');
+        const currentTime = new Date().getTime();
+        
+        if (!tokenExpiry || parseInt(tokenExpiry) > currentTime) {
+          setIsAuthenticated(true);
+          setUserRole(savedRole || 'user');
+          
+          // If no expiry has been set, set it to 1 hour from now
+          if (!tokenExpiry) {
+            const expiryTime = new Date().getTime() + (60 * 60 * 1000); // 1 hour
+            localStorage.setItem('tokenExpiry', expiryTime.toString());
+          }
+        } else {
+          // Token is expired, clean up
+          localStorage.removeItem('token');
+          localStorage.removeItem('userKey');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('tokenExpiry');
+        }
+      }
+      
+      setLoading(false);
+    };
+
+    initializeAuthState();
+    
     // Handle URL tokens (Google auth)
     const params = new URLSearchParams(window.location.search);
     const token = params.get('token');
@@ -36,9 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userRole = params.get('userRole');
 
     if (token && userKey) {
+      // Set expiry time - 1 hour from now
+      const expiryTime = new Date().getTime() + (60 * 60 * 1000);
+      
       localStorage.setItem('token', token);
       localStorage.setItem('userKey', userKey);
       localStorage.setItem('userRole', userRole || 'user');
+      localStorage.setItem('tokenExpiry', expiryTime.toString());
+      
       setIsAuthenticated(true);
       setUserRole(userRole || 'user');
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -56,9 +94,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
 
           if (response.data.token) {
+            // Set expiry time - 1 hour from now
+            const expiryTime = new Date().getTime() + (60 * 60 * 1000);
+            
             localStorage.setItem('token', response.data.token);
             localStorage.setItem('userKey', response.data.userKey);
             localStorage.setItem('userRole', response.data.role || 'user');
+            localStorage.setItem('tokenExpiry', expiryTime.toString());
+            
             setIsAuthenticated(true);
             setUserRole(response.data.role || 'user');
           }
@@ -66,7 +109,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error processing Firebase auth:', error);
         }
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -83,6 +125,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
+      // Check token expiry
+      const tokenExpiry = localStorage.getItem('tokenExpiry');
+      if (tokenExpiry && parseInt(tokenExpiry) < new Date().getTime()) {
+        // Token expired
+        localStorage.removeItem('token');
+        localStorage.removeItem('userKey');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('tokenExpiry');
+        setIsAuthenticated(false);
+        setUserRole('');
+        setLoading(false);
+        return false;
+      }
+
       const response = await axios.get('http://localhost:5000/api/user', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -92,6 +148,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         setUserRole(role);
         localStorage.setItem('userRole', role);
+        
+        // Extend token expiry on successful verification
+        const expiryTime = new Date().getTime() + (60 * 60 * 1000); // 1 hour
+        localStorage.setItem('tokenExpiry', expiryTime.toString());
+        
         return true;
       } else {
         throw new Error('Failed to verify token');
@@ -101,8 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('token');
       localStorage.removeItem('userKey');
       localStorage.removeItem('userRole');
-      setIsAuthenticated(false);
-      localStorage.removeItem('userRole');
+      localStorage.removeItem('tokenExpiry');
       setIsAuthenticated(false);
       setUserRole('');
       return false;
@@ -113,9 +173,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = (token: string, userKey: string, role = 'user') => {
     console.log("Login called with token and role:", role);
+    
+    // Set expiry time - 1 hour from now
+    const expiryTime = new Date().getTime() + (60 * 60 * 1000);
+    
     localStorage.setItem('token', token);
     localStorage.setItem('userKey', userKey);
     localStorage.setItem('userRole', role);
+    localStorage.setItem('tokenExpiry', expiryTime.toString());
 
     setIsAuthenticated(true);
     setUserRole(role);
@@ -125,6 +190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('token');
     localStorage.removeItem('userKey');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('tokenExpiry');
     setIsAuthenticated(false);
     setUserRole('');
     window.location.href = '/access';

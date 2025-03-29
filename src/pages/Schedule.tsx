@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Calendar, View, NavigateAction, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiCalendar,
   FiUpload,
@@ -31,6 +32,16 @@ import ClassModal from '../components/ClassModal';
 import { scheduleService } from '../services/scheduleService';
 import PreferencesPanel from '../components/PreferencesPanel';                
 import { pdfService } from '../services/pdfService';
+import { 
+  pageVariants, 
+  containerVariants, 
+  listVariants, 
+  listItemVariants,
+  buttonVariants,
+  modalVariants
+} from '../utils/animationConfig';
+import ScheduleGridView from '../components/ScheduleGridView';
+import ScheduleListView from '../components/ScheduleListView';
 
 // Set up the moment localizer properly
 const localizer = momentLocalizer(moment);
@@ -134,12 +145,10 @@ const Schedule: React.FC = () => {
   const [onboardingStep, setOnboardingStep] = useState<number>(1);
   const [showAddClassModal, setShowAddClassModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeView, setActiveView] = useState<'calendar' | 'grid' | 'list'>(() => {
-    // Restore previous view from localStorage if available
-    return (localStorage.getItem('scheduleActiveView') as 'calendar' | 'grid' | 'list') || 'calendar';
-  });
+  const [activeView, setActiveView] = useState<'calendar' | 'grid' | 'list'>('calendar');
   const [showClassModal, setShowClassModal] = useState<boolean>(false);
   const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [viewType, setViewType] = useState<'calendar' | 'grid' | 'list'>('calendar');
 
   // State for task management
   const [multiWeekSchedule, setMultiWeekSchedule] = useState<WeeklySchedule[] | null>(null);
@@ -1691,21 +1700,60 @@ const Schedule: React.FC = () => {
     };
 
     return (
-      <div className="schedule-grid-container">
-        <div className="schedule-grid">
-          <div className="time-column">
+      <motion.div 
+        className="schedule-grid-container"
+        variants={containerVariants}
+      >
+        <motion.div className="schedule-grid">
+          <motion.div className="time-column">
             <div className="time-header"></div>
-            {renderTimeSlots()}
-          </div>
+            {/* Animate time slots with staggered effect */}
+            <motion.div 
+              initial="hidden"
+              animate="visible"
+              variants={listVariants}
+            >
+              {TIME_SLOTS.map((time, index) => (
+                <motion.div 
+                  key={`time-${index}`} 
+                  className="time-slot-label"
+                  variants={listItemVariants}
+                >
+                  {time}
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
           
           {DAYS.map(day => (
-            <div key={day} className="day-column">
+            <motion.div 
+              key={day} 
+              className="day-column"
+              variants={containerVariants}
+            >
               <div className="day-header">{day}</div>
-              {renderEmptyCells(day)}
-            </div>
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={listVariants}
+              >
+                {TIME_SLOTS.map((time, index) => {
+                  // ...existing code for renderEmptyCells...
+                  return (
+                    <motion.div 
+                      key={`${day}-${index}`} 
+                      className="grid-cell"
+                      variants={listItemVariants}
+                    >
+                      {/* ...existing grid cell content... */}
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+            </motion.div>
           ))}
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     );
   };
 
@@ -1747,16 +1795,30 @@ const Schedule: React.FC = () => {
     };
 
     return (
-      <div className="schedule-list-container">
-        {DAYS.map(day => (
-          <div key={day} className="list-day-section">
-            <h3 className="list-day-header">{day}</h3>
-            <div className="list-classes">
-              {renderClasses(day)}
-            </div>
-          </div>
-        ))}
-      </div>
+      <motion.div 
+        className="schedule-list-container"
+        variants={containerVariants}
+      >
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={listVariants}
+        >
+          {DAYS.map(day => (
+            <motion.div 
+              key={day} 
+              className="list-day-section"
+              variants={listItemVariants}
+            >
+              <h3 className="list-day-header">{day}</h3>
+              <div className="list-classes">
+                {/* ...existing renderClasses with animations... */}
+                {renderClasses(day)}
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </motion.div>
     );
   };
 
@@ -2014,11 +2076,84 @@ const savePreferences = async () => {
     }
   }, [classData, processEvents]);
 
+  // Render the view based on the selected view type
+  const renderView = () => {
+    switch (viewType) {
+      case 'grid':
+        return (
+          <ScheduleGridView 
+            events={events}
+            onEventClick={handleEventClick}
+          />
+        );
+      case 'list':
+        return (
+          <ScheduleListView 
+            events={events}
+            onEventClick={handleEventClick}
+          />
+        );
+      default:
+        return (
+          <div className="calendar-container">
+            <Calendar
+              events={events}
+              defaultView="week"
+              views={["day", "week", "month"]}
+              defaultDate={new Date()}
+              onSelectEvent={handleEventClick}
+              onSelectSlot={handleDateSelect}
+              selectable
+              localizer={localizer}
+              components={{
+                event: TaskEventComponent
+              }}
+              eventPropGetter={eventStyleGetter}
+              dayPropGetter={(date) => {
+                const today = new Date();
+                const isToday = 
+                  date.getDate() === today.getDate() &&
+                  date.getMonth() === today.getMonth() &&
+                  date.getFullYear() === today.getFullYear();
+                
+                return {
+                  className: isToday ? 'rbc-today-enhanced' : '',
+                };
+              }}
+              messages={{
+                allDay: 'All Day',
+                previous: 'Previous',
+                next: 'Next',
+                today: 'Today',
+                month: 'Month',
+                week: 'Week',
+                day: 'Day',
+                showMore: (total) => `+${total} more`
+              }}
+              step={30}
+              timeslots={2}
+              min={new Date(new Date().setHours(8, 0, 0, 0))}
+              max={new Date(new Date().setHours(20, 0, 0, 0))}
+            />
+          </div>
+        );
+    }
+  };
+
   return (
-    <div className="schedule-container">
+    <motion.div 
+      className="schedule-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
       <ToastContainer />
       {renderOnboardingGuide()}
-      <header className="schedule-header">
+      <motion.header 
+        className="schedule-header"
+        variants={containerVariants}
+      >
         <div className="header-left">
           <div className="title-group">
             <FiCalendar className="header-icon" />
@@ -2037,171 +2172,156 @@ const savePreferences = async () => {
         </div>
 
         <div className="header-actions">
-          <div className="view-selector">
-            <button
+          <motion.div 
+            className="view-selector"
+            variants={containerVariants}
+          >
+            <motion.button
               className={`view-button ${calendarView === 'month' ? 'active' : ''}`}
               onClick={() => setCalendarView('month')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Month
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               className={`view-button ${calendarView === 'week' ? 'active' : ''}`}
               onClick={() => setCalendarView('week')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Week
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               className={`view-button ${calendarView === 'day' ? 'active' : ''}`}
               onClick={() => setCalendarView('day')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
               Day
-            </button>
-          </div>
-          <button
+            </motion.button>
+          </motion.div>
+          <motion.button
             className="settings-button"
             onClick={() => setShowPreferences(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <FiSettings className="button-icon" />
             Preferences
-          </button>
+          </motion.button>
         </div>
-      </header>
+      </motion.header>
 
-      {renderEventFilter()}
-
-      {/* Add file upload section before the calendar */}
-      <button 
+      {/* Add file upload button with animation */}
+      <motion.button 
         className="add-class-button" 
         onClick={() => setShowUploadModal(true)}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        variants={buttonVariants}
       >
         <FiUpload className="button-icon" />
         Upload PDFs
-      </button>
+      </motion.button>
 
-      {/* Render appropriate view based on active view state */}
-      {loading ? (
-        <div className="loading-message">Loading your schedule...</div>
-      ) : (
-        <>
-          {/* Calendar View */}
-          {activeView === 'calendar' && (
-            <div className="calendar-container">
-              {events.length === 0 ? (
-                <div className="empty-calendar-message">
-                  <h3>No classes found</h3>
-                  <p>Click "Add Class" to add your first class.</p>
-                </div>
-              ) : (
-                <div className="calendar-wrapper" style={{ height: 700 }} key={renderKey}>
-                  <Calendar
-                    localizer={localizer}
-                    events={events}
-                    startAccessor="start"
-                    endAccessor="end"
-                    views={['month', 'week', 'day']}
-                    defaultView="week"
-                    components={{
-                      event: TaskEventComponent
-                    }}
-                    onSelectEvent={handleEventSelect}
-                    eventPropGetter={(event) => {
-                      // Apply custom styling based on event type
-                      const isClassEvent = event.resource?.type === 'class';
-                      const priority = event.priority || 'medium';
-                      
-                      return {
-                        className: `calendar-event-clickable ${isClassEvent ? 'class-event' : `priority-${priority}-event`}`,
-                      };
-                    }}
-                    dayPropGetter={(date) => {
-                      // Customize day cell styling
-                      const today = new Date();
-                      const isToday = 
-                        date.getDate() === today.getDate() &&
-                        date.getMonth() === today.getMonth() &&
-                        date.getFullYear() === today.getFullYear();
-                      
-                      return {
-                        className: isToday ? 'rbc-today-enhanced' : '',
-                      };
-                    }}
-                    // Improve accessiblity of calendar
-                    messages={{
-                      allDay: 'All Day',
-                      previous: 'Previous',
-                      next: 'Next',
-                      today: 'Today',
-                      month: 'Month',
-                      week: 'Week',
-                      day: 'Day',
-                      showMore: (total) => `+${total} more`
-                    }}
-                    // Improve time slot display
-                    step={30}
-                    timeslots={2}
-                    min={new Date(new Date().setHours(8, 0, 0, 0))}
-                    max={new Date(new Date().setHours(20, 0, 0, 0))}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Grid View */}
-          {activeView === 'grid' && (
-            rawClasses.length === 0 ? (
-              <div className="empty-calendar-message">
-                <h3>No classes found</h3>
-                <p>Click "Add Class" to add your first class.</p>
-              </div>
-            ) : (
-              <GridView />
-            )
-          )}
-          
-          {/* List View */}
-          {activeView === 'list' && (
-            rawClasses.length === 0 ? (
-              <div className="empty-calendar-message">
-                <h3>No classes found</h3>
-                <p>Click "Add Class" to add your first class.</p>
-              </div>
-            ) : (
-              <ListView />
-            )
-          )}
-        </>
-      )}
+      {/* View selector buttons */}
+      <div className="view-selector">
+        <button 
+          className={`view-button ${viewType === 'calendar' ? 'active' : ''}`}
+          onClick={() => setViewType('calendar')}
+        >
+          <FiCalendar className="button-icon" />
+          <span>Calendar</span>
+        </button>
+        <button 
+          className={`view-button ${viewType === 'grid' ? 'active' : ''}`}
+          onClick={() => setViewType('grid')}
+        >
+          <FiGrid className="button-icon" />
+          <span>Grid</span>
+        </button>
+        <button 
+          className={`view-button ${viewType === 'list' ? 'active' : ''}`}
+          onClick={() => setViewType('list')}
+        >
+          <FiList className="button-icon" />
+          <span>List</span>
+        </button>
+      </div>
 
-      {/* Task Modal */}
-      {showTaskModal && selectedEvent && (
-        <TaskModal 
-          task={selectedEvent} 
-          onClose={() => {
-            console.log('Closing task modal');
-            setShowTaskModal(false);
-            setSelectedEvent(null);
-          }}
-        />
-      )}
+      {/* Animated view switching */}
+      <AnimatePresence mode="wait">
+        {renderView()}
+      </AnimatePresence>
+
+      {/* Task Modal with animations */}
+      <AnimatePresence>
+        {showTaskModal && selectedEvent && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            >
+              <TaskModal 
+                task={selectedEvent} 
+                onClose={() => {
+                  console.log('Closing task modal');
+                  setShowTaskModal(false);
+                  setSelectedEvent(null);
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       
-      {showClassModal && selectedEvent && (
-        <ClassModal 
-          event={selectedEvent} 
-          onClose={() => {
-            console.log('Closing class modal');
-            setShowClassModal(false);
-            setSelectedEvent(null);
-          }}
-        />
-      )}
+      {/* Class Modal with animations */}
+      <AnimatePresence>
+        {showClassModal && selectedEvent && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            >
+              <ClassModal 
+                event={selectedEvent} 
+                onClose={() => {
+                  console.log('Closing class modal');
+                  setShowClassModal(false);
+                  setSelectedEvent(null);
+                }}
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Add University Class Modal */}
       {showAddClassModal && renderAddClassModal()}
 
       {/* Preferences Modal */}
       {showPreferences && (
-        <div className="modal-overlay">
+        <motion.div 
+          className="modal-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
           <PreferencesPanel
             onClose={() => setShowPreferences(false)}
             preferences={preferences}
@@ -2211,11 +2331,11 @@ const savePreferences = async () => {
             error={preferencesError}
             success={preferencesSuccess}
           />
-        </div>
+        </motion.div>
       )}
 
       {renderUploadModal()}
-    </div>
+    </motion.div>
   );
 };
 

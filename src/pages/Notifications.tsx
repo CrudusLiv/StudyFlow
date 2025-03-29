@@ -1,5 +1,13 @@
-import { useState } from "react";
-import '../styles/pages/Notifications.css';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import "../styles/pages/Notifications.css";
+import {
+  pageVariants,
+  containerVariants,
+  listVariants,
+  listItemVariants,
+  fadeIn,
+} from "../utils/animationConfig";
 
 interface Reminder {
   id: number;
@@ -16,7 +24,7 @@ const Notifications: React.FC = () => {
     title: "",
     date: "",
     time: "",
-    description: ""
+    description: "",
   });
 
   const handleAddReminder = () => {
@@ -27,38 +35,67 @@ const Notifications: React.FC = () => {
       title: "",
       date: "",
       time: "",
-      description: ""
+      description: "",
     });
   };
 
   const handleDeleteReminder = (id: number) => {
-    setReminders(reminders.filter(reminder => reminder.id !== id));
+    setReminders(reminders.filter((reminder) => reminder.id !== id));
   };
 
   return (
-    <div className="notifications-container">
-      <div className="notifications-wrapper">
+    <motion.div
+      className="notifications-container"
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      variants={pageVariants}
+    >
+      <motion.header variants={containerVariants}>
         <h2 className="notifications-title">Notifications</h2>
-        
-        <div className="notifications-list">
-          {reminders.map((reminder) => (
-            <div key={reminder.id} className="notification-item">
-              <h3 className="notification-title">{reminder.title}</h3>
-              <p className="notification-description">{reminder.description}</p>
-              <span className="notification-time">
-                {reminder.date} at {reminder.time}
-              </span>
-              <button
-                onClick={() => handleDeleteReminder(reminder.id)}
-                className="delete-button"
-              >
-                Delete
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+      </motion.header>
+
+      <motion.div className="notifications-list" variants={containerVariants}>
+        {reminders.length > 0 ? (
+          <motion.div initial="hidden" animate="visible" variants={listVariants}>
+            <AnimatePresence>
+              {reminders.map((reminder) => (
+                <motion.div
+                  key={reminder.id}
+                  className="notification-item"
+                  variants={listItemVariants}
+                  whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  layout
+                >
+                  <h3 className="notification-title">{reminder.title}</h3>
+                  <p className="notification-description">
+                    {reminder.description}
+                  </p>
+                  <span className="notification-time">
+                    {reminder.date} at {reminder.time}
+                  </span>
+                  <button
+                    onClick={() => handleDeleteReminder(reminder.id)}
+                    className="delete-button"
+                  >
+                    Delete
+                  </button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        ) : (
+          <motion.div className="empty-state" variants={fadeIn}>
+            <span className="empty-icon">🔔</span>
+            <h3>No Notifications</h3>
+            <p>
+              You're all caught up! We'll notify you when something new arrives.
+            </p>
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
   );
 };
 
