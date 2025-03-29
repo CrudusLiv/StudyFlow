@@ -1661,3 +1661,113 @@
     border-color: var(--border, #374151);
   }
 }
+
+/* Enhanced responsive styles */
+@media (max-width: 1024px) {
+  .calendar-container {
+    height: 650px;
+  }
+  
+  .view-selector button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+  
+  .day-column {
+    min-width: 180px;
+  }
+}
+
+@media (max-width: 768px) {
+  .schedule-container {
+    padding: 1rem;
+  }
+  
+  .schedule-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .view-selector {
+    width: 100%;
+    overflow-x: auto;
+    padding: 0.5rem;
+    justify-content: flex-start;
+  }
+  
+  .calendar-container {
+    height: 500px;
+  }
+  
+  .rbc-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .rbc-toolbar-label {
+    margin: 0.5rem 0;
+  }
+  
+  .rbc-btn-group {
+    margin: 0;
+  }
+  
+  .rbc-btn-group button {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .schedule-grid {
+    overflow-x: auto;
+  }
+  
+  .day-column {
+    min-width: 220px;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-header {
+    padding: 0.75rem;
+  }
+  
+  .schedule-title {
+    font-size: 1.25rem;
+  }
+  
+  .header-icon {
+    font-size: 1.25rem;
+  }
+  
+  .view-button {
+    font-size: 0.75rem;
+  }
+  
+  .add-class-button {
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  .calendar-container {
+    margin: 1rem 0;
+    height: 450px;
+  }
+  
+  .rbc-header {
+    padding: 0.5rem 0;
+    font-size: 0.7rem;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 1rem;
+  }
+}

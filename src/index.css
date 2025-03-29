@@ -82,8 +82,68 @@
   box-sizing: border-box;
 }
 
+/* Responsive base styles */
 html {
-  font-size: var(--base-font-size);
+  font-size: 16px;
+}
+
+@media (max-width: 1024px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .container {
+    padding: calc(var(--base-spacing));
+  }
+  
+  h1 {
+    font-size: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 13px;
+  }
+  
+  .container {
+    padding: calc(var(--base-spacing) * 0.75);
+  }
+  
+  button,
+  .button,
+  [role="button"] {
+    padding: 0.5rem 1rem;
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  h2 {
+    font-size: 1.35rem;
+  }
+  
+  h3 {
+    font-size: 1.15rem;
+  }
+}
+
+html {
   scroll-behavior: smooth;
 }
 

@@ -404,3 +404,95 @@
 .dark .profile-picture-overlay {
   background: rgba(0, 0, 0, 0.8);
 }
+
+/* Enhanced responsive styles */
+@media (max-width: 1024px) {
+  .profile-card {
+    padding: 1.5rem;
+  }
+  
+  .profile-title {
+    font-size: 1.75rem;
+  }
+  
+  .profile-picture-container {
+    width: 120px;
+    height: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .profile-container {
+    padding: 1.5rem;
+  }
+  
+  .profile-card {
+    padding: 1.25rem;
+  }
+  
+  .profile-title {
+    font-size: 1.5rem;
+  }
+  
+  .card-title {
+    font-size: 1.25rem;
+  }
+  
+  .profile-picture-container {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .form-input {
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .save-button, .cancel-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .profile-container {
+    padding: 1rem;
+  }
+  
+  .profile-card {
+    padding: 1rem;
+  }
+  
+  .profile-title {
+    font-size: 1.25rem;
+  }
+  
+  .card-title {
+    font-size: 1.1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .edit-button {
+    width: 100%;
+    padding: 0.6rem 1rem;
+  }
+  
+  .profile-picture-container {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1rem;
+  }
+  
+  .picture-actions {
+    justify-content: center;
+  }
+}

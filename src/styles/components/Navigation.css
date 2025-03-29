@@ -221,3 +221,31 @@
     gap: 2rem;
   }
 }
+
+/* Hide desktop navigation on mobile */
+@media (max-width: 768px) {
+  .navigation {
+    display: none;
+  }
+  
+  .mobile-menu {
+    width: 100%;
+    border-radius: 0;
+  }
+}
+
+/* Adjust the sidebar width on different screen sizes */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .navigation.expanded {
+    width: 220px;
+  }
+  
+  .app-logo {
+    font-size: 1.2rem;
+  }
+  
+  .nav-items a {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+  }
+}
