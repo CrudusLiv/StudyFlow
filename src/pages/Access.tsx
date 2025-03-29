@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { BsMicrosoft, BsGoogle } from 'react-icons/bs';
-import { FcGoogle } from 'react-icons/fc';
 import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
@@ -130,8 +129,9 @@ const Access: React.FC = () => {
                 whileTap="tap"
                 disabled={loading}
               >
+                <BsGoogle className="auth-icon" />
                 Sign in with Google
-              </button>
+              </motion.button>
 
               <motion.button
                 onClick={handleMicrosoftAuth}

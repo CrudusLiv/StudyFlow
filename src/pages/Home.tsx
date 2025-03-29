@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaCalendarAlt, FaChartLine, FaClock, FaTasks, FaArrowRight, FaSpinner } from 'react-icons/fa';
@@ -57,6 +57,8 @@ const testAssignments: Assignment[] = [
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
 
   useEffect(() => {
     // Simulate loading data
