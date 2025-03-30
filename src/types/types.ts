@@ -91,18 +91,3 @@ export interface ClassData {
   day: string;
   semesterDates?: SemesterDates;
 }
-
-
-
-// Reminder interface defines the structure of a reminder object
-export interface Reminder {
-  _id: string;          // Unique identifier for the reminder
-  title: string;        // Title of the reminder
-  message: string;      // Detailed message of the reminder
-  dueDate: string;      // Due date of the associated assignment
-  reminderDate: string; // Date when the reminder should be shown
-  isRead: boolean;      // Whether the reminder has been read
-  assignmentId?: {
-    title: string;
-  };
-}

@@ -266,7 +266,7 @@ app.get('/api/admin/analytics', async (req, res) => {
 
 // Add Reminder schema after Assignment schema
 const reminderSchema = new mongoose.Schema({
-  // userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   assignmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Assignment', required: true },
   title: String,
   message: String,
