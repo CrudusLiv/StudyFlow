@@ -9,19 +9,7 @@ import {
   listItemVariants,
   fadeIn
 } from '../utils/animationConfig';
-
-// Reminder interface defines the structure of a reminder object
-interface Reminder {
-  _id: string;          // Unique identifier for the reminder
-  title: string;        // Title of the reminder
-  message: string;      // Detailed message of the reminder
-  dueDate: string;      // Due date of the associated assignment
-  reminderDate: string; // Date when the reminder should be shown
-  isRead: boolean;      // Whether the reminder has been read
-  assignmentId?: {
-    title: string;
-  };
-}
+import { Reminder } from '../types/types';
 
 const Reminders: React.FC = () => {
   // State management for reminders, loading state, errors, and notifications
@@ -32,6 +20,7 @@ const Reminders: React.FC = () => {
 
   // Utility function to show temporary notifications
   const showNotification = (message: string, type: 'success' | 'error') => {
+    console.log(`📣 Showing notification: ${message} (${type})`);
     setNotification({ message, type });
     setTimeout(() => {
       setNotification(null);
@@ -41,34 +30,61 @@ const Reminders: React.FC = () => {
   // Fetch reminders from the server when component mounts
   useEffect(() => {
     const fetchReminders = async () => {
+      console.log('🔄 Starting to fetch reminders...');
       try {
-        // Reset states before fetching
         setLoading(true);
         setError(null);
 
         const token = localStorage.getItem('token');
+        console.log('🔑 Token status:', token ? 'Found' : 'Not found');
+        console.log('🔑 Token value:', token); // Log actual token value
+        
         if (!token) {
-          throw new Error('No authentication token found');
+          throw new Error('No authentication token found. Please log in again.');
         }
 
-        // Make API request to fetch reminders
+        // Make API request with detailed logging
+        console.log('🌐 Making API request...');
         const response = await axios.get('http://localhost:5000/api/reminders', {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          timeout: 5000,
+          validateStatus: (status) => {
+            console.log('📡 Response status:', status);
+            return status >= 200 && status < 300;
+          }
         });
 
-        // Validate and set reminders data
-        if (response.data && Array.isArray(response.data)) {
-          setReminders(response.data);
-          showNotification('Reminders fetched successfully', 'success');
-        } else {
-          setReminders([]);
-          showNotification('Reminders fetched unsuccessfully', 'error');
+        console.log('📦 Response headers:', response.headers);
+        console.log('📦 Response data:', response.data);
+
+        if (!response.data) {
+          throw new Error('No data received from server');
         }
-        
+
+        if (Array.isArray(response.data)) {
+          setReminders(response.data);
+          showNotification(`Loaded ${response.data.length} reminders`, 'success');
+        } else {
+          throw new Error('Invalid data format received');
+        }
+
       } catch (error: any) {
-        console.error('Error fetching reminders:', error);
-        setError(error.response?.data?.error || 'Failed to fetch reminders');
-        showNotification('Failed to fetch reminders', 'error');
+        console.error('🚨 Full error object:', error);
+        console.error('🚨 Error response:', error.response);
+        console.error('🚨 Error request:', error.request);
+        console.error('🚨 Error config:', error.config);
+        
+        const errorMessage = error.response?.data?.error 
+          || error.response?.data?.message 
+          || error.message 
+          || 'An unexpected error occurred';
+        
+        setError(errorMessage);
+        showNotification(`Failed to fetch reminders: ${errorMessage}`, 'error');
       } finally {
         setLoading(false);
       }
@@ -79,23 +95,48 @@ const Reminders: React.FC = () => {
 
   // Function to mark a reminder as read
   const markAsRead = async (id: string) => {
+    console.log(`📌 Marking reminder as read: ${id}`);
     try {
-      setReminders(reminders.map(r => 
-        r._id === id ? { ...r, isRead: true } : r
-      ));
+      setReminders(reminders.map(r => {
+        if (r._id === id) {
+          console.log(`✓ Found and updating reminder: ${r.title}`);
+          return { ...r, isRead: true };
+        }
+        return r;
+      }));
       showNotification('Marked as read', 'success');
     } catch (error: any) {
-      console.error('Error marking reminder as read:', error);
+      console.error('❌ Error marking as read:', error);
       showNotification(error.response?.data?.error || 'Failed to mark reminder as read', 'error');
     }
   };
 
-  // Show error state if there's an error
+  console.log('🔄 Current state:', {
+    remindersCount: reminders.length,
+    isLoading: loading,
+    error: error,
+    hasNotification: !!notification
+  });
+
+  // Update error display
   if (error) {
     return (
-      <div className="reminders-container">
-        <div className="error-message">{error}</div>
-      </div>
+      <motion.div 
+        className="reminders-container error-page"
+        variants={fadeIn}
+      >
+        <div className="error-content">
+          <span className="error-icon">⚠️</span>
+          <h2>Error Loading Reminders</h2>
+          <p>{error}</p>
+          <button 
+            className="retry-button"
+            onClick={() => window.location.reload()}
+          >
+            Try Again
+          </button>
+        </div>
+      </motion.div>
     );
   }
 

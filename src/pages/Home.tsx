@@ -92,6 +92,30 @@ const Home: React.FC = () => {
     return diffDays;
   };
 
+  const featureCards = [
+    {
+      icon: <FaCalendarAlt />,
+      title: "Schedule Management",
+      description: "Plan your academic journey with our intelligent scheduling system.",
+      path: "/schedule",
+      className: "schedule-card"
+    },
+    {
+      icon: <FaChartLine />,
+      title: "Progress Tracking",
+      description: "Visualize your academic growth and track assignments efficiently.",
+      path: "/tracker",
+      className: "progress-card"
+    },
+    {
+      icon: <FaClock />,
+      title: "Smart Reminders",
+      description: "Stay on top of deadlines with personalized notifications.",
+      path: "/reminders",
+      className: "reminder-card"
+    }
+  ];
+
   return (
     <motion.div 
       className="home-container"
@@ -101,152 +125,106 @@ const Home: React.FC = () => {
       variants={pageVariants}
     >
       <div className="content-wrapper">
-        <motion.div 
-          className="content-card"
-          variants={containerVariants}
-        >
+        <motion.div className="content-card">
           <motion.h1 
             className="main-title"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.8 }}
+            variants={fadeIn}
           >
             Welcome to StudyFlow
           </motion.h1>
           
-          <motion.p 
-            className="subtitle"
-            variants={fadeIn}
-          >
-            Your all-in-one solution for managing your academic journey.
-          </motion.p>
-          
           <motion.div 
             className="features-grid"
             variants={staggeredGrid}
-            initial="hidden"
-            animate="visible"
           >
-            <motion.div 
-              className="feature-card schedule-card"
-              variants={gridItemVariants}
-              whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/schedule')}
-            >
-              <FaCalendarAlt className="feature-icon" />
-              <h2 className="feature-title schedule-management-title">
-                Schedule Management
-              </h2>
-              <p className="feature-description">
-                Organize your classes and study sessions with our intuitive scheduling tools.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">Go to Schedule</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="feature-card progress-card"
-              variants={gridItemVariants}
-              whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/tracker')}
-            >
-              <FaChartLine className="feature-icon" />
-              <h2 className="feature-title progress-tracking-title">
-                Progress Tracking
-              </h2>
-              <p className="feature-description">
-                Monitor your academic progress and visualize your achievements.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">View Progress</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="feature-card reminder-card"
-              variants={gridItemVariants}
-              whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/reminders')}
-            >
-              <FaClock className="feature-icon" />
-              <h2 className="feature-title reminders-title">
-                Smart Reminders
-              </h2>
-              <p className="feature-description">
-                Never miss a deadline with customizable reminder notifications.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">Set Reminders</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
+            {featureCards.map((card, index) => (
+              <motion.div
+                key={card.title}
+                className={`feature-card ${card.className}`}
+                variants={gridItemVariants}
+                whileHover={{ y: -8, transition: { duration: 0.3 } }}
+                onClick={() => handleNavigate(card.path)}
+              >
+                <div className="feature-icon">{card.icon}</div>
+                <h2 className="feature-title">{card.title}</h2>
+                <p className="feature-description">{card.description}</p>
+                <motion.div 
+                  className="feature-cta"
+                  whileHover={{ x: 4 }}
+                >
+                  <span>Get Started</span>
+                  <FaArrowRight />
+                </motion.div>
+              </motion.div>
+            ))}
           </motion.div>
 
-          <motion.div 
-            className="dashboard-section"
-            variants={containerVariants}
-          >
-            <h2 className="section-title">
-              <FaTasks className="section-icon" />
-              Upcoming Assignments
-            </h2>
-            
-            {loading ? (
-              <div className="loading-container">
-                <FaSpinner className="loading-spinner" />
-                <p>Loading your assignments...</p>
-              </div>
-            ) : (
+          {!loading && assignments.length > 0 && (
+            <motion.div 
+              className="dashboard-section"
+              variants={containerVariants}
+            >
+              <h2 className="section-title">
+                <FaTasks />
+                Active Assignments
+              </h2>
+              
               <motion.div 
                 className="assignments-grid"
                 variants={staggeredGrid}
-                initial="hidden"
-                animate="visible"
               >
                 {assignments.map((assignment) => (
-                  <motion.div 
+                  <AssignmentCard 
                     key={assignment._id}
-                    className={`assignment-item priority-${assignment.priority}`}
-                    variants={gridItemVariants}
-                    whileHover="hover"
-                  >
-                    <div className="assignment-header">
-                      <h3 className="assignment-title">{assignment.title}</h3>
-                      <span className="assignment-course">{assignment.courseCode}</span>
-                    </div>
-                    <div className="assignment-details">
-                      <div className="assignment-due">
-                        Due: {formatDate(assignment.dueDate)}
-                      </div>
-                      <div className="assignment-days-left">
-                        {getDaysRemaining(assignment.dueDate)} days left
-                      </div>
-                    </div>
-                    <div className="assignment-progress">
-                      <div className="progress-text">
-                        Progress: {assignment.progress}%
-                      </div>
-                      <div className="progress-bar">
-                        <motion.div 
-                          className="progress-fill"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${assignment.progress}%` }}
-                          transition={{ duration: 1, delay: 0.3 }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
+                    assignment={assignment}
+                    formatDate={formatDate}
+                    getDaysRemaining={getDaysRemaining}
+                  />
                 ))}
               </motion.div>
-            )}
-          </motion.div>
+            </motion.div>
+          )}
         </motion.div>
+      </div>
+    </motion.div>
+  );
+};
+
+const AssignmentCard: React.FC<{ 
+  assignment: Assignment; 
+  formatDate: (date: string) => string;
+  getDaysRemaining: (date: string) => number;
+}> = ({ assignment, formatDate, getDaysRemaining }) => {
+  return (
+    <motion.div 
+      className="assignment-item"
+      variants={gridItemVariants}
+      whileHover={{ y: -4 }}
+    >
+      <div className="assignment-header">
+        <h3 className="assignment-title">{assignment.title}</h3>
+        <span className="assignment-course">{assignment.courseCode}</span>
+      </div>
+      <div className="assignment-details">
+        <div className="assignment-due">
+          Due: {formatDate(assignment.dueDate)}
+        </div>
+        <div className="assignment-days-left">
+          {getDaysRemaining(assignment.dueDate)} days left
+        </div>
+      </div>
+      <div className="assignment-progress">
+        <div className="progress-text">
+          Progress: {assignment.progress}%
+        </div>
+        <div className="progress-bar">
+          <motion.div 
+            className="progress-fill"
+            initial={{ width: 0 }}
+            animate={{ width: `${assignment.progress}%` }}
+            transition={{ duration: 1, delay: 0.3 }}
+          />
+        </div>
       </div>
     </motion.div>
   );

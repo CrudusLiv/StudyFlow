@@ -7,16 +7,24 @@
 .content-wrapper {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 4rem 2rem;
+  padding: 2rem;
+  perspective: 1000px;
 }
 
-.hero-section {
-  text-align: center;
-  margin-bottom: 6rem;
+.content-card {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem;
+  border-radius: 1.5rem;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(0);
+  transition: transform 0.3s ease;
+  animation: fadeIn 0.8s ease-out;
 }
 
 .main-title {
-  font-size: clamp(2.5rem, 8vw, 5rem);
+  font-size: clamp(2.5rem, 8vw, 4.5rem);
   font-weight: 800;
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%);
   background-size: 200% auto;
@@ -24,6 +32,9 @@
   background-clip: text;
   color: transparent;
   animation: shine 8s linear infinite;
+  text-align: center;
+  letter-spacing: -0.04em;
+  line-height: 1.1;
 }
 
 .subtitle {
@@ -36,158 +47,71 @@
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 4rem;
+  gap: 2.5rem;
+  margin: 4rem auto;
 }
 
 .feature-card {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(79, 70, 229, 0.2);
   border-radius: 24px;
-  padding: 2rem;
+  padding: 2.5rem;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(79, 70, 229, 0.2), rgba(124, 58, 237, 0.2));
-  opacity: 0;
-  transition: opacity 0.4s ease;
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 1.25rem;
+  min-height: 300px;
 }
 
 .feature-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px -15px rgba(79, 70, 229, 0.3);
-}
-
-.feature-card:hover::before {
-  opacity: 1;
-}
-
-.feature-icon {
-  font-size: 2rem;
-  color: #4f46e5;
-  margin-bottom: 1.5rem;
+  box-shadow: 
+    0 30px 40px -15px rgba(79, 70, 229, 0.2),
+    0 0 20px rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.3);
 }
 
 .feature-title {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
-  margin-bottom: 1rem;
-  color: #1f2937;
-}
-
-.feature-cta {
-  margin-top: 2rem;
-  padding: 0.75rem 1.5rem;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  color: white;
-  border-radius: 12px;
-  display: inline-flex;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
-  transition: all 0.3s ease;
+  gap: 0.75rem;
 }
 
-.feature-cta:hover {
-  transform: translateX(4px);
-  box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.5);
-  background-color: #4f46e5;
+.assignments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.assignment-item {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(79, 70, 229, 0.2);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.assignment-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 30px -10px rgba(79, 70, 229, 0.2),
+    0 -8px 20px -8px rgba(79, 70, 229, 0.1);
+  border-color: rgba(79, 70, 229, 0.4);
 }
 
 @keyframes shine {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
-}
-
-.home-container {
-  min-height: 90vh;
-  /* Increased height for better fullscreen feel */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background: linear-gradient(135deg, #f6f7ff 0%, #f0f3ff 100%);
-  transition: background-color 0.5s ease;
-}
-
-.content-wrapper {
-  width: 100%;
-  max-width: 56rem;
-  /* Increased max-width */
-  margin: 0 auto;
-  perspective: 1000px;
-  /* 3D effect for cards */
-}
-
-.content-card {
-  background: rgba(255, 255, 255, 0.95);
-  padding: 3rem;
-  border-radius: 1.5rem;
-  box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04),
-    0 0 0 1px rgba(0, 0, 0, 0.05);
-  transform: translateY(0);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  animation: fadeIn 0.8s ease-out;
-  will-change: transform;
-}
-
-.content-card:hover {
-  transform: translateY(-5px);
-  box-shadow:
-    0 25px 30px -5px rgba(0, 0, 0, 0.15),
-    0 15px 15px -5px rgba(0, 0, 0, 0.08);
-}
-
-.main-title {
-  font-size: 4.5rem;
-  font-weight: 800;
-  margin-bottom: 2rem;
-  background: linear-gradient(90deg, #4f46e5, #7c3aed, #4f46e5);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: gradient 8s ease infinite;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-}
-
-.subtitle {
-  font-size: 1.75rem;
-  line-height: 1.5;
-  margin-bottom: 3rem;
-  color: #6b7280;
-  animation: fadeInUp 0.8s ease-out 0.2s backwards;
-  text-align: center;
-  max-width: 42rem;
-  margin: 2rem auto 4rem;
-}
-
-.features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2.5rem;
-  margin: 2rem auto 3rem;
-  max-width: 1200px;
-  align-items: stretch;
-}
-
-.assignments-list {
-  margin-top: 3rem;
-  animation: fadeInUp 0.8s ease-out 0.6s backwards;
 }
 
 @keyframes fadeInUp {
@@ -219,205 +143,38 @@
   100% { background-position: 0% 50%; }
 }
 
-.feature-card {
-  padding: 2.5rem;
-  border-radius: 1.5rem;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  display: grid;
-  grid-template-rows: auto auto 1fr auto;
-  align-items: start;
-  position: relative;
-  overflow: visible;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-  cursor: pointer; /* Add cursor pointer to indicate it's clickable */
-  will-change: transform, box-shadow;
-  transform-origin: center;
-  transform-style: preserve-3d;
-  background-color: #f0f3ff;
-  min-height: 300px;
-  gap: 1.25rem;
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(79, 70, 229, 0.1);
-  perspective: 1000px;
-}
-
-.feature-card:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-}
-
-.feature-card:focus-visible {
-  outline: none;
-  box-shadow: 
-    0 0 0 3px rgba(79, 70, 229, 0.5),
-    0 20px 25px -5px rgba(0, 0, 0, 0.1);
-}
-
-.feature-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  opacity: 0.8;
-}
-
-/* Add a new CTA element at the bottom of feature cards */
-.feature-cta {
-  display: flex;
-  align-items: center;
-  margin-top: auto;
-  padding-top: 1rem;
-  font-weight: 600;
+.feature-icon {
+  font-size: 2rem;
   color: #4f46e5;
-  transition: all 0.3s ease;
-  opacity: 0.8;
-  position: relative;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  background: rgba(79, 70, 229, 0.08);
-  transform-origin: left;
-  align-self: end;
-  width: fit-content;
-  transform-origin: center;
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  margin-top: 1.5rem;
-  padding: 0.875rem 1.5rem;
-  border-radius: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.feature-cta {
+  margin-top: 2rem;
+  padding: 0.75rem 1.5rem;
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
   color: white;
-  transition: all 0.4s ease;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
 }
 
 .feature-cta:hover {
-  background: linear-gradient(135deg, #3c35b5 0%, #6026cd 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.5);
-}
-
-.feature-cta-text {
-  margin-right: 0.5rem;
-  transition: transform 0.3s ease, font-size 0.3s ease;
-}
-
-.feature-card:hover .feature-cta {
-  background: rgba(79, 70, 229, 0.12);
   transform: translateX(4px);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.4);
-}
-
-.feature-card:hover .feature-cta-icon {
-  transform: translateX(4px);
-  transform: translateX(8px);
-}
-
-.feature-card:hover .feature-cta-text {
-  transform: scale(1.1);
-  font-weight: 700;
-}
-
-/* Ensure the feature card has enough height */
-.feature-card {
-  min-height: 250px;
-  display: flex;
-  flex-direction: column;
-}
-
-.feature-card:hover {
-  box-shadow:
-    0 30px 40px -15px rgba(79, 70, 229, 0.2),
-    0 0 20px rgba(79, 70, 229, 0.1);
-  transform: translateY(-10px) rotateX(5deg);  /* Remove card scaling */
-  transition: all 0.2s ease;
-  border-color: rgba(79, 70, 229, 0.3);
+  box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.5);
+  background-color: #4f46e5;
 }
 
 .feature-description {
   color: #4b5563;
   line-height: 1.7;
   font-size: 1.1rem;
-  margin-bottom: 0; /* Add margin to create space for the CTA */
+  margin-bottom: 0;
   flex-grow: 0;
 }
 
-/* Dark mode adjustments */
-.dark .feature-cta {
-  color: #818cf8;
-}
-
-.dark .feature-cta:hover {
-  background: linear-gradient(135deg, #5646ff 0%, #8345ff 100%);
-}
-
-  .schedule-card::before {
-    background: linear-gradient(to bottom, #4f46e5, #818cf8);
-  }
-
-  .progress-card::before {
-    background: linear-gradient(to bottom, #7c3aed, #a78bfa);
-  }
-
-  .schedule-card {
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(79, 70, 229, 0.16));
-    border: 1px solid rgba(79, 70, 229, 0.2);
-  }
-
-  .progress-card {
-    background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(124, 58, 237, 0.16));
-    border: 1px solid rgba(124, 58, 237, 0.2);
-  }
-
-  .feature-title {
-    font-size: 1.75rem;
-    font-weight: 700;
-    margin-bottom: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    color: #4f46e5;
-    background: linear-gradient(135deg, #4f46e5, #7c3aed);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    transition: all 0.3s ease;
-    line-height: 1.3;
-    width: 100%;
-    white-space: nowrap;
-    letter-spacing: -0.02em;
-    transform-style: preserve-3d;
-  }
-
-  .feature-icon {
-    width: 3.5rem;
-    height: 3.5rem;
-    padding: 0.875rem;
-    border-radius: 1.2rem;
-    background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 1.5rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    color: #4f46e5;
-    align-self: start;
-  }
-
-  .feature-description {
-    color: #4b5563;
-    line-height: 1.7;
-    font-size: 1.1rem;
-  }
-
-  /* Dark mode refinements */
-  .dark .feature-icon {
-    background: rgba(79, 70, 229, 0.2);
-  }
-/* Dark mode enhancements */
 .dark .home-container {
   background: linear-gradient(135deg, #1a1f2c 0%, #111827 100%);
 }
@@ -425,7 +182,6 @@
 .dark .content-card {
   background: rgba(17, 24, 39, 0.95);
   border: 1px solid rgba(255, 255, 255, 0.1);
-
 }
 
 .dark .subtitle,
@@ -671,7 +427,6 @@
   }
 }
 
-/* Dark mode styles for assignments */
 .dark .assignment-item {
   background: rgba(31, 41, 55, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -718,7 +473,6 @@
   }
 }
 
-/* Add a subtle indication that the card is clickable */
 .feature-card::after {
   content: '';
   position: absolute;
@@ -737,12 +491,10 @@
   box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.3);
 }
 
-/* Add a subtle active state */
 .feature-card:active {
   transform: translateY(-2px) scale(0.99);
 }
 
-/* Ensure the feature cards have a consistent height */
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -761,12 +513,10 @@
   }
 }
 
-/* Add smooth scroll behavior */
 html {
   scroll-behavior: smooth;
 }
 
-/* Add touch device optimizations */
 @media (hover: none) {
   .feature-card:hover {
     transform: none;
@@ -777,7 +527,6 @@ html {
   }
 }
 
-/* Responsive adjustments */
 @media (max-width: 1024px) {
   .main-title {
     font-size: 3.5rem;
@@ -795,6 +544,10 @@ html {
 }
 
 @media (max-width: 768px) {
+  .content-wrapper {
+    padding: 1rem;
+  }
+  
   .main-title {
     font-size: 2.5rem;
   }
@@ -815,7 +568,8 @@ html {
   
   .feature-card {
     min-height: auto;
-    padding: 1.5rem;
+    padding: 2rem;
+    min-height: 250px;
   }
   
   .assignments-grid {

@@ -207,6 +207,43 @@
   }
 }
 
+.error-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.error-content {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 1rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.error-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.retry-button {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #2563eb;
+}
+
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
   .reminders-container {
@@ -274,6 +311,11 @@
 
   .notification.error {
     background-color: #dc2626;
+  }
+
+  .error-content {
+    background: rgba(31, 41, 55, 0.95);
+    color: #f9fafb;
   }
 }
 
