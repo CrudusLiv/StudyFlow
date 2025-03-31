@@ -13,6 +13,22 @@ import {
 } from '../utils/animationConfig';
 import '../styles/pages/Access.css';
 
+const buttonLoadingVariants = {
+  loading: {
+    scale: 0.98,
+    opacity: 0.8,
+    transition: {
+      repeat: Infinity,
+      repeatType: "reverse",
+      duration: 0.5
+    }
+  },
+  idle: {
+    scale: 1,
+    opacity: 1
+  }
+};
+
 const Access: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,10 +100,10 @@ const Access: React.FC = () => {
   return (
     <motion.div 
       className="access-container"
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      variants={pageVariants}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
     >
       <motion.div 
         className="auth-card"
@@ -124,24 +140,36 @@ const Access: React.FC = () => {
               <motion.button
                 onClick={handleGoogleAuth}
                 className="auth-button google-button"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
+                variants={buttonLoadingVariants}
+                animate={loading ? "loading" : "idle"}
+                whileHover={{ scale: 1.02, y: -3 }}
+                whileTap={{ scale: 0.98 }}
                 disabled={loading}
               >
-                <BsGoogle className="auth-icon" />
+                <motion.div
+                  animate={{ rotate: loading ? 360 : 0 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <BsGoogle className="auth-icon" />
+                </motion.div>
                 Sign in with Google
               </motion.button>
 
               <motion.button
                 onClick={handleMicrosoftAuth}
                 className="auth-button microsoft-button"
-                variants={buttonVariants}
-                whileHover="hover"
-                whileTap="tap"
+                variants={buttonLoadingVariants}
+                animate={loading ? "loading" : "idle"}
+                whileHover={{ scale: 1.02, y: -3 }}
+                whileTap={{ scale: 0.98 }}
                 disabled={loading}
               >
-                <BsMicrosoft className="auth-icon" />
+                <motion.div
+                  animate={{ rotate: loading ? 360 : 0 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <BsMicrosoft className="auth-icon" />
+                </motion.div>
                 {loading ? 'Signing in...' : 'Sign in with Microsoft'}
               </motion.button>
             </motion.div>
