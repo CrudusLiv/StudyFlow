@@ -92,6 +92,18 @@ const Home: React.FC = () => {
     return diffDays;
   };
 
+  const heroVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
     <motion.div 
       className="home-container"
@@ -102,8 +114,8 @@ const Home: React.FC = () => {
     >
       <div className="content-wrapper">
         <motion.div 
-          className="content-card"
-          variants={containerVariants}
+          className="hero-section"
+          variants={heroVariants}
         >
           <motion.h1 
             className="main-title"
@@ -111,141 +123,118 @@ const Home: React.FC = () => {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            Welcome to StudyFlow
+            Transform Your <br />
+            Study Experience
           </motion.h1>
           
           <motion.p 
             className="subtitle"
             variants={fadeIn}
           >
-            Your all-in-one solution for managing your academic journey.
+            Streamline your academic journey with intelligent scheduling, progress tracking, and personalized study tools.
           </motion.p>
-          
-          <motion.div 
-            className="features-grid"
-            variants={staggeredGrid}
-            initial="hidden"
-            animate="visible"
-          >
+        </motion.div>
+
+        <motion.div 
+          className="features-grid"
+          variants={staggeredGrid}
+        >
+          {[
+            {
+              icon: <FaCalendarAlt />,
+              title: "Smart Schedule",
+              description: "AI-powered scheduling that adapts to your study patterns and preferences",
+              path: "/schedule",
+              order: 1
+            },
+            {
+              icon: <FaChartLine />,
+              title: "Progress Analytics",
+              description: "Visualize your academic progress with detailed insights and trends",
+              path: "/tracker",
+              order: 2
+            }
+          ].map((feature, index) => (
             <motion.div 
-              className="feature-card schedule-card"
+              key={index}
+              className="feature-card"
               variants={gridItemVariants}
               whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/schedule')}
+              style={{ "--animation-order": feature.order } as React.CSSProperties}
+              onClick={() => handleNavigate(feature.path)}
             >
-              <FaCalendarAlt className="feature-icon" />
-              <h2 className="feature-title schedule-management-title">
-                Schedule Management
-              </h2>
-              <p className="feature-description">
-                Organize your classes and study sessions with our intuitive scheduling tools.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">Go to Schedule</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="feature-card progress-card"
-              variants={gridItemVariants}
-              whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/tracker')}
-            >
-              <FaChartLine className="feature-icon" />
-              <h2 className="feature-title progress-tracking-title">
-                Progress Tracking
-              </h2>
-              <p className="feature-description">
-                Monitor your academic progress and visualize your achievements.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">View Progress</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
-
-            <motion.div 
-              className="feature-card reminder-card"
-              variants={gridItemVariants}
-              whileHover="hover"
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleNavigate('/reminders')}
-            >
-              <FaClock className="feature-icon" />
-              <h2 className="feature-title reminders-title">
-                Smart Reminders
-              </h2>
-              <p className="feature-description">
-                Never miss a deadline with customizable reminder notifications.
-              </p>
-              <div className="feature-cta">
-                <span className="feature-cta-text">Set Reminders</span>
-                <FaArrowRight className="feature-cta-icon" />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          <motion.div 
-            className="dashboard-section"
-            variants={containerVariants}
-          >
-            <h2 className="section-title">
-              <FaTasks className="section-icon" />
-              Upcoming Assignments
-            </h2>
-            
-            {loading ? (
-              <div className="loading-container">
-                <FaSpinner className="loading-spinner" />
-                <p>Loading your assignments...</p>
-              </div>
-            ) : (
+              <div className="feature-icon">{feature.icon}</div>
+              <h2 className="feature-title">{feature.title}</h2>
+              <p className="feature-description">{feature.description}</p>
               <motion.div 
-                className="assignments-grid"
-                variants={staggeredGrid}
-                initial="hidden"
-                animate="visible"
+                className="feature-cta"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 400 }}
               >
-                {assignments.map((assignment) => (
-                  <motion.div 
-                    key={assignment._id}
-                    className={`assignment-item priority-${assignment.priority}`}
-                    variants={gridItemVariants}
-                    whileHover="hover"
-                  >
-                    <div className="assignment-header">
-                      <h3 className="assignment-title">{assignment.title}</h3>
-                      <span className="assignment-course">{assignment.courseCode}</span>
-                    </div>
-                    <div className="assignment-details">
-                      <div className="assignment-due">
-                        Due: {formatDate(assignment.dueDate)}
-                      </div>
-                      <div className="assignment-days-left">
-                        {getDaysRemaining(assignment.dueDate)} days left
-                      </div>
-                    </div>
-                    <div className="assignment-progress">
-                      <div className="progress-text">
-                        Progress: {assignment.progress}%
-                      </div>
-                      <div className="progress-bar">
-                        <motion.div 
-                          className="progress-fill"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${assignment.progress}%` }}
-                          transition={{ duration: 1, delay: 0.3 }}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
+                <span>Explore</span>
+                <FaArrowRight />
               </motion.div>
-            )}
-          </motion.div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div 
+          className="dashboard-section"
+          variants={containerVariants}
+        >
+          <h2 className="section-title">
+            <FaTasks className="section-icon" />
+            Upcoming Assignments
+          </h2>
+          
+          {loading ? (
+            <div className="loading-container">
+              <FaSpinner className="loading-spinner" />
+              <p>Loading your assignments...</p>
+            </div>
+          ) : (
+            <motion.div 
+              className="assignments-grid"
+              variants={staggeredGrid}
+              initial="hidden"
+              animate="visible"
+            >
+              {assignments.map((assignment) => (
+                <motion.div 
+                  key={assignment._id}
+                  className={`assignment-item priority-${assignment.priority}`}
+                  variants={gridItemVariants}
+                  whileHover="hover"
+                >
+                  <div className="assignment-header">
+                    <h3 className="assignment-title">{assignment.title}</h3>
+                    <span className="assignment-course">{assignment.courseCode}</span>
+                  </div>
+                  <div className="assignment-details">
+                    <div className="assignment-due">
+                      Due: {formatDate(assignment.dueDate)}
+                    </div>
+                    <div className="assignment-days-left">
+                      {getDaysRemaining(assignment.dueDate)} days left
+                    </div>
+                  </div>
+                  <div className="assignment-progress">
+                    <div className="progress-text">
+                      Progress: {assignment.progress}%
+                    </div>
+                    <div className="progress-bar">
+                      <motion.div 
+                        className="progress-fill"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${assignment.progress}%` }}
+                        transition={{ duration: 1, delay: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </motion.div>

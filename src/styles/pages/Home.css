@@ -13,6 +13,25 @@
 .hero-section {
   text-align: center;
   margin-bottom: 6rem;
+  position: relative;
+  padding: 4rem 0;
+  overflow: hidden;
+}
+
+.hero-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(79, 70, 229, 0.15) 0%,
+    rgba(124, 58, 237, 0.1) 25%,
+    transparent 50%
+  );
+  z-index: -1;
 }
 
 .main-title {
@@ -49,6 +68,10 @@
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+  animation: float 6s ease-in-out infinite;
+  animation-delay: calc(var(--animation-order) * 0.2s);
 }
 
 .feature-card::before {
@@ -70,6 +93,14 @@
 
 .feature-card:hover::before {
   opacity: 1;
+}
+
+.feature-card:hover .feature-icon {
+  transform: translateZ(20px) rotate(10deg);
+}
+
+.feature-card:hover .feature-title {
+  transform: translateZ(15px);
 }
 
 .feature-icon {
@@ -221,15 +252,15 @@
 
 .feature-card {
   padding: 2.5rem;
-  border-radius: 1.5rem;
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 1rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   display: grid;
   grid-template-rows: auto auto 1fr auto;
   align-items: start;
   position: relative;
   overflow: visible;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
-  cursor: pointer; /* Add cursor pointer to indicate it's clickable */
+  cursor: pointer;
   will-change: transform, box-shadow;
   transform-origin: center;
   transform-style: preserve-3d;
@@ -240,6 +271,13 @@
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(79, 70, 229, 0.1);
   perspective: 1000px;
+}
+
+.feature-card:hover {
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-5px);
 }
 
 .feature-card:focus {
@@ -293,9 +331,8 @@
 }
 
 .feature-cta:hover {
-  background: linear-gradient(135deg, #3c35b5 0%, #6026cd 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px -6px rgba(79, 70, 229, 0.5);
+  background: rgba(79, 70, 229, 0.12);
+  transform: translateX(4px);
 }
 
 .feature-cta-text {
@@ -303,15 +340,11 @@
   transition: transform 0.3s ease, font-size 0.3s ease;
 }
 
-.feature-card:hover .feature-cta {
-  background: rgba(79, 70, 229, 0.12);
-  transform: translateX(4px);
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 15px 30px -10px rgba(79, 70, 229, 0.4);
+.feature-cta-icon {
+  transition: transform 0.3s ease;
 }
 
 .feature-card:hover .feature-cta-icon {
-  transform: translateX(4px);
   transform: translateX(8px);
 }
 
@@ -632,6 +665,7 @@
   border-radius: 4px;
   overflow: hidden;
   position: relative;
+  overflow: visible;
 }
 
 .progress-fill {
@@ -645,11 +679,14 @@
 .progress-fill::after {
   content: '';
   position: absolute;
-  top: 0;
+  top: 50%;
   right: 0;
-  width: 5px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.3);
+  transform: translate(50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #4f46e5;
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.5);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
