@@ -173,6 +173,76 @@ export const pdfService = {
   },
   
   /**
+   * Generate a schedule from a stored PDF document
+   */
+  async generateScheduleFromStoredPDF(documentId: string) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await axios.post(
+        `${API_URL}/pdf-documents/${documentId}/generate-schedule`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      return {
+        success: true,
+        schedule: response.data.schedule || [],
+        documentId: response.data.documentId,
+        message: response.data.message
+      };
+    } catch (error) {
+      console.error('Error generating schedule from stored PDF:', error);
+      
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to generate schedule',
+        message: 'Error generating schedule from stored PDF'
+      };
+    }
+  },
+  
+  /**
+   * Download a stored PDF document
+   */
+  async downloadPDF(documentId: string) {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+      
+      const response = await axios.get(`${API_URL}/parse/pdf/${documentId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        responseType: 'blob'
+      });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `document-${documentId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      
+      return true;
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+      throw error;
+    }
+  },
+  
+  /**
    * Save generated schedule to a PDF document
    */
   async saveScheduleToDocument(documentId: string, schedule: any[]) {

@@ -1568,6 +1568,83 @@ app.get('/api/pdf-documents/:id', authenticateJWT, async (req, res) => {
   }
 });
 
+// Add route to generate schedule from stored PDF by ID
+app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req, res) => {
+  try {
+    const documentId = req.params.id;
+    const userId = req.user.id || req.user.userId;
+    
+    if (!mongoose.Types.ObjectId.isValid(documentId)) {
+      return res.status(400).json({ error: 'Invalid document ID format' });
+    }
+    
+    // Find the stored PDF document
+    const pdfDocument = await PDFDocument.findOne({
+      _id: documentId,
+      userId
+    });
+    
+    if (!pdfDocument) {
+      return res.status(404).json({ error: 'PDF document not found' });
+    }
+    
+    // Check if document has PDF data stored
+    if (!pdfDocument.pdfData && !(pdfDocument.isGridFS && pdfDocument.gridFSId)) {
+      return res.status(400).json({ error: 'PDF data not found in document' });
+    }
+    
+    let pdfBuffer;
+    
+    // Get the PDF data from the document or GridFS
+    if (pdfDocument.isGridFS && pdfDocument.gridFSId) {
+      // GridFS retrieval logic would go here
+      return res.status(501).json({ error: 'GridFS retrieval not implemented yet' });
+    } else {
+      pdfBuffer = pdfDocument.pdfData;
+    }
+    
+    // Process the PDF data to extract text and structure
+    const processedData = await processPDF(pdfBuffer);
+    
+    // Get user preferences for schedule generation
+    let userPreferences = {};
+    try {
+      const userPrefs = await UserPreferences.findOne({ userId });
+      if (userPrefs) {
+        userPreferences = userPrefs.toObject();
+      }
+    } catch (prefsError) {
+      console.error('Error fetching user preferences:', prefsError);
+    }
+    
+    // Generate a schedule from the processed data
+    const assignments = extractAssignments(processedData.rawText || '');
+    const dates = extractDates(processedData.rawText || '');
+    const metadata = processedData.syllabus || {};
+    
+    // Generate the schedule
+    const schedule = generateSchedule(assignments, dates, userId, metadata, userPreferences);
+    
+    // Save the generated schedule to the document
+    pdfDocument.generatedSchedule = schedule;
+    await pdfDocument.save();
+    
+    res.json({
+      success: true,
+      schedule,
+      documentId: pdfDocument._id,
+      message: `Generated schedule with ${schedule.length} items`
+    });
+  } catch (error) {
+    console.error('Error generating schedule from stored PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate schedule',
+      details: error.message
+    });
+  }
+});
+
 // Class schedule routes
 app.post('/api/schedule/classes', authenticateJWT, async (req, res) => {
   try {

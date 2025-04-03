@@ -19,12 +19,27 @@ const pdfDocumentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
+  // Add PDF binary data storage
+  pdfData: {
+    type: Buffer,
+    required: false
+  },
+  // Flag to indicate if this is a large file stored in GridFS
+  isGridFS: {
+    type: Boolean,
+    default: false
+  },
+  // GridFS file ID reference if stored in GridFS
+  gridFSId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false
+  },
   extractedData: {
     courseCode: String,
     instructor: String,
     semester: String,
     assignments: {
-      type: mongoose.Schema.Types.Mixed, // Changed from array of strings to Mixed type to handle complex objects
+      type: mongoose.Schema.Types.Mixed,
       default: []
     },
     dates: [{

@@ -47,11 +47,25 @@ router.post('/parse-pdf', upload.single('file'), async (req, res) => {
       // Sanitize data for database
       const sanitizedData = sanitizePdfData(processedData);
       
+      // Create a new PDF document with the actual PDF data stored
+      const PDFDocument = mongoose.model('PDFDocument');
+      const pdfDocument = new PDFDocument({
+        userId: req.user.id,
+        title: req.file.originalname,
+        fileName: req.file.filename,
+        originalName: req.file.originalname,
+        pdfData: fileBuffer, // Store the actual PDF binary data
+        extractedData: sanitizedData
+      });
+      
+      await pdfDocument.save();
+      
       // Return the processed data
       res.status(200).json({ 
         success: true,
         data: sanitizedData,
-        message: 'PDF processed successfully'
+        documentId: pdfDocument._id,
+        message: 'PDF processed and stored successfully'
       });
     } catch (processingError) {
       console.error('PDF processing error:', processingError);
@@ -78,6 +92,46 @@ router.post('/parse-pdf', upload.single('file'), async (req, res) => {
       error: 'Server error processing PDF',
       details: error.message
     });
+  }
+});
+
+// Add a new route to retrieve PDF data by ID
+router.get('/pdf/:id', async (req, res) => {
+  try {
+    const documentId = req.params.id;
+    const userId = req.user.id;
+    
+    if (!mongoose.Types.ObjectId.isValid(documentId)) {
+      return res.status(400).json({ error: 'Invalid document ID format' });
+    }
+    
+    const PDFDocument = mongoose.model('PDFDocument');
+    const document = await PDFDocument.findOne({
+      _id: documentId,
+      userId: userId
+    });
+    
+    if (!document) {
+      return res.status(404).json({ error: 'PDF document not found' });
+    }
+    
+    // If it's stored in GridFS
+    if (document.isGridFS && document.gridFSId) {
+      // GridFS retrieval logic would go here
+      return res.status(501).json({ error: 'GridFS retrieval not implemented yet' });
+    } 
+    
+    // If it's stored directly in the document
+    if (document.pdfData) {
+      res.set('Content-Type', 'application/pdf');
+      res.set('Content-Disposition', `inline; filename="${document.originalName}"`);
+      return res.send(document.pdfData);
+    }
+    
+    return res.status(404).json({ error: 'PDF data not found in document' });
+  } catch (error) {
+    console.error('Error retrieving PDF:', error);
+    res.status(500).json({ error: 'Server error retrieving PDF' });
   }
 });
 
