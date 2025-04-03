@@ -265,7 +265,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 <button className="class-modal-cancel-btn" onClick={onClose}>Close</button>
               </div>
               <div className="class-modal-buttons">
-                <button className="class-modal-save-btn">Add to Calendar</button>
               </div>
             </div>
           </>

@@ -1191,6 +1191,27 @@ app.put('/api/reminders/:id/mark-read', authenticateJWT, async (req, res) => {
   }
 });
 
+// Add this route for testing purposes
+app.post('/api/test/create-reminder', authenticateJWT, async (req, res) => {
+  try {
+    const testReminder = new Reminder({
+      userId: req.user.userId,
+      assignmentId: req.body.assignmentId || req.user.userId, // Using userId as a fallback
+      title: 'Test Reminder',
+      message: 'This is a test reminder to verify functionality',
+      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 1 week from now
+      reminderDate: new Date(),
+      isRead: false
+    });
+    
+    await testReminder.save();
+    res.status(201).json(testReminder);
+  } catch (error) {
+    console.error('Error creating test reminder:', error);
+    res.status(500).json({ error: 'Failed to create test reminder' });
+  }
+});
+
 // Add admin routes
 // Add admin routes
 app.get('/api/admin/users', authenticateJWT, checkAdminRole, async (req, res) => {

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { FiClock, FiAlertCircle, FiCheck, FiFile, FiCalendar } from 'react-icons/fi';
+import { reminderService } from '../services/reminderService';
+import { pageVariants, containerVariants, listItemVariants } from '../utils/animationConfig';
 import '../styles/pages/Reminders.css';
-import { 
-  pageVariants, 
-  containerVariants, 
-  listVariants, 
-  listItemVariants,
-  fadeIn
-} from '../utils/animationConfig';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Reminder interface defines the structure of a reminder object
 interface Reminder {
@@ -24,87 +21,73 @@ interface Reminder {
 }
 
 const Reminders: React.FC = () => {
-  // State management for reminders, loading state, errors, and notifications
   const [reminders, setReminders] = useState<Reminder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  // Utility function to show temporary notifications
-  const showNotification = (message: string, type: 'success' | 'error') => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 3000);
-  };
-
-  // Fetch reminders from the server when component mounts
+  // Fetch reminders on component mount
   useEffect(() => {
-    const fetchReminders = async () => {
-      try {
-        // Reset states before fetching
-        setLoading(true);
-        setError(null);
-
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-
-        // Make API request to fetch reminders
-        const response = await axios.get('http://localhost:5000/api/reminders', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        // Validate and set reminders data
-        if (response.data && Array.isArray(response.data)) {
-          setReminders(response.data);
-          showNotification('Reminders fetched successfully', 'success');
-        } else {
-          setReminders([]);
-          showNotification('Reminders fetched unsuccessfully', 'error');
-        }
-        
-      } catch (error: any) {
-        console.error('Error fetching reminders:', error);
-        setError(error.response?.data?.error || 'Failed to fetch reminders');
-        showNotification('Failed to fetch reminders', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchReminders();
   }, []);
+
+  // Function to fetch reminders using our new service
+  const fetchReminders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching reminders...');
+      const data = await reminderService.getReminders();
+      
+      console.log('Reminders data received:', data);
+      
+      if (Array.isArray(data)) {
+        setReminders(data);
+        console.log('Reminders state updated with', data.length, 'items');
+      } else {
+        console.error('Unexpected response format:', data);
+        setReminders([]);
+        setError('Failed to load reminders: Invalid data format');
+      }
+    } catch (err) {
+      console.error('Error fetching reminders:', err);
+      setError('Failed to load reminders. Please try again later.');
+      setReminders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Function to mark a reminder as read
   const markAsRead = async (id: string) => {
     try {
-      setReminders(reminders.map(r => 
-        r._id === id ? { ...r, isRead: true } : r
-      ));
-      showNotification('Marked as read', 'success');
-    } catch (error: any) {
-      console.error('Error marking reminder as read:', error);
-      showNotification(error.response?.data?.error || 'Failed to mark reminder as read', 'error');
+      await reminderService.markAsRead(id);
+      
+      // Update the local state
+      setReminders(prevReminders => 
+        prevReminders.map(reminder => 
+          reminder._id === id ? { ...reminder, isRead: true } : reminder
+        )
+      );
+      
+      toast.success('Reminder marked as read');
+    } catch (err) {
+      console.error('Error marking reminder as read:', err);
+      toast.error('Failed to update reminder');
     }
   };
 
-  // Show error state if there's an error
-  if (error) {
-    return (
-      <div className="reminders-container">
-        <div className="error-message">{error}</div>
-      </div>
-    );
-  }
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
-  // Show loading state while fetching data
-  if (loading) {
-    return <div className="reminders-container">Loading...</div>;
-  }
-
-  // Render the main component
   return (
     <motion.div 
       className="reminders-container"
@@ -113,85 +96,80 @@ const Reminders: React.FC = () => {
       exit="exit"
       variants={pageVariants}
     >
-      <AnimatePresence>
-        {notification && (
-          <motion.div 
-            className={`notification ${notification.type}`}
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-          >
-            {notification.message}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      <motion.header variants={containerVariants}>
-        <h1 className="reminders-title">
-          <span>📅</span> Your Reminders
-        </h1>
-      </motion.header>
-      
-      <motion.main 
-        className="reminders-list"
-        variants={containerVariants}
-      >
-        {reminders.length > 0 ? (
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={listVariants}
-          >
-            {reminders.map(reminder => (
-              <motion.article
-                key={reminder._id}
-                className={`reminder-item ${!reminder.isRead ? 'unread' : ''}`}
-                variants={listItemVariants}
-                whileHover={{ y: -5, transition: { duration: 0.2 } }}
-              >
-                <div className="reminder-content">
-                  <div className="reminder-info">
-                    <div className="reminder-header">
-                      <h3 className="reminder-title">
-                        {reminder.assignmentId ? `${reminder.assignmentId.title}: ` : ''}{reminder.title}
-                      </h3>
-                    </div>
-                    <p className="reminder-message">{reminder.message}</p>
-                    <footer className="reminder-meta">
-                      <time>
-                        <span>📅 Due:</span> {new Date(reminder.dueDate).toLocaleDateString()}
-                      </time>
-                      <time>
-                        <span>⏰ Reminder:</span> {new Date(reminder.reminderDate).toLocaleDateString()}
-                      </time>
-                      <span className="reminder-course">
-                        <span>📚 Course:</span> {reminder.assignmentId?.title}
-                      </span>
-                    </footer>
+      {loading ? (
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading reminders...</p>
+        </div>
+      ) : error ? (
+        <div className="error-container">
+          <FiAlertCircle className="error-icon" />
+          <p>{error}</p>
+          <button onClick={fetchReminders} className="retry-button">
+            Try Again
+          </button>
+        </div>
+      ) : reminders.length === 0 ? (
+        <div className="empty-reminders">
+          <FiClock className="empty-icon" />
+          <h3>No Active Reminders</h3>
+          <p>You don't have any active reminders at the moment.</p>
+        </div>
+      ) : (
+        <motion.div 
+          className="reminders-list"
+          variants={containerVariants}
+        >
+          {reminders.map(reminder => (
+            <motion.div 
+              key={reminder._id} 
+              className={`reminder-card ${reminder.isRead ? 'read' : ''}`}
+              variants={listItemVariants}
+            >
+              <div className="reminder-header">
+                <h3>{reminder.title}</h3>
+                {!reminder.isRead && (
+                  <span className="unread-badge">New</span>
+                )}
+              </div>
+              <p className="reminder-message">{reminder.message}</p>
+              
+              {reminder.assignmentId && (
+                <div className="reminder-assignment">
+                  <FiFile className="assignment-icon" />
+                  <div className="assignment-details">
+                    <span className="assignment-title">{reminder.assignmentId.title}</span>
+                    <span className="assignment-due">
+                      Due: {formatDate(reminder.dueDate)}
+                    </span>
                   </div>
-                  {!reminder.isRead && (
-                    <button
-                      onClick={() => markAsRead(reminder._id)}
-                      className="mark-read-button"
-                    >
-                      ✓ Mark as read
-                    </button>
-                  )}
                 </div>
-              </motion.article>
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div 
-            className="empty-state"
-            variants={fadeIn}
-          >
-            <span className="empty-icon">📌</span>
-            <h2>No Reminders</h2>
-            <p>You're all caught up! Check back later for new reminders.</p>
-          </motion.div>
-        )}
-      </motion.main>
+              )}
+              
+              <div className="reminder-dates">
+                <div className="reminder-date">
+                  <FiCalendar className="date-icon" />
+                  <span>Reminded: {formatDate(reminder.reminderDate)}</span>
+                </div>
+                <div className="reminder-date">
+                  <FiClock className="date-icon" />
+                  <span>Due: {formatDate(reminder.dueDate)}</span>
+                </div>
+              </div>
+              
+              {!reminder.isRead && (
+                <button 
+                  className="mark-read-button"
+                  onClick={() => markAsRead(reminder._id)}
+                >
+                  <FiCheck className="check-icon" />
+                  Mark as Read
+                </button>
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
     </motion.div>
   );
 };

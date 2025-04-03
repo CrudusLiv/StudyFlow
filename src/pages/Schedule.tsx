@@ -98,7 +98,7 @@ const CustomEventComponent = ({ event }) => {
   );
 };
 
-// Fix the organizeClassesByDay function to handle different input formats
+// Fix the organizeClassesByDay function to handle different input formats and prevent duplicates
 const organizeClassesByDay = (classes: any): { [key: string]: any[] } => {
   const dayMap: { [key: string]: any[] } = {
     'Monday': [],
@@ -117,9 +117,34 @@ const organizeClassesByDay = (classes: any): { [key: string]: any[] } => {
         ? classes.data 
         : []);
   
+  // Keep track of processed class IDs to avoid duplicates
+  const processedIds = new Set();
+  
   classArray.forEach(cls => {
-    if (cls && cls.day && dayMap[cls.day]) {
-      dayMap[cls.day].push(cls);
+    // Extract the class day - handle both raw classes and calendar events
+    const day = cls.day || cls.resource?.day;
+    
+    // Extract a unique identifier for the class
+    const classId = cls._id || cls.resource?._id || 
+      (cls.courseCode && cls.day ? `${cls.courseCode}-${cls.day}-${cls.startTime}` : null);
+    
+    // Only process if it's a valid class and we haven't seen this ID before
+    if (day && dayMap[day] && classId && !processedIds.has(classId)) {
+      processedIds.add(classId);
+      
+      // If it's a calendar event, extract the original class data
+      const classData = cls.resource?.type === 'class' 
+        ? { 
+            courseName: cls.resource.details?.courseName || cls.title,
+            courseCode: cls.resource.courseCode || cls.courseCode,
+            startTime: cls.resource.startTime || (cls.start && cls.start.toTimeString().substring(0, 5)),
+            endTime: cls.resource.endTime || (cls.end && cls.end.toTimeString().substring(0, 5)),
+            location: cls.resource.location || cls.location,
+            day: cls.resource.day || day
+          }
+        : cls;
+      
+      dayMap[day].push(classData);
     }
   });
   
@@ -583,6 +608,7 @@ const Schedule: React.FC = () => {
     }
     
     const events = [];
+    let eventCounter = 0; // Add a counter to ensure uniqueness
     
     classItems.forEach(classData => {
       if (!classData || !classData.semesterDates) {
@@ -612,8 +638,13 @@ const Schedule: React.FC = () => {
             const eventEnd = new Date(currentDate);
             eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
             
+            // Create a unique ID using more parameters and a counter
+            const uniqueId = `class-${classData._id || Math.random().toString(36).substring(2)}-${
+              currentDate.toISOString().split('T')[0]
+            }-${startHours}${startMinutes}-${endHours}${endMinutes}-${eventCounter++}`;
+            
             events.push({
-              id: `class-${classData._id || Math.random().toString(36).substring(2)}-${currentDate.toISOString()}`,
+              id: uniqueId,
               title: `${classData.courseName} (${classData.courseCode || 'No Code'})`,
               start: eventStart,
               end: eventEnd,
@@ -948,7 +979,10 @@ const Schedule: React.FC = () => {
           <span className="step-number">2</span>
           <span className="step-text">Upload course materials to generate study schedule</span>
           {hasUniversitySchedule && (
-            <button className="generate-button">
+            <button 
+              className="generate-button"
+              onClick={() => setShowUploadModal(true)} // Add onClick handler here
+            >
               Generate Schedule
             </button>
           )}
@@ -1287,20 +1321,10 @@ const Schedule: React.FC = () => {
 
   // Fix the handleDateSelect function
   const handleDateSelect = (slotInfo: { start: Date, end: Date, slots: Date[], action: 'select' | 'click' | 'doubleClick' }) => {
+    // Only set the selected date without creating a new event
     setSelectedDate(slotInfo.start);
-
-    const newEvent: CalendarEvent = {
-      id: `task-${Math.random().toString(36).substr(2, 9)}`,
-      title: "New Task",
-      start: slotInfo.start,
-      end: slotInfo.end,
-      allDay: false,
-      category: 'task',
-      priority: 'medium',
-      resource: {}
-    };
-
-    setEvents(prevEvents => [...prevEvents, newEvent]);
+    
+    // The code that creates a new event has been removed
   };
 
   const fetchAllEvents = async () => {
@@ -1382,8 +1406,23 @@ const Schedule: React.FC = () => {
     if (!showUploadModal) return null;
   
     return (
-      <div className="modal-overlay" onClick={() => setShowUploadModal(false)}>
-        <div className="pdf-upload-modal" onClick={e => e.stopPropagation()}>
+      <div 
+        className="modal-overlay" 
+        onClick={() => setShowUploadModal(false)}
+        style={{ 
+          zIndex: 1000, 
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0
+        }}
+      >
+        <div 
+          className="pdf-upload-modal" 
+          onClick={e => e.stopPropagation()}
+          style={{ position: 'relative', zIndex: 1001 }}
+        >
           <div className="modal-header">
             <h2>Upload PDF Documents</h2>
             <button className="close-button" onClick={() => setShowUploadModal(false)}>×</button>
@@ -2076,20 +2115,50 @@ const savePreferences = async () => {
     }
   }, [classData, processEvents]);
 
+  // Add a function to deduplicate events for grid and list views
+  const deduplicateClassEvents = (events: CalendarEvent[]) => {
+    // For non-calendar views, we want to show each class only once
+    const uniqueClassMap = new Map();
+    const nonClassEvents = events.filter(event => event.category !== 'class');
+    
+    // Process class events and keep only one instance per class
+    events.forEach(event => {
+      if (event.category === 'class') {
+        const day = event.resource?.day;
+        if (day) {
+          // Create a unique key for each class based on day, course code, and time
+          const courseCode = event.courseCode || event.resource?.courseCode || '';
+          const startTime = event.resource?.startTime || 
+            (event.start ? event.start.toTimeString().substring(0, 5) : '');
+          
+          const uniqueKey = `${day}-${courseCode}-${startTime}`;
+          
+          // Only add this class if we haven't seen this key before
+          if (!uniqueClassMap.has(uniqueKey)) {
+            uniqueClassMap.set(uniqueKey, event);
+          }
+        }
+      }
+    });
+    
+    // Combine non-class events with deduplicated class events
+    return [...nonClassEvents, ...Array.from(uniqueClassMap.values())];
+  };
+
   // Render the view based on the selected view type
   const renderView = () => {
     switch (viewType) {
       case 'grid':
         return (
           <ScheduleGridView 
-            events={events}
+            events={deduplicateClassEvents(events)}
             onEventClick={handleEventClick}
           />
         );
       case 'list':
         return (
           <ScheduleListView 
-            events={events}
+            events={deduplicateClassEvents(events)}
             onEventClick={handleEventClick}
           />
         );
@@ -2213,17 +2282,7 @@ const savePreferences = async () => {
         </div>
       </motion.header>
 
-      {/* Add file upload button with animation */}
-      <motion.button 
-        className="add-class-button" 
-        onClick={() => setShowUploadModal(true)}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        variants={buttonVariants}
-      >
-        <FiUpload className="button-icon" />
-        Upload PDFs
-      </motion.button>
+
 
       {/* View selector buttons */}
       <div className="view-selector">
@@ -2312,7 +2371,23 @@ const savePreferences = async () => {
       </AnimatePresence>
 
       {/* Add University Class Modal */}
-      {showAddClassModal && renderAddClassModal()}
+      {showAddClassModal && 
+        <div 
+          className="modal-overlay" 
+          style={{
+            zIndex: 1000,
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0
+          }}
+        >
+          {renderAddClassModal()}
+        </div>
+      }
+
+      {showUploadModal && renderUploadModal()}
 
       {/* Preferences Modal */}
       {showPreferences && (
