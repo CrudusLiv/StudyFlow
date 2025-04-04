@@ -2286,30 +2286,6 @@ const savePreferences = async () => {
             className="view-selector"
             variants={containerVariants}
           >
-            <motion.button
-              className={`view-button ${calendarView === 'month' ? 'active' : ''}`}
-              onClick={() => setCalendarView('month')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Month
-            </motion.button>
-            <motion.button
-              className={`view-button ${calendarView === 'week' ? 'active' : ''}`}
-              onClick={() => setCalendarView('week')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Week
-            </motion.button>
-            <motion.button
-              className={`view-button ${calendarView === 'day' ? 'active' : ''}`}
-              onClick={() => setCalendarView('day')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              Day
-            </motion.button>
           </motion.div>
           <motion.button
             className="settings-button"
