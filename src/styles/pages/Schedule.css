@@ -788,7 +788,10 @@
   min-height: 120px;
   /* Ensure minimum height for day cells */
 }
-
+.rbc-row-content{
+  overflow: scroll;
+  scrollbar-width: none;
+}
 /* Allow scrolling within day cells when events overflow */
 .rbc-month-view .rbc-row-content {
   position: relative;

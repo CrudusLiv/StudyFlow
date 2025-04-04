@@ -140,7 +140,6 @@ const Header: React.FC = () => {
                       <small>Yesterday</small>
                     </div>
                   </div>
-                  <Link to="/notifications" className="view-all">View all notifications</Link>
                 </motion.div>
               )}
             </AnimatePresence>
