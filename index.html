@@ -16,15 +16,16 @@
     ">
     <title>StudyFlow</title>
     <script>
-      // Initialize theme from localStorage or system preference
-      const theme = localStorage.getItem('theme') || 'system';
-      if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-        document.documentElement.classList.add('dark');
-        document.body.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.body.classList.remove('dark');
-      }
+      document.addEventListener('DOMContentLoaded', () => {
+        const theme = localStorage.getItem('theme') || 'system';
+        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+          document.body.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          document.body.classList.remove('dark');
+        }
+      });
     </script>
   </head>
   <body>
