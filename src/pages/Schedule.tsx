@@ -18,7 +18,8 @@ import {
   FiInfo,  
   FiCheck,
   FiPlus,
-  FiUser
+  FiUser,
+  FiDatabase
 } from 'react-icons/fi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -42,6 +43,8 @@ import {
 } from '../utils/animationConfig';
 import ScheduleGridView from '../components/ScheduleGridView';
 import ScheduleListView from '../components/ScheduleListView';
+import SemesterDatesModal from '../components/SemesterDatesModal';
+import SavedScheduleSelector from '../components/SavedScheduleSelector';
 
 // Set up the moment localizer properly
 const localizer = momentLocalizer(moment);
@@ -267,11 +270,57 @@ const Schedule: React.FC = () => {
 
   const [showPreferences, setShowPreferences] = useState(false);
 
+  const [semesterDatesModalOpen, setSemesterDatesModalOpen] = useState(false);
+
+  const [savedScheduleId, setSavedScheduleId] = useState<string | null>(null);
+  const [showSavedSchedules, setShowSavedSchedules] = useState<boolean>(false);
+
   useEffect(() => {
-    fetchScheduleData();
-    fetchClassSchedules();
+    async function loadInitialSchedule() {
+      try {
+        setLoading(true);
+        
+        // Always fetch class schedules first and wait for completion
+        console.log('Fetching class schedules first...');
+        await fetchClassSchedules();
+        
+        // Store class events so we can preserve them
+        const classEvents = events.filter(event => event.category === 'class');
+        console.log(`Fetched ${classEvents.length} class events:`, 
+          classEvents.map(e => e.title));
+        
+        // Only load saved schedule if we have class events ready
+        const recentSchedule = await scheduleService.fetchMostRecentSchedule();
+        
+        if (recentSchedule && recentSchedule.schedule) {
+          console.log('Loaded most recent schedule with', recentSchedule.schedule.length, 'events');
+          
+          // Get non-class events from the loaded schedule
+          const nonClassEvents = recentSchedule.schedule.filter(event => event.category !== 'class');
+          console.log(`Schedule has ${nonClassEvents.length} non-class events`);
+          
+          // Combine class events with the non-class events from saved schedule
+          const combinedEvents = [...classEvents, ...nonClassEvents];
+          console.log(`Setting combined events: ${combinedEvents.length} total`);
+          
+          setEvents(combinedEvents);
+          setSavedScheduleId(recentSchedule.id);
+        } else {
+          console.log('No saved schedules found, using only class events');
+          // If no saved schedule, just keep the class events
+          setEvents(classEvents);
+        }
+      } catch (error) {
+        console.error('Error loading initial schedule:', error);
+        // Fall back to just fetching class schedules
+        await fetchClassSchedules();
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadInitialSchedule();
     loadPreferences();
-    loadPDFDocuments();
   }, []);
 
   // Fetch schedule data from the API
@@ -310,32 +359,37 @@ const Schedule: React.FC = () => {
   // Fix fetchClassSchedules function to properly handle the response format
   const fetchClassSchedules = async () => {
     try {
-      setLoading(true);
+      console.log('Fetching class schedules...');
       const response = await scheduleService.fetchClasses();
       
       // Check if response has data and it's an array
-      if (response && response.data && Array.isArray(response.data)) {
-        setClassSchedules(response.data);
+      if (response && Array.isArray(response)) {
+        setClassSchedules(response);
         
-        if (response.data.length > 0) {
-          console.log(`Processing ${response.data.length} classes for calendar`);
+        if (response.length > 0) {
+          console.log(`Processing ${response.length} classes for calendar`);
           // Convert class schedules to events and add to calendar
-          const classEvents = generateRecurringEvents(response.data);
-          setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...classEvents]);
+          const classEvents = generateRecurringEvents(response);
+          console.log(`Generated ${classEvents.length} class events`);
+          
+          // Update state with ONLY class events - preserving them
+          setEvents(prev => {
+            // Remove previous class events to avoid duplicates
+            const nonClassEvents = prev.filter(e => e.category !== 'class');
+            return [...nonClassEvents, ...classEvents];
+          });
         } else {
           console.log('No classes found in response');
         }
       } else {
-        console.log('No class data received from API or invalid format:', response);
+        console.log('Invalid response format from fetchClasses:', response);
         setClassSchedules([]);
       }
     } catch (error) {
       console.error('Error fetching schedules:', error);
-      toast.error('Failed to load schedule');
+      toast.error('Failed to load class schedule');
       // Set empty array to prevent undefined errors
       setClassSchedules([]);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -672,6 +726,7 @@ const Schedule: React.FC = () => {
       }
     });
     
+    console.log(`Generated ${events.length} class events with category='class'`);
     return events;
   };
 
@@ -2250,6 +2305,49 @@ const savePreferences = async () => {
     }
   };
 
+  const handleScheduleSelected = async (scheduleId: string) => {
+    try {
+      setLoading(true);
+      
+      // Get current class events first - BEFORE fetching the new schedule
+      // Make sure we're working with the latest class events
+      await fetchClassSchedules();
+      
+      // Now get class events from the current state
+      const classEvents = events.filter(event => event.category === 'class');
+      console.log(`Preserving ${classEvents.length} class events when loading saved schedule`, 
+        classEvents.map(e => e.title));
+      
+      const scheduleData = await scheduleService.fetchScheduleById(scheduleId);
+      
+      if (scheduleData && scheduleData.schedule) {
+        console.log(`Loaded schedule with ${scheduleData.schedule.length} events`);
+        
+        // Filter out any class events from the loaded schedule to avoid duplicates
+        const nonClassEvents = scheduleData.schedule.filter(event => event.category !== 'class');
+        console.log(`Schedule has ${nonClassEvents.length} non-class events`);
+        
+        // Combine preserved class events with loaded non-class events
+        const combinedEvents = [...classEvents, ...nonClassEvents];
+        console.log(`Setting combined events: ${combinedEvents.length} total (${classEvents.length} class + ${nonClassEvents.length} non-class)`);
+        
+        setEvents(combinedEvents);
+        setSavedScheduleId(scheduleId);
+        setShowSavedSchedules(false); // Hide selector after selection
+        
+        // Set a success message
+        toast.success('Schedule loaded successfully');
+      } else {
+        toast.error('Failed to load schedule');
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+      toast.error('Error loading schedule');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <motion.div 
       className="schedule-container"
@@ -2296,6 +2394,21 @@ const savePreferences = async () => {
             <FiSettings className="button-icon" />
             Preferences
           </motion.button>
+          <motion.button
+            className="semester-dates-button"
+            onClick={() => setSemesterDatesModalOpen(true)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Set Semester Dates
+          </motion.button>
+          <button 
+            className="action-button"
+            onClick={() => setShowSavedSchedules(!showSavedSchedules)}
+          >
+            <FiDatabase className="button-icon" />
+            Saved Schedules
+          </button>
         </div>
       </motion.header>
 
@@ -2427,6 +2540,22 @@ const savePreferences = async () => {
       )}
 
       {renderUploadModal()}
+
+      {/* Semester Dates Modal */}
+      {semesterDatesModalOpen && (
+        <SemesterDatesModal
+          isOpen={semesterDatesModalOpen}
+          onClose={() => setSemesterDatesModalOpen(false)}
+          onSaved={() => {
+            fetchClassSchedules();
+          }}
+        />
+      )}
+
+      {/* Saved Schedules Selector */}
+      {showSavedSchedules && (
+        <SavedScheduleSelector onScheduleSelected={handleScheduleSelected} />
+      )}
     </motion.div>
   );
 };

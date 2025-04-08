@@ -109,17 +109,70 @@ export const pdfService = {
         throw new Error('Authentication token not found');
       }
       
+      // Extract course codes from filenames and PDF content
+      const extractedCourseCodes = files.map(file => {
+        const courseCodeMatch = file.name.match(/\b([A-Z]{2,}[-\s]?[A-Z0-9]*\d{3}[A-Z0-9]*)\b/i);
+        return courseCodeMatch ? courseCodeMatch[1].toUpperCase() : null;
+      }).filter(Boolean);
+      
+      if (extractedCourseCodes.length > 0) {
+        console.log('Extracted course codes from filenames:', extractedCourseCodes);
+        formData.append('courseCodes', JSON.stringify(extractedCourseCodes));
+      }
+      
+      // Get class schedule data for better due date estimation
+      try {
+        const classScheduleJson = localStorage.getItem('scheduleRawClasses');
+        if (classScheduleJson) {
+          const classSchedule = JSON.parse(classScheduleJson);
+          console.log('Adding class schedule data for due date estimation');
+          formData.append('classSchedule', JSON.stringify(classSchedule));
+        }
+      } catch (e) {
+        console.error('Error parsing class schedule:', e);
+      }
+      
+      // Add PDF metadata with extracted assignment details
+      formData.append('extractAssignmentDetails', 'true');
+      
       // Get user preferences to send with request
       const userPreferences = localStorage.getItem('userPreferences');
       const preferences = userPreferences ? JSON.parse(userPreferences) : {};
       
-      // Add preferences to form data if available
-      if (Object.keys(preferences).length > 0) {
+      // Add user preferences if they exist
+      const preferenceJson = localStorage.getItem('userPreferences');
+      if (preferenceJson) {
+        const preferences = JSON.parse(preferenceJson);
+        if (!preferences.cognitiveLoadFactors) {
+          preferences.cognitiveLoadFactors = {
+            exam: 1.5,
+            project: 1.3,
+            assignment: 1.0,
+            reading: 0.8,
+            homework: 1.1,
+            presentation: 1.3,
+            lab: 1.2
+          };
+        }
+        
+        if (!preferences.spacingPreference) {
+          preferences.spacingPreference = 'moderate';
+        }
+        
+        if (!preferences.productiveTimeOfDay) {
+          // Use morning as default if not specified
+          preferences.productiveTimeOfDay = 'morning';
+        }
+        
+        if (!preferences.procrastinationProfile) {
+          preferences.procrastinationProfile = 'moderate';
+        }
+        
         formData.append('preferences', JSON.stringify(preferences));
         console.log('Added user preferences to request');
       }
       
-      console.log('Sending PDF files for processing with preferences');
+      console.log('Sending PDF files for processing with preferences and extracted course codes');
       
       // Updated endpoint to match the backend route
       const response = await axios.post(
@@ -381,7 +434,16 @@ export const pdfService = {
         description: item.description || '',
         courseCode: item.courseCode || '',
         location: item.location || '',
-        resource: item.resource || {}
+        resource: {
+          ...item.resource,
+          pdfDetails: item.pdfDetails || item.resource?.pdfDetails,
+          assignmentData: item.assignmentData || item.resource?.assignmentData,
+          sourceFile: item.sourceFile || item.resource?.sourceFile,
+          assignmentTitle: item.assignmentTitle || item.resource?.assignmentTitle,
+          dueDate: item.dueDate || item.resource?.dueDate,
+          extractedContent: item.extractedContent || item.resource?.extractedContent,
+          pageReference: item.pageReference || item.resource?.pageReference
+        }
       };
     });
   }

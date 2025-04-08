@@ -1,0 +1,81 @@
+.saved-schedule-selector {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 16px 0;
+  padding: 20px;
+  width: 100%;
+}
+
+.saved-schedule-selector h3 {
+  color: #333;
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.schedule-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+}
+
+.schedule-item {
+  background: #f9f9f9;
+  border-radius: 6px;
+  border: 1px solid #eaeaea;
+  cursor: pointer;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.schedule-item:hover {
+  background: #f0f7ff;
+  border-color: #d0e3ff;
+  transform: translateY(-2px);
+}
+
+.schedule-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.schedule-title {
+  font-weight: 600;
+  font-size: 16px;
+  color: #333;
+}
+
+.schedule-date {
+  color: #666;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.schedule-item-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #666;
+  font-size: 14px;
+}
+
+.saved-schedule-selector.loading,
+.saved-schedule-selector.error,
+.saved-schedule-selector.empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  font-size: 16px;
+  color: #666;
+}

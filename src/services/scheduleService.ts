@@ -2,32 +2,61 @@ import axios from 'axios';
 import { ClassData } from '../types/types';
 
 const BASE_URL = 'http://localhost:5000/api/schedule';
+const API_URL = 'http://localhost:5000/api';
+
+// Add schedule interface
+interface SavedSchedule {
+  id: string;
+  createdAt: string;
+  title: string;
+  assignmentCount: number;
+  classCount: number;
+  fileCount: number;
+}
+
+// Add schedule data interface
+interface ScheduleData {
+  id: string;
+  userId: string;
+  schedule: any[];
+  metadata: any;
+}
 
 export const scheduleService = {
   /**
-   * Fetch all classes for the current user
-   * @returns {Promise<Array>} The array of class objects
+   * Fetch class schedules for the current user
+   * @returns Promise with class schedule data
    */
-  async fetchClasses() {
+  async fetchClasses(): Promise<any[]> {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('No authentication token found');
+        throw new Error('Authentication token not found');
       }
 
-      const response = await axios.get(`${BASE_URL}/classes`, {
+      const response = await axios.get(`${API_URL}/schedule/classes`, {
         headers: {
-          Authorization: `Bearer ${token}`
+          'Authorization': `Bearer ${token}`
         }
       });
-
-      console.log('Raw API response from fetchClasses:', response.data);
       
-      // Return the array directly - the server is already returning the correct format
+      console.log('Fetched classes response:', response.data);
+      
+      // If the response itself is an array, return it directly
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      // Sometimes the API might wrap the array in a data property
+      if (response.data && Array.isArray(response.data.data)) {
+        return response.data.data;
+      }
+      
+      // Otherwise, the response itself is what we want
       return response.data;
     } catch (error) {
       console.error('Error fetching classes:', error);
-      // Return empty array on error instead of throwing
+      // Return empty array instead of null to prevent errors
       return [];
     }
   },
@@ -147,6 +176,88 @@ export const scheduleService = {
     } catch (error) {
       console.error('Error processing PDFs:', error);
       throw error;
+    }
+  },
+
+  /**
+   * Fetch all saved schedules for the current user
+   * @returns Promise with array of saved schedules
+   */
+  async fetchSavedSchedules(): Promise<SavedSchedule[]> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/schedule/schedules`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      console.log('Fetched saved schedules:', response.data);
+      return response.data.schedules || [];
+    } catch (error) {
+      console.error('Error fetching saved schedules:', error);
+      return [];
+    }
+  },
+
+  /**
+   * Fetch a specific schedule by ID
+   * @param scheduleId The ID of the schedule to fetch
+   * @returns Promise with schedule data
+   */
+  async fetchScheduleById(scheduleId: string): Promise<ScheduleData | null> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/schedule/schedules/${scheduleId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // Convert string dates back to Date objects in schedule items
+      if (response.data.schedule && Array.isArray(response.data.schedule)) {
+        response.data.schedule = response.data.schedule.map(item => ({
+          ...item,
+          start: item.start ? new Date(item.start) : undefined,
+          end: item.end ? new Date(item.end) : undefined
+        }));
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching schedule ${scheduleId}:`, error);
+      return null;
+    }
+  },
+
+  /**
+   * Fetch the most recent schedule
+   * @returns Promise with the most recent schedule
+   */
+  async fetchMostRecentSchedule(): Promise<ScheduleData | null> {
+    try {
+      const schedules = await this.fetchSavedSchedules();
+      
+      if (!schedules || schedules.length === 0) {
+        return null;
+      }
+      
+      // Get first schedule (should be the most recent)
+      const mostRecentId = schedules[0].id;
+      console.log('Fetching most recent schedule with ID:', mostRecentId);
+      
+      return await this.fetchScheduleById(mostRecentId);
+    } catch (error) {
+      console.error('Error fetching most recent schedule:', error);
+      return null;
     }
   },
 

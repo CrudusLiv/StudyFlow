@@ -4,19 +4,26 @@ import { CalendarEvent } from '../types/types';
 import { FiClock, FiCalendar, FiBook, FiMapPin, FiUser, FiX, FiTag, FiRepeat, FiSave } from 'react-icons/fi';
 import { modalVariants } from '../utils/animationConfig';
 import '../styles/components/ClassModal.css';
+import axios from 'axios';
 
 interface ClassModalProps {
   event: CalendarEvent;
   onClose: () => void;
   isNewEvent?: boolean;
   onSave?: (updatedEvent: CalendarEvent) => void;
+  isOpen: boolean;
+  editClass?: CalendarEvent;
+  onSaved?: () => void;
 }
 
 const ClassModal: React.FC<ClassModalProps> = ({ 
   event, 
   onClose, 
   isNewEvent = false,
-  onSave 
+  onSave,
+  isOpen,
+  editClass,
+  onSaved
 }) => {
   const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: event.title || '',
@@ -27,7 +34,35 @@ const ClassModal: React.FC<ClassModalProps> = ({
     description: event.description || ''
   });
 
-  // Handle form input changes
+  const [semesterStartDate, setSemesterStartDate] = useState<string>("");
+  const [semesterEndDate, setSemesterEndDate] = useState<string>("");
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSemesterDates();
+    }
+  }, [isOpen, editClass]);
+
+  const loadSemesterDates = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get('http://localhost:5000/api/schedule/semester-dates', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      
+      if (response.data.semesterDates) {
+        const { startDate, endDate } = response.data.semesterDates;
+        setSemesterStartDate(startDate.split('T')[0]);
+        setSemesterEndDate(endDate.split('T')[0]);
+      }
+    } catch (error) {
+      console.error('Error loading semester dates:', error);
+    }
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({
@@ -36,7 +71,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
     });
   };
 
-  // Handle date/time changes
   const handleDateTimeChange = (name: string, value: Date) => {
     setFormData({
       ...formData,
@@ -44,7 +78,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
     });
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSave) {
@@ -56,7 +89,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
     onClose();
   };
 
-  // Format time for display
   const formatTime = (date: Date) => {
     if (!date) return '';
     return date.toLocaleTimeString('en-US', {
@@ -66,7 +98,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
     });
   };
 
-  // Format date for display
   const formatDate = (date: Date) => {
     if (!date) return '';
     return date.toLocaleDateString('en-GB', {
@@ -179,6 +210,22 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   placeholder="Add any additional details about this class"
                   rows={4}
                 ></textarea>
+              </div>
+
+              <div className="class-form-group">
+                <h3>Semester Dates</h3>
+                <p>This class will use the system-wide semester dates.</p>
+                <div className="semester-date-display">
+                  <div>
+                    <strong>Start:</strong> {semesterStartDate || 'Not set'}
+                  </div>
+                  <div>
+                    <strong>End:</strong> {semesterEndDate || 'Not set'}
+                  </div>
+                </div>
+                <p className="info-text">
+                  To change semester dates, use the "Set Semester Dates" button on the schedule page.
+                </p>
               </div>
             </div>
 

@@ -3,10 +3,12 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { processDocuments } from '../utils/pdfProcessor.js';
+import { setSemesterDates, getCurrentSemesterDates } from '../utils/textProcessing.js';
 import ClassSchedule from '../models/ClassSchedule.js';
 import UserPreferences from '../models/UserPreferences.js';
 import PDFDocument from '../models/PDFDocument.js';
 import { validateToken } from './auth.js';
+import { saveSchedule, loadSchedule, getUserSchedules, deleteSchedule, updateSchedule } from '../utils/fileStorage.js';
 
 const router = express.Router();
 router.use(validateToken);
@@ -45,6 +47,32 @@ router.post('/classes', async (req, res) => {
   try {
     const userId = req.user.id;
     const classData = { ...req.body, userId };
+    
+    // Get system-wide semester dates if they exist
+    let semesterDates = getCurrentSemesterDates();
+    
+    // If no system-wide dates, check user preferences
+    if (!semesterDates) {
+      const userPreferences = await UserPreferences.findOne({ userId });
+      if (userPreferences?.semesterDates) {
+        semesterDates = userPreferences.semesterDates;
+      } else {
+        // Default semester dates as fallback
+        const today = new Date();
+        semesterDates = {
+          startDate: today,
+          endDate: new Date(today.getFullYear(), today.getMonth() + 4, today.getDate())
+        };
+      }
+    }
+    
+    // Always add semesterDates to class data
+    classData.semesterDates = semesterDates;
+    
+    // Set the semester dates for the whole system if not already set
+    if (!getCurrentSemesterDates()) {
+      setSemesterDates(semesterDates);
+    }
     
     const newClass = new ClassSchedule(classData);
     await newClass.save();
@@ -131,11 +159,28 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
     
     // Extract file paths - all files are now treated as assignments by default
     const filePaths = files.map(file => file.path);
-    const fileMetadata = files.map(file => ({
-      filePath: file.path,
-      name: file.originalname,
-      documentType: 'assignment'
-    }));
+    const fileMetadata = files.map(file => {
+      // Try to extract course code from filename
+      const courseCodeMatch = file.originalname.match(/\b([A-Z]{2,}[-\s]?[A-Z0-9]*\d{3}[A-Z0-9]*)\b/i);
+      return {
+        filePath: file.path,
+        name: file.originalname,
+        documentType: 'assignment',
+        courseCode: courseCodeMatch ? courseCodeMatch[1].toUpperCase() : undefined,
+        extractAssignmentDetails: req.body.extractAssignmentDetails === 'true'
+      };
+    });
+    
+    // Get course codes from request if available
+    let courseCodes = [];
+    if (req.body.courseCodes) {
+      try {
+        courseCodes = JSON.parse(req.body.courseCodes);
+        console.log('Received course codes:', courseCodes);
+      } catch (e) {
+        console.error('Error parsing course codes:', e);
+      }
+    }
     
     // Process user preferences for cognitive optimization
     let userPreferences = {};
@@ -156,12 +201,23 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
     if (req.body.classSchedule) {
       try {
         classSchedule = JSON.parse(req.body.classSchedule);
-        console.log('Using provided class schedule');
+        console.log('Using provided class schedule for due date estimation');
       } catch (e) {
         console.error('Error parsing class schedule:', e);
       }
     } else {
       console.log('No class schedule provided');
+      
+      // Try to fetch class schedule from database if it exists
+      try {
+        const userClasses = await ClassSchedule.find({ userId });
+        if (userClasses && userClasses.length > 0) {
+          console.log(`Found ${userClasses.length} classes in database, using for due date estimation`);
+          classSchedule = userClasses;
+        }
+      } catch (dbError) {
+        console.error('Error fetching classes from database:', dbError);
+      }
     }
     
     // Tag each class entry with class type
@@ -169,6 +225,19 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
       ...cls,
       documentType: 'class'
     }));
+
+    // Load persisted semester dates if they're not already set
+    if (!getCurrentSemesterDates()) {
+      try {
+        const userPreferences = await UserPreferences.findOne({ userId });
+        if (userPreferences?.semesterDates) {
+          setSemesterDates(userPreferences.semesterDates);
+          console.log('Loaded semester dates from user preferences');
+        }
+      } catch (dbError) {
+        console.error('Error loading semester dates from preferences:', dbError);
+      }
+    }
 
     // Process the documents with all metadata
     const options = {
@@ -178,51 +247,24 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
       },
       classSchedule: taggedClassSchedule,
       fileMetadata: fileMetadata,
-      documentType: 'assignment'
+      documentType: 'assignment',
+      courseCodes: courseCodes,
+      extractAssignmentDetails: true,
+      title: `Schedule from ${files.length} files` // Add a title for the schedule
     };
     
-    console.log(`Starting processDocuments with ${filePaths.length} files`);
+    console.log(`Starting processDocuments with ${filePaths.length} files, semester dates set: ${!!getCurrentSemesterDates()}`);
     const studySchedule = await processDocuments(filePaths, userId, options);
     console.log(`processDocuments completed - generated ${studySchedule.length} schedule items`);
     
-    // Create a new PDF document entry to store the extracted data and schedule
-    let documentId = null;
-    
-    // After processing and generating a schedule, save to database
-    if (studySchedule && studySchedule.length > 0) {
-      try {
-        // Create new document with first file's name as title
-        const newDocument = new PDFDocument({
-          userId,
-          title: fileMetadata[0].name.replace(/\.[^/.]+$/, ""), // Remove file extension
-          fileName: fileMetadata[0].name,
-          originalName: fileMetadata[0].name,
-          extractedData: {
-            // Add extracted data from first file
-            courseCode: options.preferences.courseCode || '',
-            instructor: options.preferences.instructor || '',
-            semester: options.preferences.semester || '',
-            assignments: [], // Will be populated later
-            dates: [],
-            topics: [],
-            complexity: 0
-          },
-          generatedSchedule: studySchedule // Save the study schedule here
-        });
-        
-        await newDocument.save();
-        documentId = newDocument._id;
-        console.log(`Saved document with schedule to database, ID: ${documentId}`);
-      } catch (dbError) {
-        console.error('Error saving document to database:', dbError);
-      }
-    }
+    // Get the schedule ID that was generated during processing
+    const scheduleId = studySchedule.length > 0 ? studySchedule[0].scheduleId : null;
     
     res.status(200).json({
       message: `${files.length} files processed successfully`,
       studySchedule,
       count: studySchedule.length,
-      documentId // Return the document ID to the client
+      scheduleId
     });
   } catch (error) {
     console.error('Error processing PDFs:', error);
@@ -339,6 +381,158 @@ router.post('/preferences', async (req, res) => {
       error: 'Error updating preferences',
       details: error.message
     });
+  }
+});
+
+// Add a new route to set semester dates
+router.post('/semester-dates', async (req, res) => {
+  try {
+    const { startDate, endDate } = req.body;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
+    }
+    
+    const success = setSemesterDates({ startDate, endDate });
+    
+    if (success) {
+      // Save to user preferences for persistence across server restarts
+      await UserPreferences.findOneAndUpdate(
+        { userId: req.user.id },
+        { 
+          $set: { 
+            semesterDates: { startDate, endDate },
+            updatedAt: new Date() 
+          } 
+        },
+        { 
+          new: true,
+          upsert: true, // Create if doesn't exist
+          runValidators: true
+        }
+      );
+      
+      res.status(200).json({
+        message: 'Semester dates set successfully',
+        semesterDates: { startDate, endDate }
+      });
+    } else {
+      res.status(400).json({ error: 'Invalid semester dates' });
+    }
+  } catch (error) {
+    console.error('Error setting semester dates:', error);
+    res.status(500).json({ 
+      error: 'Error setting semester dates',
+      details: error.message
+    });
+  }
+});
+
+// Get current semester dates
+router.get('/semester-dates', async (req, res) => {
+  try {
+    // First check in-memory dates
+    let semesterDates = getCurrentSemesterDates();
+    
+    // If no in-memory dates, check user preferences
+    if (!semesterDates) {
+      const userPreferences = await UserPreferences.findOne({ userId: req.user.id });
+      
+      if (userPreferences?.semesterDates) {
+        semesterDates = userPreferences.semesterDates;
+        
+        // Also set in memory for future use
+        setSemesterDates(semesterDates);
+      }
+    }
+    
+    res.status(200).json({
+      semesterDates: semesterDates || null
+    });
+  } catch (error) {
+    console.error('Error getting semester dates:', error);
+    res.status(500).json({ 
+      error: 'Error getting semester dates',
+      details: error.message
+    });
+  }
+});
+
+// Add new routes for file-based schedule storage
+router.get('/schedules', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all schedules for the user
+    const schedules = getUserSchedules(userId);
+    
+    res.status(200).json({
+      schedules
+    });
+  } catch (error) {
+    console.error('Error fetching schedules:', error);
+    res.status(500).json({ error: 'Error fetching schedules' });
+  }
+});
+
+router.get('/schedules/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const scheduleId = req.params.id;
+    
+    // Load the schedule
+    const scheduleData = loadSchedule(userId, scheduleId);
+    
+    if (!scheduleData) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+    
+    res.status(200).json(scheduleData);
+  } catch (error) {
+    console.error('Error fetching schedule:', error);
+    res.status(500).json({ error: 'Error fetching schedule' });
+  }
+});
+
+router.delete('/schedules/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const scheduleId = req.params.id;
+    
+    // Delete the schedule
+    const success = deleteSchedule(userId, scheduleId);
+    
+    if (!success) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+    
+    res.status(200).json({ message: 'Schedule deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting schedule:', error);
+    res.status(500).json({ error: 'Error deleting schedule' });
+  }
+});
+
+router.put('/schedules/:id', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const scheduleId = req.params.id;
+    const { schedule, metadata } = req.body;
+    
+    // Update the schedule
+    const result = updateSchedule(userId, scheduleId, schedule, metadata);
+    
+    if (!result.success) {
+      return res.status(404).json({ error: result.error || 'Failed to update schedule' });
+    }
+    
+    res.status(200).json({ 
+      message: 'Schedule updated successfully',
+      scheduleId
+    });
+  } catch (error) {
+    console.error('Error updating schedule:', error);
+    res.status(500).json({ error: 'Error updating schedule' });
   }
 });
 
