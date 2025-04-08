@@ -1441,6 +1441,23 @@
   font-size: 1.25rem;
 }
 
+.constraints-list {
+  list-style: none;
+  padding: 1rem 3rem;
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.upload-area {
+  list-style: none;
+  padding: 1rem;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+
 @media (max-width: 768px) {
   .onboarding-guide {
     padding: 1.25rem;
@@ -1540,4 +1557,195 @@
   .rbc-event-content {
     font-size: 12px !important;
   }
+}
+
+.dark{
+  .dark .schedule-container{
+    background: linear-gradient(to bottom right, #111827, #1f2937);
+  }
+
+  .schedule-header {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    background-color: #1f2937;
+  }
+
+  .schedule-title {
+    background: linear-gradient(45deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .calendar-container {
+    background-color: var(--card-bg);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+    border-color: var(--border);
+  }
+
+  .calendar-container::before {
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #6366f1);
+    background-size: 200% 100%;
+  }
+
+  .rbc-event {
+    background: #2d3748 !important;
+    border-color: #4a5568 !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .rbc-event:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3) !important;
+  }
+
+  .rbc-time-gutter {
+    background-color: #1f2937;
+    border-right-color: #374151;
+  }
+
+  .rbc-toolbar {
+    background-color: #1f2937;
+    border-bottom-color: #374151;
+  }
+
+  .rbc-toolbar button {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #e5e7eb;
+  }
+
+  .rbc-toolbar button.rbc-active {
+    background-color: #6366f1;
+    border-color: #6366f1;
+  }
+
+  .rbc-toolbar button:hover:not(.rbc-active) {
+    background-color: #4a5568;
+  }
+
+  .rbc-header {
+  background-color: #2d3748;
+  border-bottom-color: #4a5568;
+  color: #e5e7eb;
+  }
+
+  .rbc-day-bg.rbc-today {
+  background-color: rgba(99, 102, 241, 0.1);
+  }
+
+  .rbc-time-view {
+  background: #1f2937;
+  border-color: #374151;
+  }
+
+  .rbc-timeslot-group {
+  border-bottom-color: #374151;
+  }
+  .rbc-current-time-indicator {
+    background-color: #6366f1;
+    box-shadow: 0 0 4px rgba(99, 102, 241, 0.5);
+  }
+
+  .rbc-current-time-indicator::before {
+    background-color: #6366f1;
+  }
+
+  .day-column {
+  background-color: #2d3748;
+  border-color: #4a5568;
+  }
+
+  .day-column:hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  }
+
+  .day-header {
+  border-bottom-color: #4a5568;
+  }
+
+  .day-header h3 {
+    color: #e5e7eb;
+  }
+
+  .grid-class-item {
+    background-color: #1f2937;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .grid-class-item:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .onboarding-guide {
+  background: linear-gradient(to right, #1f2937, #2d3748);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
+  }
+
+  .step {
+    background: rgba(31, 41, 55, 0.7);
+    border-color: #4a5568;
+  }
+
+  .step.active {
+    background: #2d3748;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .step-number {
+    background: #6366f1;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.4);
+  }
+
+  .step-text {
+    color: #e5e7eb;
+  }
+
+  /* Dark mode for scrollbars */
+  .rbc-time-content::-webkit-scrollbar-track {
+    background: #2d3748;
+  }
+
+  .rbc-time-content::-webkit-scrollbar-thumb {
+    background-color: #4a5568;
+    border: 2px solid #2d3748;
+  }
+
+  .rbc-time-content::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280;
+  }
+  /* Dark mode for modal overlay */
+  .modal-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+
+  .pdf-upload-modal,
+  .modal-content {
+    background-color: #1f2937;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Dark mode for view selector */
+  .view-selector {
+    background: #2d3748;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .view-button {
+    color: #9ca3af;
+  }
+
+  .view-button.active {
+    background-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  }
+
+  .view-button:hover:not(.active) {
+    background-color: #4a5568;
+    color: #e5e7eb;
+  }
+
+  .rbc-btn-group button:hover:not(.rbc-active) {
+    background-color: #4a5568;
+    color: #e5e7eb;
+  }
+
 }

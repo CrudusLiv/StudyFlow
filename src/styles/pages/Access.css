@@ -196,6 +196,16 @@
   .input-label {
     color: #e5e7eb;
   }
+  .info-section {
+  background: linear-gradient(135deg, #3730a3, #4338ca);
+  padding: 3rem;
+  color: white;
+  border-top-right-radius: 20px;
+  border-bottom-right-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 }
 
 /* Responsive design */
@@ -401,35 +411,175 @@ p {
   transform: translateY(-2px);
 }
 
-/* Dark mode support */
+/* Enhanced dark mode for access container */
 @media (prefers-color-scheme: dark) {
+  .access-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+
+  .access-card {
+    background: #1e293b;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    border: 1px solid #374151;
+  }
+
+  h1 {
+    color: #e2e8f0;
+  }
+
+  p {
+    color: #94a3b8;
+  }
+
+  .error-message {
+    background: #450a0a;
+    color: #fca5a5;
+    border: 1px solid #7f1d1d;
+  }
+
+  .header-icon {
+    color: #818cf8;
+  }
+}
+
+/* Enhanced dark mode for auth buttons */
+@media (prefers-color-scheme: dark) {
+  .google-button {
+    background-color: #2d3748;
+    border-color: #4b5563;
+    color: #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .google-button:hover {
+    background-color: #1a202c;
+    border-color: #4b5563;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
   .microsoft-button {
-    background-color: #404040;
+    background-color: #2d3748;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
   }
 
   .microsoft-button:hover {
-    background-color: #525252;
+    background-color: #1a202c;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .auth-divider {
+    color: #94a3b8;
+  }
+
+  .auth-divider::before,
+  .auth-divider::after {
+    border-color: #4b5563;
+  }
+
+  .auth-switch {
+    color: #94a3b8;
+  }
+
+  .auth-switch-link {
+    color: #818cf8;
+  }
+
+  .auth-switch-link:hover {
+    color: #a5b4fc;
+  }
+
+  .toggle-auth {
+    color: #818cf8;
+  }
+
+  .toggle-auth:hover {
+    color: #a5b4fc;
+    background-color: rgba(99, 102, 241, 0.1);
   }
 }
 
-/* Replace all media queries with .dark class selectors */
+/* Replace class-based dark mode selectors with improved colors */
 .dark .auth-container {
-  background: linear-gradient(135deg, var(--background) 0%, var(--muted) 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
 }
 
 .dark .auth-card {
-  background: var(--card);
+  background: #1e293b;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border: 1px solid #374151;
 }
 
 .dark .input-field {
-  background: var(--input-bg);
-  border-color: var(--input-border);
-  color: var(--input-text);
+  background: #2d3748;
+  border-color: #4b5563;
+  color: #e2e8f0;
 }
 
 .dark .input-field:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.dark .input-label {
+  color: #e2e8f0;
+}
+
+.dark .toggle-auth {
+  color: #818cf8;
+}
+
+.dark .toggle-auth:hover {
+  color: #a5b4fc;
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.dark .google-button {
+  background-color: #2d3748;
+  border-color: #4b5563;
+  color: #e2e8f0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.dark .google-button:hover {
+  background-color: #1a202c;
+  border-color: #4b5563;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .info-section {
+  background: linear-gradient(135deg, #3730a3, #4338ca);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+}
+
+.dark .form-title {
+  background: linear-gradient(90deg, #818cf8, #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dark .submit-button {
+  background: linear-gradient(90deg, #4338ca, #5b21b6);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+.dark .submit-button:hover {
+  box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+}
+
+/* Add subtle border glow effect for focused elements in dark mode */
+.dark .input-field:focus {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3), 0 0 10px rgba(99, 102, 241, 0.2);
+}
+
+/* Add subtle transition for dark mode elements */
+.dark .auth-card,
+.dark .input-field,
+.dark .submit-button,
+.dark .toggle-auth,
+.dark .google-button,
+.dark .microsoft-button {
+  transition: all 0.3s ease;
 }
 
 .dark .input-label {

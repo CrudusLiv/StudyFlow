@@ -6,7 +6,7 @@ import {
   FiCalendar, 
   FiCheck, 
   FiClock, 
-  FiEdit2, 
+  FiEdit, 
   FiPlus, 
   FiTrash2, 
   FiX 
@@ -483,7 +483,7 @@ const Reminders: React.FC = () => {
                             setShowEditForm(true);
                           }}
                         >
-                          <FiEdit2 />
+                          <FiEdit / >
                         </button>
                         <button 
                           className="delete-button"
