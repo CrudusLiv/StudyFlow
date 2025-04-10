@@ -5,12 +5,14 @@ import { FiUser, FiBell, FiLogOut, FiMoon, FiSun, FiMenu } from 'react-icons/fi'
 import '../styles/components/Header.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import useReminderCount from '../hooks/useReminderCount';
 
 const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { reminders, count: notificationCount, markAsRead } = useReminderCount();
   const navigate = useNavigate();
   
   // Refs for dropdown menus
@@ -47,6 +49,29 @@ const Header: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.round(diffMs / 60000);
+    const diffHours = Math.round(diffMs / 3600000);
+    const diffDays = Math.round(diffMs / 86400000);
+    
+    if (diffMins < 60) {
+      return `${diffMins} minute${diffMins !== 1 ? 's' : ''} ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours} hour${diffHours !== 1 ? 's' : ''} ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+    } else {
+      return date.toLocaleDateString();
+    }
+  };
+  
+  const handleMarkAsRead = async (id: string) => {
+    await markAsRead(id);
   };
 
   // Animation variants
@@ -113,7 +138,11 @@ const Header: React.FC = () => {
               aria-label="Notifications"
             >
               <FiBell />
-              <span className="notification-badge">3</span>
+              {notificationCount > 0 && (
+                <span className="notification-badge">
+                  {notificationCount > 99 ? '99+' : notificationCount}
+                </span>
+              )}
             </motion.button>
             
             <AnimatePresence>
@@ -125,21 +154,31 @@ const Header: React.FC = () => {
                   animate="visible"
                   exit="exit"
                 >
-                  <h3>Notifications</h3>
+                  <h3>Reminders</h3>
                   <div className="notification-items">
-                    <div className="notification-item">
-                      <p>New message from professor</p>
-                      <small>2 minutes ago</small>
-                    </div>
-                    <div className="notification-item">
-                      <p>Assignment due tomorrow</p>
-                      <small>1 hour ago</small>
-                    </div>
-                    <div className="notification-item">
-                      <p>Study session scheduled</p>
-                      <small>Yesterday</small>
-                    </div>
+                    {reminders.length > 0 ? (
+                      reminders.map(reminder => (
+                        <div key={reminder._id} className="notification-item">
+                          <p>{reminder.title}</p>
+                          <small>{formatDate(reminder.reminderDate)}</small>
+                          <button 
+                            className="mark-read-btn" 
+                            onClick={() => handleMarkAsRead(reminder._id)}
+                            aria-label="Mark as read"
+                          >
+                            ✓
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="empty-notifications">
+                        <p>No new reminders</p>
+                      </div>
+                    )}
                   </div>
+                  <Link to="/reminders" className="view-all">
+                    View all reminders
+                  </Link>
                 </motion.div>
               )}
             </AnimatePresence>

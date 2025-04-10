@@ -1,35 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useAuth } from '../contexts/AuthContext';
 import { FiLoader } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  requiredRole?: string; // New prop for role-based access control
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, requiredRole }) => {
+  const { isAuthenticated, loading, userRole } = useAuth();
   const location = useLocation();
-  const [showLoader, setShowLoader] = useState(true);
 
-  useEffect(() => {
-    // Only show the loader for a minimum of 500ms to avoid flashes
-    if (!isLoading) {
-      const timer = setTimeout(() => {
-        setShowLoader(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoading]);
-
-  if (isLoading || showLoader) {
+  // Show a loading indicator while checking authentication
+  if (loading) {
     return (
       <motion.div
-        className="auth-loading"
+        className="flex flex-col items-center justify-center min-h-screen"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
       >
         <motion.div
           animate={{ 
@@ -59,7 +50,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
     return <Navigate to="/access" state={{ from: location }} replace />;
   }
 
-  // Pass children if authenticated
+  // Check if a specific role is required and if user has that role
+  if (requiredRole && userRole !== requiredRole) {
+    console.log(`Access denied: Required role '${requiredRole}', user has role '${userRole}'`);
+    // Redirect to home page if user doesn't have required role
+    return <Navigate to="/" state={{ accessDenied: true }} replace />;
+  }
+
+  // Pass children if authenticated and has correct role if required
   return (
     <motion.div
       initial={{ opacity: 0 }}

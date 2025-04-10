@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 import '../styles/pages/Admin.css';
 import { FaChartLine, FaChartPie, FaUsers, FaUserClock, FaClock, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { BiError } from 'react-icons/bi';
-
+import AdminDebug from '../components/AdminDebug';
+import { processUserData, extractAnalytics, directServerResponseHandler } from '../utils/adminUtils';
 
 import { 
   pageVariants, 
@@ -17,7 +18,8 @@ import {
 } from '../utils/animationConfig';
 
 interface UserActivity {
-  _id: string;
+  _id: string;  // This should match what's coming from the server
+  id?: string;  // Add optional id field to handle both formats
   name: string;
   email: string;
   role: string;
@@ -52,18 +54,19 @@ const Admin: React.FC = () => {
         setLoading(true);
         const token = localStorage.getItem('token');
 
+        // Make the direct API call
         const response = await axios.get('http://localhost:5000/api/admin/analytics', {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        const formattedData: Analytics = {
-          totalUsers: response.data.userCount || 0,
-          activeToday: response.data.activeToday || 0,
-          averageSessionDuration: response.data.averageSessionDuration || 1,
-          userActivity: response.data.userData || [],
-        };
-
-        setAnalytics(formattedData);
+        // Log the complete raw response
+        console.log('Complete raw server response:', JSON.stringify(response.data, null, 2));
+        
+        // Use the direct response handler
+        const processedData = directServerResponseHandler(response.data);
+        
+        // Update state with the processed data
+        setAnalytics(processedData);
       } catch (error: any) {
         setError(error.response?.data?.error || 'Failed to fetch analytics data');
         console.error('Error fetching analytics:', error);
@@ -218,6 +221,7 @@ const Admin: React.FC = () => {
     );
   }
 
+  // Update the stat cards to show values correctly
   return (
     <motion.div 
       className="admin-container"
@@ -226,6 +230,9 @@ const Admin: React.FC = () => {
       exit="exit"
       variants={pageVariants}
     >
+      {/* Add the debug component in development */}
+      {process.env.NODE_ENV !== 'production' && <AdminDebug />}
+      
       <motion.header 
         className="admin-header"
         variants={containerVariants}
@@ -250,7 +257,7 @@ const Admin: React.FC = () => {
             <h2 className="stat-title">Total Users</h2>
           </div>
           <p className="stat-description">Active accounts on the platform</p>
-          <p className="stat-value">{analytics.totalUsers}</p>
+          <p className="stat-value">{analytics.totalUsers || 0}</p>
         </motion.div>
 
         <motion.div 
@@ -464,25 +471,31 @@ const Admin: React.FC = () => {
               className="table-body"
             >
               {filteredAndSortedUsers.length > 0 ? (
-                filteredAndSortedUsers.map(user => (
-                  <motion.tr 
-                    key={user._id}
-                    variants={listItemVariants}
-                    whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)' }}
-                    className="table-row"
-                  >
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`role-badge role-${user.role.toLowerCase()}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>{new Date(user.lastLogin).toLocaleDateString()}</td>
-                    <td>{user.totalSessions}</td>
-                    <td>{Math.round(user.averageSessionDuration)}m</td>
-                  </motion.tr>
-                ))
+                filteredAndSortedUsers.map((user, index) => {
+                  // Add a unique key with fallback to index
+                  const key = user._id || `user-${index}`;
+                  
+                  return (
+                    <motion.tr 
+                      key={key}
+                      variants={listItemVariants}
+                      whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)' }}
+                      className="table-row"
+                    >
+                      <td>{user.name || 'N/A'}</td>
+                      <td>{user.email || 'N/A'}</td>
+                      <td>
+                        <span className={`role-badge role-${(user.role || 'user').toLowerCase()}`}>
+                          {user.role || 'User'}
+                        </span>
+                      </td>
+                      <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
+                      <td>{user.totalSessions !== undefined ? user.totalSessions : 0}</td>
+                      <td>{user.averageSessionDuration !== undefined ? 
+                        `${Math.round(user.averageSessionDuration)}m` : '0m'}</td>
+                    </motion.tr>
+                  );
+                })
               ) : (
                 <tr className="empty-row">
                   <td colSpan={6}>

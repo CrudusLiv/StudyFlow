@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { auth } from '../config/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -9,7 +9,8 @@ interface AuthContextType {
   loading: boolean;
   login: (token: string, userKey: string, role?: string) => void;
   logout: () => void;
-  checkAuth: () => Promise<boolean>;
+  checkAuth: () => boolean;  // Change return type to match implementation
+  refreshUserData: () => Promise<void>; // Add new method to refresh user data
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -18,7 +19,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   login: () => {},
   logout: () => {},
-  checkAuth: async () => false
+  checkAuth: () => false,
+  refreshUserData: async () => {} // Add default implementation
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -27,6 +29,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Function to refresh user data from API
+  const refreshUserData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await axios.get('http://localhost:5000/api/user', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data && response.data.role) {
+        console.log('Retrieved role from API:', response.data.role);
+        setUserRole(response.data.role);
+        localStorage.setItem('userRole', response.data.role);
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+    }
+  };
 
   // Initialize auth state from localStorage on mount
   useEffect(() => {
@@ -60,7 +82,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     };
 
-    initializeAuthState();
+    // Add call to verify auth immediately after initialization
+    const checkAndRefreshAuth = async () => {
+      initializeAuthState();
+      
+      // If we have a token, attempt to refresh user data from server
+      if (localStorage.getItem('token')) {
+        await refreshUserData();
+      }
+      
+      setLoading(false);
+    };
+    
+    checkAndRefreshAuth();
     
     // Handle URL tokens (Google auth)
     const params = new URLSearchParams(window.location.search);
@@ -172,18 +206,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = (token: string, userKey: string, role = 'user') => {
-    console.log("Login called with token and role:", role);
+    console.log('Logging in with role:', role);
     
     // Set expiry time - 1 hour from now
     const expiryTime = new Date().getTime() + (60 * 60 * 1000);
+    localStorage.setItem('tokenExpiry', expiryTime.toString());
     
     localStorage.setItem('token', token);
     localStorage.setItem('userKey', userKey);
     localStorage.setItem('userRole', role);
-    localStorage.setItem('tokenExpiry', expiryTime.toString());
-
     setIsAuthenticated(true);
     setUserRole(role);
+    
+    // After login, fetch fresh user data to ensure role is up to date
+    setTimeout(() => refreshUserData(), 500);
   };
 
   const logout = () => {
@@ -196,9 +232,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     window.location.href = '/access';
   };
 
-  const checkAuth = async () => {
-    return await verifyAuth();
-  };
+  const checkAuth = useCallback(() => {
+    const storedToken = localStorage.getItem('token');
+    const storedUserKey = localStorage.getItem('userKey');
+    const storedRole = localStorage.getItem('userRole');
+    
+    console.log('Stored role from localStorage:', storedRole);
+    
+    if (storedToken && storedUserKey) {
+      setIsAuthenticated(true);
+      setUserRole(storedRole || 'user');
+      return true;
+    }
+    
+    return false;
+  }, []);
 
   return (
     <AuthContext.Provider value={{
@@ -207,7 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loading,
       login,
       logout,
-      checkAuth
+      checkAuth,
+      refreshUserData // Add the new method to the context
     }}>
       {children}
     </AuthContext.Provider>

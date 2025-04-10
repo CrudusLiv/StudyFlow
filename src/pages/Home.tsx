@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { FaCalendarAlt, FaChartLine, FaClock, FaTasks, FaArrowRight, FaSpinner } from 'react-icons/fa';
 import {
   pageVariants,
@@ -10,6 +10,7 @@ import {
   fadeIn
 } from '../utils/animationConfig';
 import '../styles/pages/Home.css';
+import AccessDenied from '../components/AccessDenied';
 
 interface Assignment {
   _id: string;
@@ -57,8 +58,10 @@ const testAssignments: Assignment[] = [
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
 
   useEffect(() => {
     // Simulate loading data
@@ -69,6 +72,17 @@ const Home: React.FC = () => {
     
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (location.state && (location.state as any).accessDenied) {
+      setShowAccessDenied(true);
+      // Clear the state after a short delay
+      const timer = setTimeout(() => {
+        window.history.replaceState({}, document.title);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const handleNavigate = (path: string) => {
     navigate(path);
@@ -103,6 +117,10 @@ const Home: React.FC = () => {
       }
     }
   };
+
+  if (showAccessDenied) {
+    return <AccessDenied />;
+  }
 
   return (
     <motion.div 

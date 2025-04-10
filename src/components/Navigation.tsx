@@ -20,11 +20,22 @@ import { rightSideNavVariants, rightSideItemVariants } from '../utils/rightSideN
 const Navigation: React.FC = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isAuthenticated, userRole } = useAuth(); // Get userRole from context
+  const { isAuthenticated, userRole, refreshUserData } = useAuth();
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Check if user is admin
-  const isAdmin = userRole === 'admin';
+  // Improved admin check with detailed logging
+  const isAdmin = userRole && (userRole.toLowerCase() === 'admin');
+  
+  useEffect(() => {
+    console.log('Navigation - Current user role:', userRole);
+    console.log('Navigation - Is admin?', isAdmin);
+    console.log('Navigation - Role type:', typeof userRole);
+    
+    // Refresh user data when component mounts to ensure role is current
+    if (isAuthenticated) {
+      refreshUserData().catch(err => console.error('Failed to refresh user data:', err));
+    }
+  }, [isAuthenticated, userRole, isAdmin, refreshUserData]);
 
   // Close mobile menu when clicking outside
   useEffect(() => {

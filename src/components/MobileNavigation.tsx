@@ -1,14 +1,19 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaChartLine, FaBell, FaUser } from 'react-icons/fa';
+import { FaHome, FaCalendarAlt, FaChartLine, FaBell, FaUser,  } from 'react-icons/fa';
 import '../styles/components/MobileNavigation.css';
+import { useAuth } from '../contexts/AuthContext';
 
 const MobileNavigation: React.FC = () => {
   const location = useLocation();
+  const { userRole } = useAuth();
   
   const isActive = (path: string) => {
     return location.pathname === path;
   };
+
+  // Check if user is admin
+  const isAdmin = userRole === 'admin';
 
   return (
     <nav className="mobile-navigation">
@@ -36,6 +41,14 @@ const MobileNavigation: React.FC = () => {
         <FaUser className="mobile-nav-icon" />
         <span className="mobile-nav-label">Profile</span>
       </Link>
+
+      {/* Admin link - only visible to admin users */}
+      {isAdmin && (
+        <Link to="/admin" className={`mobile-nav-item ${isActive('/admin') ? 'active' : ''}`}>
+          <FaUser className="mobile-nav-icon" />
+          <span className="mobile-nav-label">Admin</span>
+        </Link>
+      )}
     </nav>
   );
 };

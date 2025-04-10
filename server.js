@@ -246,24 +246,6 @@ const assignmentSchema = new mongoose.Schema({
 const Assignment = mongoose.model('Assignment', assignmentSchema);
 
 // Add new schema for AI-generated schedule
-app.get('/api/admin/analytics', async (req, res) => {
-  try {
-    const users = await User.find();
-    const userCount = users.length;
-    const userData = users.map(user => ({
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      createdAt: user.createdAt,
-    }));
-    res.json({ userCount, userData });
-  }catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-
 // Add Reminder schema after Assignment schema
 const reminderSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -441,6 +423,39 @@ app.post('/login', async (req, res) => {
   }
 });
 
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: 'Invalid email or password' });
+    }
+    // Include role in JWT token
+    const token = jwt.sign({ 
+      userId: user._id, 
+      userKey: user.uniqueKey,
+      role: user.role // Add role to JWT token
+    }, JWT_SECRET, { expiresIn: '1h' });
+    
+    user.lastLogin = new Date();
+    user.loginHistory.push({
+      timestamp: new Date(),
+      action: 'login'
+    });
+    await user.save();
+    res.json({ 
+      token: token, 
+      userKey: user.uniqueKey, // Send uniqueKey instead of _id
+      role: user.role 
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 // Google authentication routes
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], accessType: 'offline', prompt: 'consent' }));
@@ -710,12 +725,19 @@ app.get('/api/get-api-key', authenticateJWT, (req, res) => {
 app.get('/api/user', authenticateJWT, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    console.log(`User ${user._id} has role: ${user.role || 'user'}`);
+    
     res.json({
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role || 'user' // Ensure role is included
     });
   } catch (error) {
+    console.error('Error fetching user data:', error);
     res.status(500).json({ error: 'Error fetching user data' });
   }
 });
@@ -1112,37 +1134,58 @@ app.post('/assignments', authenticateJWT, async (req, res) => {
     });
     await assignment.save();
 
-    // Create reminders for the assignment
+    // Create reminders for the assignment based on due date proximity
     const dueDate = new Date(assignment.dueDate);
+    const now = new Date();
+    
+    // Create a reminder 2 weeks before due date (if applicable)
     const twoWeeksBefore = new Date(dueDate);
     twoWeeksBefore.setDate(dueDate.getDate() - 14);
-
-    // Create initial reminder (2 weeks before)
-    if (twoWeeksBefore > new Date()) {
+    
+    if (twoWeeksBefore > now) {
+      // Create a reminder for 2 weeks before deadline
       await new Reminder({
         userId: req.user.userId,
         assignmentId: assignment._id,
         title: `Reminder: ${assignment.title} due in 2 weeks`,
         message: `Your assignment "${assignment.title}" is due on ${dueDate.toLocaleDateString()}`,
         dueDate: assignment.dueDate,
-        reminderDate: twoWeeksBefore
+        reminderDate: twoWeeksBefore,
+        isRead: false
       }).save();
     }
-
-    // Create daily reminders for the last week
-    for (let i = 7; i > 0; i--) {
-      const reminderDate = new Date(dueDate);
-      reminderDate.setDate(dueDate.getDate() - i);
-      if (reminderDate > new Date()) {
-        await new Reminder({
-          userId: req.user.userId,
-          assignmentId: assignment._id,
-          title: `Reminder: ${assignment.title} due in ${i} day${i > 1 ? 's' : ''}`,
-          message: `Your assignment "${assignment.title}" is due on ${dueDate.toLocaleDateString()}`,
-          dueDate: assignment.dueDate,
-          reminderDate
-        }).save();
-      }
+    
+    // Create an immediate reminder if due date is coming soon
+    if (dueDate > now && dueDate <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000)) {
+      const daysDiff = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+      const dayText = daysDiff === 1 ? 'tomorrow' : 
+                     daysDiff === 0 ? 'today' :
+                     `in ${daysDiff} days`;
+      
+      await new Reminder({
+        userId: req.user.userId,
+        assignmentId: assignment._id,
+        title: `Due Soon: ${assignment.title}`,
+        message: `Your assignment "${assignment.title}" is due ${dayText} (${dueDate.toLocaleDateString()})`,
+        dueDate: assignment.dueDate,
+        reminderDate: now,
+        isRead: false
+      }).save();
+    }
+    
+    // Create planning reminder if due date is more than 3 days away
+    if (dueDate > new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)) {
+      const planningDate = new Date(now.getTime() + Math.ceil((dueDate - now) / (2 * 24 * 60 * 60 * 1000)));
+      
+      await new Reminder({
+        userId: req.user.userId,
+        assignmentId: assignment._id,
+        title: `Plan Ahead: ${assignment.title}`,
+        message: `Start working on "${assignment.title}" which is due on ${dueDate.toLocaleDateString()}`,
+        dueDate: assignment.dueDate,
+        reminderDate: planningDate,
+        isRead: false
+      }).save();
     }
 
     res.status(201).json(assignment);
@@ -1162,6 +1205,32 @@ app.put('/assignments/:id', authenticateJWT, async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: 'Error updating assignment' });
   }
+});
+
+// Add delete assignment endpoint
+app.delete('/assignments/:id', authenticateJWT, async (req, res) => {
+  try {
+    // First find the assignment to ensure it exists and belongs to the requesting user
+    const assignment = await Assignment.findOne({ 
+      _id: req.params.id, 
+      userId: req.user.userId 
+    });
+
+    if (!assignment) { 
+      return res.status(404).json({ error: 'Assignment not found or unauthorized' });
+    }
+
+    // Delete the assignment
+    await Assignment.findByIdAndDelete(req.params.id);
+
+    // Also delete any associated reminders
+    await Reminder.deleteMany({ assignmentId: req.params.id });
+
+    res.json({ message: 'Assignment deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting assignment:', error);
+    res.status(500).json({ error: 'Error deleting assignment' });
+  } 
 });
 
 // Add reminder routes
@@ -1203,7 +1272,6 @@ app.post('/api/test/create-reminder', authenticateJWT, async (req, res) => {
       reminderDate: new Date(),
       isRead: false
     });
-    
     await testReminder.save();
     res.status(201).json(testReminder);
   } catch (error) {
@@ -1212,7 +1280,66 @@ app.post('/api/test/create-reminder', authenticateJWT, async (req, res) => {
   }
 });
 
-// Add admin routes
+// Add this after the assignments endpoints
+// Endpoint to check for approaching assignments and create reminders
+app.get('/api/check-upcoming-assignments', authenticateJWT, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const now = new Date();
+    const oneWeekFromNow = new Date(now);
+    oneWeekFromNow.setDate(now.getDate() + 7);
+
+    // Find assignments due within a week that aren't completed
+    const upcomingAssignments = await Assignment.find({
+      userId,
+      dueDate: { $gte: now, $lte: oneWeekFromNow },
+      completed: false
+    });
+
+    const newReminders = [];
+
+    // For each upcoming assignment, check if we need to create a reminder
+    for (const assignment of upcomingAssignments) {
+      // Check if we already have a recent reminder for this assignment
+      const existingReminder = await Reminder.findOne({ 
+        userId, 
+        assignmentId: assignment._id, 
+        reminderDate: { $gte: new Date(now - 24 * 60 * 60 * 1000) } // In the last 24 hours
+      });
+      
+      if (!existingReminder) {
+        const dueDate = new Date(assignment.dueDate);
+        const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+        const dayText = daysUntilDue === 1 ? 'tomorrow' : 
+                        daysUntilDue === 0 ? 'today' : 
+                        `in ${daysUntilDue} days`;
+        
+        const reminder = new Reminder({
+          userId,
+          assignmentId: assignment._id,
+          title: `Due Soon: ${assignment.title}`,
+          message: `Your assignment "${assignment.title}" is due ${dayText} (${dueDate.toLocaleDateString()})`,
+          dueDate: assignment.dueDate,
+          reminderDate: now,
+          isRead: false
+        });
+        
+        await reminder.save();
+        newReminders.push(reminder);
+      }
+    }
+
+    res.json({
+      checked: upcomingAssignments.length,
+      created: newReminders.length,
+      reminders: newReminders
+    });
+  } catch (error) {
+    console.error('Error checking upcoming assignments:', error);
+    res.status(500).json({ error: 'Error checking upcoming assignments' });
+  }
+});
+
 // Add admin routes
 app.get('/api/admin/users', authenticateJWT, checkAdminRole, async (req, res) => {
   try {
@@ -1250,28 +1377,36 @@ app.get('/api/admin/analytics', authenticateJWT, checkAdminRole, async (req, res
   try {
     const users = await User.find();
     const analytics = {
-      totalUsers: users.length,
-      activeToday: users.filter(u =>
+      userCount: users.length, // Change to userCount for frontend compatibility
+      activeToday: users.filter(u => 
         u.lastLogin && u.lastLogin > new Date(Date.now() - 24 * 60 * 60 * 1000)
       ).length,
       averageSessionDuration: users.reduce((acc, user) => {
-        const userAvg = user.sessionDurations.reduce((sum, session) =>
-          sum + session.duration, 0) / (user.sessionDurations.length || 1);
-        return acc + userAvg;
-      }, 0) / users.length,
-      userActivity: users.map(u => ({
-        id: u._id,
-        name: u.name,
-        email: u.email,
-        lastLogin: u.lastLogin,
-        totalSessions: u.sessionDurations.length,
-        averageSessionDuration: u.sessionDurations.reduce((acc, session) =>
-          acc + session.duration, 0) / (u.sessionDurations.length || 1)
+        const userAvg = user.sessionDurations?.reduce((sum, session) => 
+          sum + (session.duration || 0), 0) / (user.sessionDurations?.length || 1);
+        return acc + (userAvg || 0);
+      }, 0) / (users.length || 1) || 0, // Add fallback to 0
+      userData: users.map(u => ({ // Change to userData for frontend compatibility
+        _id: u._id,
+        name: u.name || 'Unknown User',
+        email: u.email || 'No Email',
+        role: u.role || 'user',
+        lastLogin: u.lastLogin || null,
+        totalSessions: u.sessionDurations?.length || 0,
+        averageSessionDuration: u.sessionDurations?.reduce((acc, session) =>
+          acc + (session.duration || 0), 0) / (u.sessionDurations?.length || 1) || 0
       }))
     };
 
+    console.log('Sending analytics data:', { 
+      userCount: analytics.userCount,
+      activeToday: analytics.activeToday,
+      userData: analytics.userData.length > 0 ? analytics.userData[0] : 'No users'
+    });
+
     res.json(analytics);
   } catch (error) {
+    console.error('Error fetching analytics:', error);
     res.status(500).json({ error: 'Error fetching analytics' });
   }
 });
@@ -1298,13 +1433,11 @@ app.put('/api/user/profile', authenticateJWT, async (req, res) => {
       email: req.body.email,
       username: req.body.username
     };
-
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       updates,
       { new: true }
     );
-
     res.json({
       name: user.name,
       email: user.email,
@@ -1319,7 +1452,6 @@ app.put('/api/user/change-password', authenticateJWT, async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const user = await User.findById(req.user.userId);
-
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) {
       return res.status(400).json({ error: 'Current password is incorrect' });
@@ -1328,7 +1460,6 @@ app.put('/api/user/change-password', authenticateJWT, async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
     await user.save();
-
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Error updating password' });
@@ -1496,10 +1627,10 @@ app.post('/api/parse-pdf',
       if (!userId) {
         return res.status(400).json({ error: 'User ID not found in token' });
       }
-      
+
       // Create a filename if one doesn't exist
       const fileName = req.file.filename || `${Date.now()}_${req.file.originalname.replace(/\s+/g, '_')}`;
-      
+
       // Sanitize the extracted data for database storage
       const sanitizedData = sanitizePdfData(result);
       
@@ -1573,17 +1704,17 @@ app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req
   try {
     const documentId = req.params.id;
     const userId = req.user.id || req.user.userId;
-    
+
     if (!mongoose.Types.ObjectId.isValid(documentId)) {
       return res.status(400).json({ error: 'Invalid document ID format' });
     }
-    
+
     // Find the stored PDF document
     const pdfDocument = await PDFDocument.findOne({
       _id: documentId,
       userId
     });
-    
+
     if (!pdfDocument) {
       return res.status(404).json({ error: 'PDF document not found' });
     }
@@ -1592,9 +1723,8 @@ app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req
     if (!pdfDocument.pdfData && !(pdfDocument.isGridFS && pdfDocument.gridFSId)) {
       return res.status(400).json({ error: 'PDF data not found in document' });
     }
-    
+
     let pdfBuffer;
-    
     // Get the PDF data from the document or GridFS
     if (pdfDocument.isGridFS && pdfDocument.gridFSId) {
       // GridFS retrieval logic would go here
@@ -1605,7 +1735,7 @@ app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req
     
     // Process the PDF data to extract text and structure
     const processedData = await processPDF(pdfBuffer);
-    
+
     // Get user preferences for schedule generation
     let userPreferences = {};
     try {
@@ -1616,15 +1746,15 @@ app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req
     } catch (prefsError) {
       console.error('Error fetching user preferences:', prefsError);
     }
-    
+
     // Generate a schedule from the processed data
     const assignments = extractAssignments(processedData.rawText || '');
     const dates = extractDates(processedData.rawText || '');
     const metadata = processedData.syllabus || {};
-    
+
     // Generate the schedule
     const schedule = generateSchedule(assignments, dates, userId, metadata, userPreferences);
-    
+
     // Save the generated schedule to the document
     pdfDocument.generatedSchedule = schedule;
     await pdfDocument.save();
@@ -1645,11 +1775,10 @@ app.post('/api/pdf-documents/:id/generate-schedule', authenticateJWT, async (req
   }
 });
 
-// Class schedule routes
+// Class schedule routes 
 app.post('/api/schedule/classes', authenticateJWT, async (req, res) => {
   try {
     console.log('Received class schedule data:', req.body);
-    
     const { courseName, courseCode, startTime, endTime, location, professor, day, semesterDates } = req.body;
     const userId = req.user.userId;
 
@@ -1683,7 +1812,7 @@ app.post('/api/schedule/classes', authenticateJWT, async (req, res) => {
     res.status(201).json({
       message: 'Class schedule added successfully',
       class: newClass,
-      allClasses: allClasses
+      allClasses: allClasses 
     });
   } catch (error) {
     console.error('Error adding class schedule:', error);
@@ -1698,10 +1827,9 @@ app.get('/api/schedule/classes', authenticateJWT, async (req, res) => {
   try {
     const userId = req.user.userId;
     console.log('Fetching classes for user:', userId);
-    
+
     const classes = await ClassSchedule.find({ userId });
     console.log('Found classes:', classes);
-    
     res.json(classes);
   } catch (error) {
     console.error('Error fetching classes:', error);
@@ -1726,20 +1854,18 @@ app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) =
         console.error('Error processing PDF file:', error);
       }
     }
-    
+
     // Extract assignments and dates from PDF content
     const assignments = pdfContent.flatMap(content => 
       extractAssignments(content.rawText || '')
     );
-    
     const dates = pdfContent.flatMap(content => 
       extractDates(content.rawText || '')
     );
-    
+
     // Generate schedule using the imported function
     const metadata = pdfContent[0]?.syllabus || {};
     const schedule = generateSchedule(assignments, dates, userId, metadata);
-    
     res.json({ success: true, schedule });
   } catch (error) {
     console.error('Error generating schedule:', error);
@@ -1760,12 +1886,12 @@ app.use('/api', scheduleRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  
+
   // Check if response has already been sent
   if (res.headersSent) {
     return next(err);
   }
-  
+
   // Send appropriate error response
   res.status(500).json({
     error: 'Internal server error',
@@ -1773,13 +1899,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Try to start the server with error handling for port conflicts
+// Debug route to check JWT secret
+app.get('/api/debug/config', (req, res) => {
+  console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
+  res.json({ 
+    jwtSecretExists: !!process.env.JWT_SECRET,
+    mongodbConnected: mongoose.connection.readyState === 1,
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Start the server with the configured port
 const startServer = (port) => {
   try {
     const server = app.listen(port, () => {
       console.log(`Server running on port ${port}`);
     });
-    
+
     server.on('error', (e) => {
       if (e.code === 'EADDRINUSE') {
         console.log(`Port ${port} is busy, trying port ${port + 1}...`);
@@ -1794,42 +1930,4 @@ const startServer = (port) => {
   }
 };
 
-// Start the server with the configured port
 startServer(PORT);
-
-// Debug route to check JWT secret
-app.get('/api/debug/config', (req, res) => {
-  console.log('JWT Secret exists:', !!process.env.JWT_SECRET);
-  res.json({ 
-    jwtSecretExists: !!process.env.JWT_SECRET,
-    mongodbConnected: mongoose.connection.readyState === 1,
-    environment: process.env.NODE_ENV || 'development'
-  });
-});
-
-// Improved Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
-  
-  // Check if headers already sent
-  if (res.headersSent) {
-    return next(err);
-  }
-  
-  // Custom error handling with helpful details
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal server error';
-  
-  // Include stack trace in development
-  const errorResponse = {
-    error: message,
-    statusCode,
-    path: req.path
-  };
-  
-  if (process.env.NODE_ENV !== 'production') {
-    errorResponse.stack = err.stack;
-  }
-  
-  res.status(statusCode).json(errorResponse);
-});

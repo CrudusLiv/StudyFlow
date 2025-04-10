@@ -6,13 +6,13 @@ import AppContent from './components/AppContent';
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
+    <BrowserRouter>
       <ThemeProvider>
-        <BrowserRouter>
+        <AuthProvider>
           <AppContent />
-        </BrowserRouter>
+        </AuthProvider>
       </ThemeProvider>
-    </AuthProvider>
+    </BrowserRouter>
   );
 };
 
