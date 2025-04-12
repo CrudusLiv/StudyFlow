@@ -22,6 +22,38 @@ interface ScheduleData {
   metadata: any;
 }
 
+/**
+ * Fetch the most recent saved schedule
+ */
+export async function fetchMostRecentSchedule() {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+    
+    const response = await axios.get('http://localhost:5000/api/schedules/recent', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching recent schedule:', error);
+    
+    // Try to load from localStorage as fallback
+    try {
+      const localSchedule = localStorage.getItem('recentSchedule');
+      if (localSchedule) {
+        return JSON.parse(localSchedule);
+      }
+    } catch (localError) {
+      console.error('Error loading local schedule:', localError);
+    }
+    
+    return null;
+  }
+}
+
 export const scheduleService = {
   /**
    * Fetch class schedules for the current user
@@ -222,18 +254,54 @@ export const scheduleService = {
         }
       });
 
+      // Add debug logging to see what's in the response
+      console.log(`Schedule data received for ID ${scheduleId}:`, {
+        hasData: !!response.data,
+        hasSchedule: !!response.data?.schedule,
+        itemCount: response.data?.schedule?.length || 0
+      });
+
       // Convert string dates back to Date objects in schedule items
       if (response.data.schedule && Array.isArray(response.data.schedule)) {
         response.data.schedule = response.data.schedule.map(item => ({
           ...item,
           start: item.start ? new Date(item.start) : undefined,
-          end: item.end ? new Date(item.end) : undefined
+          end: item.end ? new Date(item.end) : undefined,
+          // Make sure resource properties are preserved
+          resource: item.resource ? {
+            ...item.resource,
+            // Fix any dates in resource
+            dueDate: item.resource.dueDate ? new Date(item.resource.dueDate) : undefined,
+            // Make sure these critical properties are preserved
+            taskDetails: item.resource.taskDetails || {},
+            pdfDetails: item.resource.pdfDetails || {},
+            sourceFile: item.resource.sourceFile || ''
+          } : {}
         }));
+      }
+
+      // Save this fetched schedule to localStorage for redundancy
+      if (response.data && response.data.schedule) {
+        console.log('Saving fetched schedule to localStorage');
+        localStorage.setItem('lastFetchedSchedule', JSON.stringify(response.data));
       }
 
       return response.data;
     } catch (error) {
       console.error(`Error fetching schedule ${scheduleId}:`, error);
+      
+      // Try to retrieve from localStorage as backup
+      try {
+        const cachedSchedule = localStorage.getItem('lastFetchedSchedule');
+        if (cachedSchedule) {
+          const parsedSchedule = JSON.parse(cachedSchedule);
+          console.log('Retrieved schedule from localStorage backup');
+          return parsedSchedule;
+        }
+      } catch (cacheError) {
+        console.error('Error retrieving cached schedule:', cacheError);
+      }
+      
       return null;
     }
   },
@@ -392,5 +460,8 @@ export const scheduleService = {
       // Return local preferences as fallback
       return preferences;
     }
-  }
+  },
+  
+  // Add the standalone fetchMostRecentSchedule function to the object
+  fetchMostRecentSchedule
 };

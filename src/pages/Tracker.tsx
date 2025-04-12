@@ -15,6 +15,7 @@ import {
   staggeredGrid,
   gridItemVariants
 } from '../utils/animationConfig';
+import { fetchAssignmentsFromSchedule } from '../services/assignmentService';
 
 interface Assignment {
   _id: string;
@@ -99,17 +100,37 @@ const Tracker: React.FC = () => {
   // Fetch assignments from the API
   const fetchAssignments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/assignments', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data && response.data.length > 0) {
-        setAssignments(response.data);
+      setLoading(true);
+      
+      // First try to get assignments from schedule
+      const scheduleAssignments = await fetchAssignmentsFromSchedule();
+      
+      if (scheduleAssignments && scheduleAssignments.length > 0) {
+        console.log('Using assignments from schedule:', scheduleAssignments.length);
+        setAssignments(scheduleAssignments);
       } else {
-        // Use example data if API returns empty array
-        console.log('Using example data - No assignments from API');
-        setAssignments(exampleAssignments);
+        // If no assignments from schedule, try API
+        try {
+          const token = localStorage.getItem('token');
+          const response = await axios.get('http://localhost:5000/assignments', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          if (response.data && response.data.length > 0) {
+            setAssignments(response.data);
+          } else {
+            // Use example data if API returns empty array
+            console.log('Using example data - No assignments from API or schedule');
+            setAssignments(exampleAssignments);
+          }
+        } catch (apiError) {
+          console.error('Error fetching from API:', apiError);
+          // Use example data if API returns error
+          console.log('Using example data - API unavailable');
+          setAssignments(exampleAssignments);
+        }
       }
+      
       setError(null);
     } catch (error) {
       console.error('Error fetching assignments:', error);
@@ -135,14 +156,39 @@ const Tracker: React.FC = () => {
     }
   }, [assignments]);
 
-  const calculateProgress = useCallback((assignment: Assignment) => {
-    const now = new Date().getTime();
-    const dueDate = new Date(assignment.dueDate).getTime();
-    const startDate = assignment.startDate ? new Date(assignment.startDate).getTime() : now - (24 * 60 * 60 * 1000);
-    const totalDuration = dueDate - startDate;
-    const elapsed = now - startDate;
-    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+  // Add this new helper function to handle date conversion issues
+  const parseDateSafely = useCallback((dateString) => {
+    try {
+      return new Date(dateString).getTime();
+    } catch (error) {
+      return Date.now(); // Fallback to current date if parsing fails
+    }
   }, []);
+
+  // Update the calculateProgress function to handle potential errors
+  const calculateProgress = useCallback((assignment: Assignment) => {
+    try {
+      const now = new Date().getTime();
+      const dueDate = parseDateSafely(assignment.dueDate);
+      const startDate = assignment.startDate ? 
+        parseDateSafely(assignment.startDate) : 
+        now - (24 * 60 * 60 * 1000);
+      
+      const totalDuration = dueDate - startDate;
+      const elapsed = now - startDate;
+      
+      // If assignment has an explicit progress value, use it
+      if (typeof assignment.progress === 'number' && !isNaN(assignment.progress)) {
+        return assignment.progress;
+      }
+      
+      // Otherwise calculate based on time
+      return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
+    } catch (error) {
+      console.warn(`Error calculating progress for assignment "${assignment.title}":`, error);
+      return 0;
+    }
+  }, [parseDateSafely]);
 
   const updateProgressStats = useCallback(() => {
     const total = assignments.length;
