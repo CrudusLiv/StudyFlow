@@ -501,8 +501,6 @@ export async function processDocuments(filePaths, userId, options = {}) {
       dates: [],
       deadlines: [],
       topics: [],
-      tasks: [],        // Add this line to initialize tasks array
-      deliverables: [], // Add this line to initialize deliverables array
       metadata: {
         courseTitle: '',
         courseCode: '',
@@ -564,13 +562,11 @@ export async function processDocuments(filePaths, userId, options = {}) {
               ? parseInt(assignmentNumberMatch[1] || assignmentNumberMatch[2], 10) 
               : 1;
             
-            // Pass filename in metadata to help determine due date
-            const fileName = filePath.split('/').pop();
+            // Use the fixed due date function
             const fixedDueDate = createFallbackDueDate(
               `${courseCode} Assignment ${assignmentNumber}`, 
               options.classSchedule || [], 
-              options.preferences || {},
-              { fileName: fileName }  // Pass the filename as metadata
+              options.preferences || {}
             );
             
             // Use ISO date format string for the due date

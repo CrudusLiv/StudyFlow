@@ -25,27 +25,17 @@ const ClassModal: React.FC<ClassModalProps> = ({
   editClass,
   onSaved
 }) => {
-  const [formData, setFormData] = useState<any>({
+  const [formData, setFormData] = useState<Partial<CalendarEvent>>({
     title: event.title || '',
     courseCode: event.courseCode || '',
     location: event.location || '',
     start: event.start || new Date(),
     end: event.end || new Date(Date.now() + 60 * 60 * 1000),
-    description: event.description || '',
-    // Extract day of the week from the start date if available
-    day: event.resource?.day || (event.start ? new Date(event.start).toLocaleDateString('en-US', { weekday: 'long' }) : ''),
-    // Extract times for API format
-    startTime: event.start ? event.start.toTimeString().substring(0, 5) : '',
-    endTime: event.end ? event.end.toTimeString().substring(0, 5) : '',
-    // Adding courseName field for API compatibility
-    courseName: event.title || '',
-    professor: event.resource?.details?.professor || '',
-    // Initialize semester dates, we'll fill this from the API
-    semesterDates: {
-      startDate: null,
-      endDate: null
-    }
+    description: event.description || ''
   });
+
+  const [semesterStartDate, setSemesterStartDate] = useState<string>("");
+  const [semesterEndDate, setSemesterEndDate] = useState<string>("");
 
   useEffect(() => {
     if (isOpen) {
@@ -65,14 +55,8 @@ const ClassModal: React.FC<ClassModalProps> = ({
       
       if (response.data.semesterDates) {
         const { startDate, endDate } = response.data.semesterDates;
-        // Update the semesterDates in formData
-        setFormData(prevData => ({
-          ...prevData,
-          semesterDates: {
-            startDate: new Date(startDate),
-            endDate: new Date(endDate)
-          }
-        }));
+        setSemesterStartDate(startDate.split('T')[0]);
+        setSemesterEndDate(endDate.split('T')[0]);
       }
     } catch (error) {
       console.error('Error loading semester dates:', error);
@@ -92,76 +76,17 @@ const ClassModal: React.FC<ClassModalProps> = ({
       ...formData,
       [name]: value
     });
-    
-    // If start or end time changes, update the corresponding time string
-    if (name === 'start' || name === 'end') {
-      const timeKey = name === 'start' ? 'startTime' : 'endTime';
-      setFormData(prevData => ({
-        ...prevData,
-        [timeKey]: value.toTimeString().substring(0, 5)
-      }));
-      
-      // If start date changes, update the day of week
-      if (name === 'start') {
-        setFormData(prevData => ({
-          ...prevData,
-          day: value.toLocaleDateString('en-US', { weekday: 'long' })
-        }));
-      }
-    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    try {
-      // Prepare data for API
-      const classData = {
-        courseName: formData.title,
-        courseCode: formData.courseCode,
-        location: formData.location,
-        professor: formData.professor || '',
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        day: formData.day,
-        semesterDates: formData.semesterDates,
-        description: formData.description
-      };
-      
-      // Send directly to API
-      const token = localStorage.getItem('token');
-      const response = await axios.post('http://localhost:5000/api/schedule/classes', classData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    if (onSave) {
+      onSave({
+        ...event,
+        ...formData
       });
-      
-      console.log('Class created successfully:', response.data);
-      
-      // Notify parent components
-      if (onSave) {
-        onSave({
-          ...event,
-          ...formData
-        });
-      }
-      
-      // Call onSaved callback if provided
-      if (onSaved) {
-        onSaved();
-      }
-      
-      // Trigger custom event to notify schedule to refresh
-      window.dispatchEvent(new CustomEvent('classAdded', {
-        detail: { classData }
-      }));
-      
-      onClose();
-    } catch (error) {
-      console.error('Error saving class:', error);
-      alert('Failed to save class. Please try again.');
     }
+    onClose();
   };
 
   const formatTime = (date: Date) => {
@@ -248,62 +173,31 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   />
                 </div>
               </div>
-              
-              <div className="class-form-group">
-                <label className="class-form-label">Day of Week</label>
-                <select
-                  name="day"
-                  value={formData.day}
-                  onChange={handleChange}
-                  className="class-form-input"
-                  required
-                >
-                  <option value="">Select day</option>
-                  <option value="Monday">Monday</option>
-                  <option value="Tuesday">Tuesday</option>
-                  <option value="Wednesday">Wednesday</option>
-                  <option value="Thursday">Thursday</option>
-                  <option value="Friday">Friday</option>
-                  <option value="Saturday">Saturday</option>
-                  <option value="Sunday">Sunday</option>
-                </select>
-              </div>
-
-              <div className="class-form-grid">
-                <div className="class-form-group">
-                  <label className="class-form-label">Start Time</label>
-                  <input
-                    type="time"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleChange}
-                    className="class-form-input"
-                    required
-                  />
-                </div>
-                <div className="class-form-group">
-                  <label className="class-form-label">End Time</label>
-                  <input
-                    type="time"
-                    name="endTime"
-                    value={formData.endTime}
-                    onChange={handleChange}
-                    className="class-form-input"
-                    required
-                  />
-                </div>
-              </div>
 
               <div className="class-form-group">
-                <label className="class-form-label">Professor (Optional)</label>
-                <input
-                  type="text"
-                  name="professor"
-                  value={formData.professor}
-                  onChange={handleChange}
-                  className="class-form-input"
-                  placeholder="Professor name"
-                />
+                <label className="class-form-label">Date & Time</label>
+                <div className="class-form-grid">
+                  <div className="class-form-group">
+                    <input
+                      type="datetime-local"
+                      name="start"
+                      value={formData.start instanceof Date ? formData.start.toISOString().slice(0, 16) : ''}
+                      onChange={(e) => handleDateTimeChange('start', new Date(e.target.value))}
+                      className="class-form-input"
+                      required
+                    />
+                  </div>
+                  <div className="class-form-group">
+                    <input
+                      type="datetime-local"
+                      name="end"
+                      value={formData.end instanceof Date ? formData.end.toISOString().slice(0, 16) : ''}
+                      onChange={(e) => handleDateTimeChange('end', new Date(e.target.value))}
+                      className="class-form-input"
+                      required
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="class-form-group">
@@ -320,15 +214,13 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
               <div className="class-form-group">
                 <h3>Semester Dates</h3>
-                <p className="info-text">
-                  This class will use the system-wide semester dates.
-                </p>
+                <p>This class will use the system-wide semester dates.</p>
                 <div className="semester-date-display">
                   <div>
-                    <strong>Start:</strong> {formData.semesterDates.startDate ? formData.semesterDates.startDate.toLocaleDateString() : 'Not set'}
+                    <strong>Start:</strong> {semesterStartDate || 'Not set'}
                   </div>
                   <div>
-                    <strong>End:</strong> {formData.semesterDates.endDate ? formData.semesterDates.endDate.toLocaleDateString() : 'Not set'}
+                    <strong>End:</strong> {semesterEndDate || 'Not set'}
                   </div>
                 </div>
                 <p className="info-text">

@@ -154,6 +154,24 @@ const Access: React.FC = () => {
                 </motion.div>
                 Sign in with Google
               </motion.button>
+
+              <motion.button
+                onClick={handleMicrosoftAuth}
+                className="auth-button microsoft-button"
+                variants={buttonLoadingVariants}
+                animate={loading ? "loading" : "idle"}
+                whileHover={{ scale: 1.02, y: -3 }}
+                whileTap={{ scale: 0.98 }}
+                disabled={loading}
+              >
+                <motion.div
+                  animate={{ rotate: loading ? 360 : 0 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                >
+                  <BsMicrosoft className="auth-icon" />
+                </motion.div>
+                {loading ? 'Signing in...' : 'Sign in with Microsoft'}
+              </motion.button>
             </motion.div>
           </div>
 

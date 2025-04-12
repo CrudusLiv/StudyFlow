@@ -654,144 +654,81 @@ const Schedule: React.FC = () => {
     }
   };
 
-  // Replace the generateRecurringEvents function to handle date issues properly
-const generateRecurringEvents = (classItems) => {
-  if (!Array.isArray(classItems)) {
-    console.warn('generateRecurringEvents: Input is not an array:', classItems);
-    return [];
-  }
-  
-  console.log('Generating recurring events for classes:', classItems);
-  const events = [];
-  let eventCounter = 0; // Add a counter to ensure uniqueness
-  
-  classItems.forEach(classData => {
-    if (!classData) {
-      console.warn('Null class data found');
-      return;
+  // Replace the generateRecurringEvents function to handle single class or array
+  const generateRecurringEvents = (classItems) => {
+    if (!Array.isArray(classItems)) {
+      console.warn('generateRecurringEvents: Input is not an array:', classItems);
+      return [];
     }
     
-    // Check if semesterDates exists
-    if (!classData.semesterDates || !classData.semesterDates.startDate || !classData.semesterDates.endDate) {
-      console.warn('Missing semesterDates in class:', classData);
-      return;
-    }
+    const events = [];
+    let eventCounter = 0; // Add a counter to ensure uniqueness
     
-    // Debug log for semester dates
-    console.log(`Class ${classData.courseName} semester dates:`, {
-      startDate: new Date(classData.semesterDates.startDate),
-      endDate: new Date(classData.semesterDates.endDate)
-    });
-    
-    // Ensure we're working with Date objects
-    const startDate = new Date(classData.semesterDates.startDate);
-    const endDate = new Date(classData.semesterDates.endDate);
-    
-    // Ensure dates are valid
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      console.warn('Invalid semester dates for class:', classData);
-      return;
-    }
-
-    // If start and end dates are the same, adjust the end date to be at least a week later
-    // This fixes the issue where equal start/end dates generate no events
-    let adjustedEndDate = endDate;
-    if (startDate.getTime() === endDate.getTime()) {
-      console.log('Start and end dates are the same - adjusting end date to be 3 months later');
-      adjustedEndDate = new Date(startDate);
-      adjustedEndDate.setMonth(startDate.getMonth() + 3); // Add 3 months
-    }
-    
-    // Clone the start date to avoid modifying the original
-    let currentDate = new Date(startDate);
-    
-    // Set correct hours from the current date to prevent timezone issues
-    currentDate.setHours(new Date().getHours(), new Date().getMinutes(), 0, 0);
-    
-    console.log(`Generating events from ${currentDate.toISOString()} to ${adjustedEndDate.toISOString()}`);
-    
-    // Generate events for each day between start and end date
-    while (currentDate <= adjustedEndDate) {
-      // Check if current date's day matches the class day
-      const currentDayName = currentDate.toLocaleString('en-us', { weekday: 'long' });
-      
-      if (currentDayName === classData.day) {
-        console.log(`Found matching day ${currentDayName} for ${classData.courseName}`);
-        
-        // Skip if missing critical time values
-        if (!classData.startTime || !classData.endTime) {
-          console.warn('Missing time values in class item:', classData);
-          currentDate.setDate(currentDate.getDate() + 1); // Move to next day
-          continue;
-        }
-        
-        try {
-          // Parse start and end times
-          const [startHours, startMinutes] = classData.startTime.split(':').map(num => parseInt(num, 10));
-          const [endHours, endMinutes] = classData.endTime.split(':').map(num => parseInt(num, 10));
-          
-          if (isNaN(startHours) || isNaN(startMinutes) || isNaN(endHours) || isNaN(endMinutes)) {
-            console.warn('Invalid time format in class item:', classData);
-            currentDate.setDate(currentDate.getDate() + 1); // Move to next day
-            continue;
-          }
-          
-          // Create event start and end dates
-          const eventStart = new Date(currentDate);
-          eventStart.setHours(startHours, startMinutes, 0);
-          
-          const eventEnd = new Date(currentDate);
-          eventEnd.setHours(endHours, endMinutes, 0);
-          
-          // Create a unique ID using multiple parameters for uniqueness
-          const uniqueId = `class-${classData._id || Math.random().toString(36).substring(2)}-${
-            currentDate.toISOString().split('T')[0]
-          }-${startHours}${startMinutes}-${endHours}${endMinutes}-${eventCounter++}`;
-          
-          // Debug log for event creation
-          console.log(`Creating calendar event for ${classData.courseName} on ${eventStart.toDateString()} at ${eventStart.toLocaleTimeString()}`);
-          
-          // Create the calendar event object with all necessary properties
-          const calendarEvent = {
-            id: uniqueId,
-            title: `${classData.courseName} (${classData.courseCode || 'No Code'})`,
-            start: eventStart,
-            end: eventEnd,
-            allDay: false,
-            category: 'class',
-            courseCode: classData.courseCode,
-            location: classData.location,
-            professor: classData.professor,
-            resource: {
-              type: 'class',
-              _id: classData._id,
-              courseCode: classData.courseCode,
-              location: classData.location,
-              recurring: true,
-              day: classData.day,
-              startTime: classData.startTime,
-              endTime: classData.endTime,
-              details: {
-                courseName: classData.courseName,
-                professor: classData.professor
-              }
-            }
-          };
-          
-          events.push(calendarEvent);
-        } catch (err) {
-          console.error('Error creating event for class:', err, classData);
-        }
+    classItems.forEach(classData => {
+      if (!classData || !classData.semesterDates) {
+        console.warn('Invalid class data:', classData);
+        return;
       }
       
-      // Move to next day
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-  });
-  
-  console.log(`Generated ${events.length} class events with category='class'`);
-  return events;
-};
+      const startDate = new Date(classData.semesterDates.startDate);
+      const endDate = new Date(classData.semesterDates.endDate);
+      let currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        if (currentDate.toLocaleString('en-us', { weekday: 'long' }) === classData.day) {
+          // Skip if missing critical time values
+          if (!classData.startTime || !classData.endTime) {
+            console.warn('Missing time values in class item:', classData);
+            break;
+          }
+          
+          try {
+            const [startHours, startMinutes] = classData.startTime.split(':');
+            const [endHours, endMinutes] = classData.endTime.split(':');
+            
+            const eventStart = new Date(currentDate);
+            eventStart.setHours(parseInt(startHours), parseInt(startMinutes), 0);
+            
+            const eventEnd = new Date(currentDate);
+            eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
+            
+            // Create a unique ID using more parameters and a counter
+            const uniqueId = `class-${classData._id || Math.random().toString(36).substring(2)}-${
+              currentDate.toISOString().split('T')[0]
+            }-${startHours}${startMinutes}-${endHours}${endMinutes}-${eventCounter++}`;
+            
+            events.push({
+              id: uniqueId,
+              title: `${classData.courseName} (${classData.courseCode || 'No Code'})`,
+              start: eventStart,
+              end: eventEnd,
+              allDay: false,
+              category: 'class',
+              courseCode: classData.courseCode,
+              location: classData.location,
+              resource: {
+                type: 'class',
+                courseCode: classData.courseCode,
+                location: classData.location,
+                recurring: true,
+                day: classData.day,
+                details: {
+                  courseName: classData.courseName,
+                  professor: classData.professor
+                }
+              }
+            });
+          } catch (err) {
+            console.error('Error creating event for class:', err, classData);
+          }
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+    
+    console.log(`Generated ${events.length} class events with category='class'`);
+    return events;
+  };
 
   // Handler for calendar navigation
   const handleNavigate = (newDate: Date, view: View, action: NavigateAction) => {
@@ -1027,6 +964,45 @@ const generateRecurringEvents = (classItems) => {
               onChange={(e) => setNewClass({ ...newClass, location: e.target.value })}
               className="form-input"
             />
+          </div>
+        </div>
+
+        {/* Add semester dates */}
+        <div className="form-group">
+          <h3>Semester Dates</h3>
+          <div className="date-inputs">
+            <div className="input-group">
+              <label>Start Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(newClass.semesterDates.startDate)}
+                onChange={(e) => handleDateChange('startDate', e.target.value)}
+                className="form-input"
+              />
+              <span className="date-format">Current format: {
+                newClass.semesterDates.startDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })
+              }</span>
+            </div>
+            <div className="input-group">
+              <label>End Date</label>
+              <input
+                type="date"
+                value={formatDateForInput(newClass.semesterDates.endDate)}
+                onChange={(e) => handleDateChange('endDate', e.target.value)}
+                className="form-input"
+              />
+              <span className="date-format">Current format: {
+                newClass.semesterDates.endDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric'
+                })
+              }</span>
+            </div>
           </div>
         </div>
 
@@ -2484,25 +2460,11 @@ const savePreferences = async () => {
               transition={{ type: "spring", stiffness: 400, damping: 30 }}
             >
               <TaskModal 
-                event={selectedEvent}  // Changed from task to event
-                isOpen={showTaskModal} // Added missing isOpen prop
+                task={selectedEvent} 
                 onClose={() => {
                   console.log('Closing task modal');
                   setShowTaskModal(false);
                   setSelectedEvent(null);
-                }}
-                onUpdate={(updatedTask) => {
-                  // Handle updating the task in events list
-                  setEvents(prevEvents => 
-                    prevEvents.map(e => e.id === updatedTask.id ? updatedTask : e)
-                  );
-                  
-                  // Close modal after update
-                  setShowTaskModal(false);
-                  setSelectedEvent(null);
-                  
-                  // Show success message
-                  toast.success("Task updated successfully");
                 }}
               />
             </motion.div>
