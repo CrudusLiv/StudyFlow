@@ -287,29 +287,6 @@ export const scheduleService = {
   },
 
   /**
-   * Fetch the most recent schedule
-   * @returns Promise with the most recent schedule
-   */
-  async fetchMostRecentSchedule(): Promise<ScheduleData | null> {
-    try {
-      const schedules = await this.fetchSavedSchedules();
-      
-      if (!schedules || schedules.length === 0) {
-        return null;
-      }
-      
-      // Get first schedule (should be the most recent)
-      const mostRecentId = schedules[0].id;
-      console.log('Fetching most recent schedule with ID:', mostRecentId);
-      
-      return await this.fetchScheduleById(mostRecentId);
-    } catch (error) {
-      console.error('Error fetching most recent schedule:', error);
-      return null;
-    }
-  },
-
-  /**
    * Get user preferences
    */
   async getUserPreferences() {
@@ -778,115 +755,7 @@ export const scheduleService = {
     return updatedEvents;
   },
   
-  /**
-   * Convert calendar events to assignments for Tracker
-   * @param events Array of calendar events
-   * @returns Array of assignments
-   */
-  eventsToAssignments(events: CalendarEvent[]): Assignment[] {
-    if (!Array.isArray(events)) {
-      return [];
-    }
-    
-    // Filter out class events and convert study events to assignments
-    const assignments = events
-      .filter(event => event.category !== 'class')
-      .map(event => {
-        // Calculate progress based on completed status or time elapsed
-        let progress = 0;
-        if (event.completed) {
-          progress = 100;
-        } else {
-          const now = new Date();
-          const start = new Date(event.start);
-          const end = new Date(event.end);
-          
-          // If start date is in the future, progress is 0
-          if (start > now) {
-            progress = 0;
-          } 
-          // If due date has passed, progress is 100 (auto-complete)
-          else if (end < now) {
-            progress = 100;
-          } 
-          // Otherwise, calculate progress based on time elapsed
-          else {
-            const totalDuration = end.getTime() - start.getTime();
-            const elapsedDuration = now.getTime() - start.getTime();
-            progress = Math.min(Math.round((elapsedDuration / totalDuration) * 100), 100);
-          }
-        }
-        
-        return {
-          _id: event.id,
-          title: event.title,
-          description: event.description || '',
-          startDate: event.start.toISOString(),
-          dueDate: event.end.toISOString(),
-          progress: progress,
-          completed: event.completed || progress === 100,
-          courseCode: event.courseCode || event.resource?.courseCode || ''
-        };
-      });
-    
-    return assignments;
-  },
   
-  /**
-   * Calculate progress statistics for assignments
-   * @param events Array of calendar events
-   * @returns Progress statistics
-   */
-  calculateProgressStats(events: CalendarEvent[]): ProgressStats {
-    // Convert events to assignments
-    const assignments = this.eventsToAssignments(events);
-    
-    // Calculate stats
-    const totalAssignments = assignments.length;
-    const completedAssignments = assignments.filter(a => a.completed).length;
-    
-    // Calculate overall progress as average of all assignment progress values
-    let overallProgress = 0;
-    if (totalAssignments > 0) {
-      const totalProgress = assignments.reduce((sum, assignment) => sum + assignment.progress, 0);
-      overallProgress = Math.round(totalProgress / totalAssignments);
-    }
-    
-    // Calculate time remaining for incomplete assignments (in days)
-    const now = new Date();
-    let totalRemainingTime = 0;
-    
-    assignments
-      .filter(a => !a.completed)
-      .forEach(a => {
-        const dueDate = new Date(a.dueDate);
-        if (dueDate > now) {
-          const timeDiff = dueDate.getTime() - now.getTime();
-          const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-          totalRemainingTime += daysDiff;
-        }
-      });
-    
-    // Count upcoming deadlines (due in next 7 days)
-    const upcomingDeadlines = assignments.filter(a => {
-      if (a.completed) return false;
-      
-      const dueDate = new Date(a.dueDate);
-      if (dueDate < now) return false;
-      
-      const timeDiff = dueDate.getTime() - now.getTime();
-      const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-      return daysDiff <= 7;
-    }).length;
-    
-    return {
-      totalAssignments,
-      completedAssignments,
-      overallProgress,
-      timeRemaining: totalRemainingTime,
-      upcomingDeadlines
-    };
-  },
   
   /**
    * Update the completed status of an event

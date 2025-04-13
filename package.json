@@ -39,7 +39,6 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "express-session": "^1.18.1",
-    "firebase": "^11.3.1",
     "framer-motion": "^12.6.2",
     "gapi-script": "^1.2.0",
     "googleapis": "^144.0.0",
