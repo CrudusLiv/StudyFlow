@@ -711,6 +711,57 @@ app.post('/auth/microsoft', async (req, res) => {
   }
 });
 
+// ...existing code...
+
+app.post('/auth/microsoft', async (req, res) => {
+  try {
+    console.log('Received Microsoft auth request:', req.body.email);
+    const { email, name } = req.body;
+
+    let user = await User.findOne({ email });
+    if (!user) {
+      const uniqueKey = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      user = new User({
+        email,
+        name,
+        uniqueKey, // Ensure uniqueKey is set
+        role: 'user'
+      });
+      await user.save();
+      console.log('Created new user with uniqueKey:', uniqueKey);
+    } else if (!user.uniqueKey) {
+      // If user exists but doesn't have a uniqueKey, add one
+      user.uniqueKey = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      await user.save();
+      console.log('Added uniqueKey to existing user:', user.uniqueKey);
+    }
+
+    // Generate token with the uniqueKey included
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        userKey: user.uniqueKey, // Make sure userKey is included
+        email: user.email,
+        role: user.role
+      },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    console.log('Sending auth response for:', user.email);
+    res.json({
+      token,
+      userKey: user.uniqueKey, // Send uniqueKey in response
+      role: user.role
+    });
+  } catch (error) {
+    console.error('Microsoft auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
+  }
+});
+
+// ...existing code...
+
 // Endpoint to fetch the MISTRAL_API_KEY
 app.get('/api/get-api-key', authenticateJWT, (req, res) => {
   const apiKey = process.env.MISTRAL_API_KEY;

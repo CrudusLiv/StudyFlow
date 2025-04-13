@@ -85,6 +85,17 @@ const SemesterDatesModal: React.FC<SemesterDatesModalProps> = ({ isOpen, onClose
         }
       );
       
+      // Store in localStorage for immediate access across components
+      localStorage.setItem('universalSemesterDates', JSON.stringify({
+        startDate,
+        endDate
+      }));
+      
+      // Dispatch global event for all components to update
+      window.dispatchEvent(new CustomEvent('semesterDatesUpdated', {
+        detail: { startDate, endDate }
+      }));
+      
       if (onSaved) {
         onSaved();
       }
@@ -157,6 +168,8 @@ const SemesterDatesModal: React.FC<SemesterDatesModalProps> = ({ isOpen, onClose
           
           <p className="info-text">
             These dates will be used to estimate due dates for assignments when they're not explicitly provided.
+            <br/>
+            This will also automatically set date ranges for all classes.
           </p>
         </div>
         

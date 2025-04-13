@@ -15,6 +15,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: false
   },
+  uniqueKey: {
+    type: String,
+    default: () => Math.random().toString(36).substring(2) + Date.now().toString(36)
+  },
   role: {
     type: String,
     enum: ['user', 'admin'],

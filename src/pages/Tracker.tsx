@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCheckCircle, FaClock, FaChartLine, FaTasks, FaCalendarAlt, FaExclamationTriangle, FaArrowUp, FaArrowDown } from 'react-icons/fa';
 import {
@@ -15,70 +14,18 @@ import {
   staggeredGrid,
   gridItemVariants
 } from '../utils/animationConfig';
+import { scheduleService, Assignment, ProgressStats } from '../services/scheduleService';
+import { CalendarEvent } from '../types/types';
 
-interface Assignment {
-  _id: string;
-  title: string;
-  description?: string;
-  startDate: string;
-  dueDate: string;
-  progress: number;
-  completed: boolean;
-}
-
-interface ProgressStats {
-  totalAssignments: number;
-  completedAssignments: number;
-  overallProgress: number;
-  timeRemaining: number;
-  upcomingDeadlines: number;
-}
-
-// Add example data
-const exampleAssignments: Assignment[] = [
+// Sample fallback data for when no tasks are available
+const fallbackAssignments: Assignment[] = [
   {
     _id: '1',
-    title: 'Database Design Project',
-    description: 'ERD and Schema Design',
+    title: 'Example Assignment',
+    description: 'This is an example. Add real assignments in the Schedule page.',
     startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    progress: 75,
-    completed: false
-  },
-  {
-    _id: '2',
-    title: 'Operating Systems Report',
-    description: 'Process Scheduling Analysis',
-    startDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-    dueDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    progress: 90,
-    completed: false
-  },
-  {
-    _id: '3',
-    title: 'Web Development Project',
-    description: 'React Frontend Implementation',
-    startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    progress: 45,
-    completed: false
-  },
-  {
-    _id: '4',
-    title: 'Algorithm Assignment',
-    description: 'Dynamic Programming Solutions',
-    startDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    progress: 100,
-    completed: true
-  },
-  {
-    _id: '5',
-    title: 'Software Testing',
-    description: 'Unit Test Implementation',
-    startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    dueDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-    progress: 30,
+    progress: 0,
     completed: false
   }
 ];
@@ -95,112 +42,93 @@ const Tracker: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed'>('all');
+  const [events, setEvents] = useState<CalendarEvent[]>([]);
 
-  // Fetch assignments from the API
-  const fetchAssignments = async () => {
+  // Get events from localStorage where Schedule component saves them
+  const getEventsFromStorage = useCallback(() => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/assignments', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (response.data && response.data.length > 0) {
-        setAssignments(response.data);
-      } else {
-        // Use example data if API returns empty array
-        console.log('Using example data - No assignments from API');
-        setAssignments(exampleAssignments);
+      const cachedEvents = localStorage.getItem('scheduleEvents');
+      if (cachedEvents) {
+        const parsedEvents = JSON.parse(cachedEvents);
+        // Convert string dates back to Date objects
+        const eventsWithDates = parsedEvents.map((event: any) => ({
+          ...event,
+          start: new Date(event.start),
+          end: new Date(event.end)
+        }));
+        return eventsWithDates;
       }
-      setError(null);
+      return [];
     } catch (error) {
-      console.error('Error fetching assignments:', error);
-      // Use example data on error
-      setAssignments(exampleAssignments);
-      setError('Using example data - API unavailable');
+      console.error('Error loading cached schedule data:', error);
+      return [];
+    }
+  }, []);
+
+  // Load events from Schedule and convert to assignments
+  const loadScheduleData = useCallback(async () => {
+    try {
+      setLoading(true);
+      // Get events from localStorage first (faster)
+      const storedEvents = getEventsFromStorage();
+      
+      if (storedEvents.length > 0) {
+        setEvents(storedEvents);
+        const assignments = scheduleService.eventsToAssignments(storedEvents);
+        setAssignments(assignments);
+        setStats(scheduleService.calculateProgressStats(storedEvents));
+        setError(null);
+      } else {
+        // If no cached events, try to fetch from server
+        try {
+          const recentSchedule = await scheduleService.fetchMostRecentSchedule();
+          
+          if (recentSchedule && recentSchedule.schedule && recentSchedule.schedule.length > 0) {
+            setEvents(recentSchedule.schedule);
+            const assignments = scheduleService.eventsToAssignments(recentSchedule.schedule);
+            setAssignments(assignments);
+            setStats(scheduleService.calculateProgressStats(recentSchedule.schedule));
+            setError(null);
+          } else {
+            // No real assignments found, show empty state
+            setAssignments(fallbackAssignments);
+            setError('No schedule data found. Create a schedule in the Schedule page to track your progress.');
+          }
+        } catch (fetchError) {
+          console.error('Error fetching schedule:', fetchError);
+          setAssignments(fallbackAssignments);
+          setError('Failed to load schedule data. Please check your connection.');
+        }
+      }
+    } catch (error) {
+      console.error('Error loading schedule data:', error);
+      setAssignments(fallbackAssignments);
+      setError('An error occurred while loading your progress data.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [getEventsFromStorage]);
 
+  // Initial data load
   useEffect(() => {
-    fetchAssignments();
-    // Set up periodic refresh
-    const interval = setInterval(fetchAssignments, 300000); // Refresh every 5 minutes
-    return () => clearInterval(interval);
-  }, []);
-
-  // Calculate progress and update stats whenever assignments change
-  useEffect(() => {
-    if (assignments.length > 0) {
-      updateProgressStats();
-    }
-  }, [assignments]);
-
-  const calculateProgress = useCallback((assignment: Assignment) => {
-    const now = new Date().getTime();
-    const dueDate = new Date(assignment.dueDate).getTime();
-    const startDate = assignment.startDate ? new Date(assignment.startDate).getTime() : now - (24 * 60 * 60 * 1000);
-    const totalDuration = dueDate - startDate;
-    const elapsed = now - startDate;
-    return Math.min(Math.max((elapsed / totalDuration) * 100, 0), 100);
-  }, []);
-
-  const updateProgressStats = useCallback(() => {
-    const total = assignments.length;
-    const completed = assignments.filter(a => a.completed).length;
-    const progress = assignments.reduce((acc, curr) => acc + (curr.progress || 0), 0) / total;
+    loadScheduleData();
     
-    const now = new Date().getTime();
-    const remainingAssignments = assignments.filter(a => !a.completed);
-    const avgTimeRemaining = remainingAssignments.reduce((acc, curr) => {
-      const dueDate = new Date(curr.dueDate).getTime();
-      return acc + (dueDate - now);
-    }, 0) / (remainingAssignments.length || 1);
-
-    // Count assignments due in the next 3 days
-    const upcomingDeadlines = assignments.filter(a => {
-      const dueDate = new Date(a.dueDate).getTime();
-      return !a.completed && (dueDate - now) <= (3 * 24 * 60 * 60 * 1000);
-    }).length;
-
-    setStats({
-      totalAssignments: total,
-      completedAssignments: completed,
-      overallProgress: progress,
-      timeRemaining: avgTimeRemaining / (1000 * 60 * 60 * 24),
-      upcomingDeadlines
-    });
-  }, [assignments]);
-
-  const formatYAxis = (value: number) => `${value}`;
-  const formatTooltip = (value: number) => [`${value}%`, 'Progress'];
-
-  const getResponsiveMargin = () => {
-    const width = window.innerWidth;
-    if (width <= 480) {
-      return { top: 5, right: 5, left: 20, bottom: 50 };
-    } else if (width <= 768) {
-      return { top: 10, right: 10, left: 30, bottom: 60 };
-    } else if (width <= 1024) {
-      return { top: 15, right: 20, left: 40, bottom: 70 };
-    }
-    return { top: 20, right: 30, left: 50, bottom: 80 };
-  };
-
-  const getChartDimensions = () => {
-    const width = window.innerWidth;
-    if (width <= 480) {
-      return { height: 250, fontSize: 10, barSize: 30 };
-    } else if (width <= 768) {
-      return { height: 300, fontSize: 12, barSize: 40 };
-    }
-    return { height: 400, fontSize: 14, barSize: 60 };
-  };
-
-  // Prepare data for pie chart
-  const pieData = [
-    { name: 'Completed', value: stats.completedAssignments, fill: '#10b981' },
-    { name: 'In Progress', value: stats.totalAssignments - stats.completedAssignments, fill: '#6366f1' }
-  ];
+    // Set up event listener for schedule changes
+    const handleScheduleUpdate = () => {
+      console.log('Schedule update detected, refreshing tracker...');
+      loadScheduleData();
+    };
+    
+    window.addEventListener('scheduleUpdated', handleScheduleUpdate);
+    
+    // Set up periodic refresh
+    const interval = setInterval(loadScheduleData, 300000); // Refresh every 5 minutes
+    
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
+    };
+  }, [loadScheduleData]);
 
   // Get assignments based on active tab
   const getFilteredAssignments = () => {
@@ -240,6 +168,37 @@ const Tracker: React.FC = () => {
     return due < now;
   };
 
+  const formatYAxis = (value: number) => `${value}`;
+  const formatTooltip = (value: number) => [`${value}%`, 'Progress'];
+
+  const getResponsiveMargin = () => {
+    const width = window.innerWidth;
+    if (width <= 480) {
+      return { top: 5, right: 5, left: 20, bottom: 50 };
+    } else if (width <= 768) {
+      return { top: 10, right: 10, left: 30, bottom: 60 };
+    } else if (width <= 1024) {
+      return { top: 15, right: 20, left: 40, bottom: 70 };
+    }
+    return { top: 20, right: 30, left: 50, bottom: 80 };
+  };
+
+  const getChartDimensions = () => {
+    const width = window.innerWidth;
+    if (width <= 480) {
+      return { height: 250, fontSize: 10, barSize: 30 };
+    } else if (width <= 768) {
+      return { height: 300, fontSize: 12, barSize: 40 };
+    }
+    return { height: 400, fontSize: 14, barSize: 60 };
+  };
+
+  // Prepare data for pie chart
+  const pieData = [
+    { name: 'Completed', value: stats.completedAssignments, fill: '#10b981' },
+    { name: 'In Progress', value: stats.totalAssignments - stats.completedAssignments, fill: '#6366f1' }
+  ];
+
   // Show loading state
   if (loading) {
     return (
@@ -260,8 +219,8 @@ const Tracker: React.FC = () => {
     );
   }
 
-  // Show error state
-  if (error) {
+  // Show error state with clear message
+  if (error && assignments.length === 0) {
     return (
       <motion.div 
         className="tracker-container"
@@ -274,7 +233,27 @@ const Tracker: React.FC = () => {
           className="tracker-wrapper"
           variants={containerVariants}
         >
-          <div className="error">{error}</div>
+          <div className="error">
+            <FaExclamationTriangle style={{ fontSize: '2rem', marginBottom: '1rem' }} />
+            <p>{error}</p>
+            <motion.a 
+              href="/schedule" 
+              className="action-btn"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              style={{ 
+                display: 'inline-block',
+                marginTop: '1rem',
+                padding: '0.75rem 1.5rem',
+                background: 'var(--primary)',
+                color: 'white',
+                borderRadius: '0.5rem',
+                textDecoration: 'none'
+              }}
+            >
+              Go to Schedule
+            </motion.a>
+          </div>
         </motion.div>
       </motion.div>
     );
@@ -298,6 +277,12 @@ const Tracker: React.FC = () => {
         >
           <h2 className="tracker-title">Progress Tracker</h2>
           <p className="tracker-subtitle">Track your assignment progress and completion status</p>
+          
+          {error && (
+            <div className="info-message">
+              <FaExclamationTriangle /> {error}
+            </div>
+          )}
         </motion.div>
         
         <motion.div 
@@ -359,7 +344,7 @@ const Tracker: React.FC = () => {
           <div className="chart-wrapper" style={{ height: getChartDimensions().height }}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={assignments.length > 0 ? assignments : exampleAssignments}
+                data={getFilteredAssignments()}
                 margin={getResponsiveMargin()}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
@@ -424,7 +409,7 @@ const Tracker: React.FC = () => {
                   animationDuration={1500}
                   animationEasing="ease-in-out"
                 >
-                  {(assignments.length > 0 ? assignments : exampleAssignments).map((entry, index) => {
+                  {getFilteredAssignments().map((entry, index) => {
                     // Simplified color logic: green for completed, orange for in-progress
                     const fillColor = entry.completed ? '#10b981' : '#f59e0b';
                     
@@ -452,6 +437,94 @@ const Tracker: React.FC = () => {
             </div>
           </div>
         </motion.div>
+
+        {assignments.length > 0 && (
+          <motion.div 
+            className="assignments-section"
+            variants={containerVariants}
+          >
+            <h3 className="section-title">
+              <FaCalendarAlt className="section-icon" />
+              Assignments
+            </h3>
+            
+            <div className="tab-buttons">
+              <button 
+                className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
+                onClick={() => setActiveTab('all')}
+              >
+                All
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'upcoming' ? 'active' : ''}`}
+                onClick={() => setActiveTab('upcoming')}
+              >
+                Upcoming
+              </button>
+              <button 
+                className={`tab-button ${activeTab === 'completed' ? 'active' : ''}`}
+                onClick={() => setActiveTab('completed')}
+              >
+                Completed
+              </button>
+            </div>
+            
+            <div className="assignments-grid">
+              {getFilteredAssignments().map(assignment => (
+                <motion.div 
+                  key={assignment._id}
+                  className="assignment-item"
+                  variants={listItemVariants}
+                  whileHover={{ y: -4, boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)' }}
+                >
+                  <div className="assignment-status">
+                    {assignment.completed && (
+                      <div className="status-indicator completed">
+                        <FaCheckCircle style={{ color: '#10b981' }} />
+                      </div>
+                    )}
+                    {!assignment.completed && isDueSoon(assignment.dueDate) && (
+                      <div className="status-indicator due-soon">
+                        <FaExclamationTriangle style={{ color: '#f59e0b' }} />
+                      </div>
+                    )}
+                    {!assignment.completed && isOverdue(assignment.dueDate) && (
+                      <div className="status-indicator overdue">
+                        <FaExclamationTriangle style={{ color: '#ef4444' }} />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="assignment-header">
+                    <h4 className="assignment-title">{assignment.title}</h4>
+                    <div className="assignment-meta">
+                      <span className="meta-icon"><FaCalendarAlt /></span>
+                      <span className="assignment-date">{formatDate(assignment.dueDate)}</span>
+                    </div>
+                  </div>
+                  
+                  {assignment.description && (
+                    <p className="assignment-description">{assignment.description}</p>
+                  )}
+                  
+                  <div className="progress-header">
+                    <span className="progress-label">Progress</span>
+                    <span className="progress-value">{assignment.progress.toFixed(1)}%</span>
+                  </div>
+                  <div className="progress-bar">
+                    <motion.div 
+                      className="progress-fill" 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${assignment.progress}%` }}
+                      transition={{ duration: 1, ease: "easeOut" }}
+                      style={{ background: assignment.completed ? '#10b981' : '#6366f1' }}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </motion.div>
     </motion.div>
   );

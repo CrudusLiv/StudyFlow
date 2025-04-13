@@ -1,47 +1,61 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { CalendarEvent } from '../types/types';
-import { FiClock, FiCalendar, FiBook, FiMapPin, FiUser, FiX, FiTag, FiRepeat, FiSave } from 'react-icons/fi';
-import { modalVariants } from '../utils/animationConfig';
-import '../styles/components/ClassModal.css';
 import axios from 'axios';
+import { FiX, FiClock, FiMapPin, FiCalendar, FiEdit2, FiSave, FiTag, FiUser, FiInfo } from 'react-icons/fi';
+import '../styles/components/ClassModal.css';
+import { motion } from 'framer-motion';
+import { fadeIn } from '../utils/animationConfig';
+import { toast } from 'react-toastify';
+import { scheduleService } from '../services/scheduleService';
 
 interface ClassModalProps {
-  event: CalendarEvent;
+  event: any;
   onClose: () => void;
-  isNewEvent?: boolean;
-  onSave?: (updatedEvent: CalendarEvent) => void;
-  isOpen: boolean;
-  editClass?: CalendarEvent;
-  onSaved?: () => void;
 }
 
-const ClassModal: React.FC<ClassModalProps> = ({ 
-  event, 
-  onClose, 
-  isNewEvent = false,
-  onSave,
-  isOpen,
-  editClass,
-  onSaved
-}) => {
-  const [formData, setFormData] = useState<Partial<CalendarEvent>>({
-    title: event.title || '',
-    courseCode: event.courseCode || '',
-    location: event.location || '',
-    start: event.start || new Date(),
-    end: event.end || new Date(Date.now() + 60 * 60 * 1000),
-    description: event.description || ''
-  });
-
+const ClassModal: React.FC<ClassModalProps> = ({ event, onClose }) => {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isNewEvent, setIsNewEvent] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [editClass, setEditClass] = useState<any>(null);
+  
+  // State for system-wide semester dates - for display only
   const [semesterStartDate, setSemesterStartDate] = useState<string>("");
   const [semesterEndDate, setSemesterEndDate] = useState<string>("");
 
   useEffect(() => {
-    if (isOpen) {
-      loadSemesterDates();
+    if (event) {
+      setIsNewEvent(event.isNew === true);
+      if (event.isNew) {
+        setIsEditing(true);
+      }
     }
-  }, [isOpen, editClass]);
+    
+    if (!event) {
+      setEditClass(null);
+      return;
+    }
+    
+    // Load semester dates when modal opens
+    loadSemesterDates();
+    
+    // Initialize form data from event
+    const formData = {
+      id: event._id || event.id,
+      title: event.title || '',
+      courseName: event.resource?.details?.courseName || event.title || '',
+      courseCode: event.courseCode || event.resource?.courseCode || '',
+      start: event.start || new Date(),
+      end: event.end || new Date(new Date().getTime() + 60 * 60 * 1000),
+      day: event.resource?.day || event.start?.toLocaleString('en-us', { weekday: 'long' }) || 'Monday',
+      location: event.location || event.resource?.location || '',
+      description: event.description || '',
+      professor: event.resource?.details?.professor || '',
+      recurring: event.resource?.recurring || false
+    };
+    
+    setEditClass(formData);
+  }, [event]);
 
   const loadSemesterDates = async () => {
     try {
@@ -65,85 +79,132 @@ const ClassModal: React.FC<ClassModalProps> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setEditClass({
+      ...editClass,
       [name]: value
     });
   };
-
-  const handleDateTimeChange = (name: string, value: Date) => {
-    setFormData({
-      ...formData,
-      [name]: value
+  
+  const handleDateTimeChange = (field: string, value: Date) => {
+    setEditClass({
+      ...editClass,
+      [field]: value
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onSave) {
-      onSave({
-        ...event,
-        ...formData
-      });
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      if (!editClass.courseName || !editClass.day || !editClass.start || !editClass.end) {
+        setError('Please fill in all required fields');
+        setIsLoading(false);
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError('Authentication token not found');
+        setIsLoading(false);
+        return;
+      }
+
+      // Format the class data according to what the API expects
+      const classData = {
+        _id: editClass.id,
+        courseName: editClass.courseName,
+        courseCode: editClass.courseCode,
+        startTime: `${editClass.start.getHours().toString().padStart(2, '0')}:${editClass.start.getMinutes().toString().padStart(2, '0')}`,
+        endTime: `${editClass.end.getHours().toString().padStart(2, '0')}:${editClass.end.getMinutes().toString().padStart(2, '0')}`,
+        location: editClass.location,
+        professor: editClass.professor,
+        day: editClass.day,
+        // We'll use the system-wide semester dates, not individual dates
+      };
+
+      // Update or create class
+      if (isNewEvent) {
+        const result = await scheduleService.addClass(classData);
+        console.log('Class added:', result);
+        
+        // Display success message
+        toast.success('Class added successfully');
+      } else {
+        const result = await scheduleService.updateClass(classData);
+        console.log('Class updated:', result);
+        
+        // Display success message
+        toast.success('Class updated successfully');
+      }
+
+      // Notify that a class was updated - global event
+      window.dispatchEvent(new CustomEvent('classChanged', {
+        detail: { classData }
+      }));
+      
+      onClose();
+    } catch (error) {
+      console.error('Error saving class:', error);
+      setError('Failed to save class. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-    onClose();
   };
 
-  const formatTime = (date: Date) => {
-    if (!date) return '';
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatTime = (date: Date): string => {
     return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
+      hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
   };
 
-  const formatDate = (date: Date) => {
-    if (!date) return '';
-    return date.toLocaleDateString('en-GB', {
-      weekday: 'long',
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
-  };
+  if (!event || !editClass) return null;
 
   return (
-    <motion.div 
-      className="class-modal-backdrop" 
-      onClick={onClose}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div 
-        className="class-modal"
-        onClick={(e) => e.stopPropagation()}
-        variants={modalVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-      >
-        <div className="class-modal-header">
-          <h2>
-            <FiBook /> 
-            {isNewEvent ? 'Add New Class' : event.title || 'Class Details'}
-          </h2>
-          <button className="close-button" onClick={onClose}><FiX /></button>
-        </div>
+    <div className="class-modal">
+      <div className="class-modal-header">
+        <h2>{isNewEvent ? 'Add New Class' : (isEditing ? 'Edit Class' : 'Class Details')}</h2>
+        <button className="class-modal-close-btn" onClick={onClose}>
+          <FiX />
+        </button>
+      </div>
 
-        {isNewEvent || onSave ? (
+      {error && (
+        <motion.div 
+          className="class-modal-error" 
+          variants={fadeIn}
+          initial="hidden"
+          animate="visible"
+        >
+          {error}
+        </motion.div>
+      )}
+
+      <div className="class-modal-content">
+        {isEditing ? (
           <form onSubmit={handleSubmit}>
-            <div className="class-modal-body">
+            <div className="class-form">
               <div className="class-form-group">
-                <label className="class-form-label">Class Title</label>
+                <label className="class-form-label">Class Name</label>
                 <input
                   type="text"
-                  name="title"
-                  value={formData.title}
+                  name="courseName"
+                  value={editClass.courseName}
                   onChange={handleChange}
                   className="class-form-input"
-                  placeholder="Enter class title"
+                  placeholder="E.g., Introduction to Computer Science"
                   required
                 />
               </div>
@@ -154,7 +215,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   <input
                     type="text"
                     name="courseCode"
-                    value={formData.courseCode}
+                    value={editClass.courseCode}
                     onChange={handleChange}
                     className="class-form-input"
                     placeholder="E.g., CS101"
@@ -166,7 +227,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   <input
                     type="text"
                     name="location"
-                    value={formData.location}
+                    value={editClass.location}
                     onChange={handleChange}
                     className="class-form-input"
                     placeholder="Room number or building"
@@ -181,7 +242,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                     <input
                       type="datetime-local"
                       name="start"
-                      value={formData.start instanceof Date ? formData.start.toISOString().slice(0, 16) : ''}
+                      value={editClass.start instanceof Date ? editClass.start.toISOString().slice(0, 16) : ''}
                       onChange={(e) => handleDateTimeChange('start', new Date(e.target.value))}
                       className="class-form-input"
                       required
@@ -191,7 +252,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                     <input
                       type="datetime-local"
                       name="end"
-                      value={formData.end instanceof Date ? formData.end.toISOString().slice(0, 16) : ''}
+                      value={editClass.end instanceof Date ? editClass.end.toISOString().slice(0, 16) : ''}
                       onChange={(e) => handleDateTimeChange('end', new Date(e.target.value))}
                       className="class-form-input"
                       required
@@ -204,7 +265,7 @@ const ClassModal: React.FC<ClassModalProps> = ({
                 <label className="class-form-label">Description</label>
                 <textarea
                   name="description"
-                  value={formData.description}
+                  value={editClass.description}
                   onChange={handleChange}
                   className="class-form-textarea"
                   placeholder="Add any additional details about this class"
@@ -245,6 +306,22 @@ const ClassModal: React.FC<ClassModalProps> = ({
           <>
             <div className="class-modal-body">
               <div className="class-details">
+                <h3 className="class-title">
+                  {event.title || (event.resource?.details?.courseName || 'Untitled Class')}
+                </h3>
+
+                {event.courseCode && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiTag />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Course</div>
+                      <div className="class-detail-value">{event.courseCode}</div>
+                    </div>
+                  </div>
+                )}
+
                 {event.start && (
                   <div className="class-detail-item">
                     <div className="detail-icon">
@@ -269,18 +346,6 @@ const ClassModal: React.FC<ClassModalProps> = ({
                   </div>
                 )}
 
-                {event.courseCode && (
-                  <div className="class-detail-item">
-                    <div className="detail-icon">
-                      <FiTag />
-                    </div>
-                    <div className="class-detail-content">
-                      <div className="class-detail-title">Course</div>
-                      <div className="class-detail-value">{event.courseCode}</div>
-                    </div>
-                  </div>
-                )}
-
                 {event.location && (
                   <div className="class-detail-item">
                     <div className="detail-icon">
@@ -292,32 +357,68 @@ const ClassModal: React.FC<ClassModalProps> = ({
                     </div>
                   </div>
                 )}
-                
+
+                {event.resource?.details?.professor && (
+                  <div className="class-detail-item">
+                    <div className="detail-icon">
+                      <FiUser />
+                    </div>
+                    <div className="class-detail-content">
+                      <div className="class-detail-title">Professor</div>
+                      <div className="class-detail-value">{event.resource.details.professor}</div>
+                    </div>
+                  </div>
+                )}
+
                 {event.description && (
                   <div className="class-detail-item">
                     <div className="detail-icon">
-                      <FiBook />
+                      <FiInfo />
                     </div>
                     <div className="class-detail-content">
                       <div className="class-detail-title">Description</div>
-                      <div className="class-detail-value">{event.description}</div>
+                      <div className="class-detail-value class-description">{event.description}</div>
                     </div>
+                  </div>
+                )}
+                
+                <div className="class-detail-item">
+                  <div className="detail-icon">
+                    <FiCalendar />
+                  </div>
+                  <div className="class-detail-content">
+                    <div className="class-detail-title">Semester Dates</div>
+                    <div className="class-detail-value">
+                      {semesterStartDate && semesterEndDate ? (
+                        <span>
+                          {new Date(semesterStartDate).toLocaleDateString()} - {new Date(semesterEndDate).toLocaleDateString()}
+                        </span>
+                      ) : (
+                        <span>System-wide semester dates not set</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {event.resource?.recurring && (
+                  <div className="recurrence-note">
+                    <em>This class recurs weekly throughout the semester.</em>
                   </div>
                 )}
               </div>
             </div>
 
             <div className="class-modal-actions">
-              <div className="class-modal-buttons">
-                <button className="class-modal-cancel-btn" onClick={onClose}>Close</button>
-              </div>
-              <div className="class-modal-buttons">
-              </div>
+              <button className="class-modal-edit-btn" onClick={() => setIsEditing(true)}>
+                <FiEdit2 style={{ marginRight: '8px' }} />
+                Edit
+              </button>
+              <button className="class-modal-close-btn" onClick={onClose}>Close</button>
             </div>
           </>
         )}
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 };
 

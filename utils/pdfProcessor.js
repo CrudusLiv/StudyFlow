@@ -490,6 +490,23 @@ function determineAssignmentType(text) {
  */
 export async function processDocuments(filePaths, userId, options = {}) {
   try {
+    console.log(`Processing ${filePaths ? filePaths.length : 0} PDFs for user ${userId}`);
+    
+    // Add validation to ensure filePaths is defined and is an array
+    if (!filePaths || !Array.isArray(filePaths)) {
+      console.error("Invalid filePaths provided:", filePaths);
+      throw new Error("Expected an array of file paths");
+    }
+    
+    // Validate userId
+    if (!userId) {
+      console.error("Missing userId in processDocuments call");
+      throw new Error("User ID is required to process documents");
+    }
+    
+    // Ensure options is an object
+    const processingOptions = options || {};
+    
     console.log('Starting enhanced document processing...', { 
       numberOfFiles: filePaths.length,
       hasPreferences: !!options.preferences,

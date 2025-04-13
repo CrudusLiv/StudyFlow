@@ -198,7 +198,7 @@ const Schedule: React.FC = () => {
   const [showStudyEvents, setShowStudyEvents] = useState<boolean>(true);
   const [showClassEvents, setShowClassEvents] = useState<boolean>(true);
 
-  // State for adding a university class
+  // State for adding a university class - removed semester dates from this object
   const [newClass, setNewClass] = useState({
     courseName: '',
     courseCode: '',
@@ -207,10 +207,6 @@ const Schedule: React.FC = () => {
     location: '',
     professor: '',
     day: '',
-    semesterDates: {
-      startDate: new Date(),
-      endDate: new Date()
-    }
   });
 
   // State for file upload
@@ -218,6 +214,12 @@ const Schedule: React.FC = () => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
   const [uploadMessage, setUploadMessage] = useState<string>('');
+
+  // State for semester dates (universal)
+  const [universalSemesterDates, setUniversalSemesterDates] = useState<{startDate: Date, endDate: Date}>({
+    startDate: new Date(),
+    endDate: new Date(new Date().setMonth(new Date().getMonth() + 4))
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -274,6 +276,46 @@ const Schedule: React.FC = () => {
 
   const [savedScheduleId, setSavedScheduleId] = useState<string | null>(null);
   const [showSavedSchedules, setShowSavedSchedules] = useState<boolean>(false);
+  
+  // Load universal semester dates and use them throughout the app
+  const loadUniversalSemesterDates = useCallback(async () => {
+    try {
+      const semesterDates = await scheduleService.getSemesterDates();
+      if (semesterDates) {
+        setUniversalSemesterDates({
+          startDate: new Date(semesterDates.startDate),
+          endDate: new Date(semesterDates.endDate)
+        });
+        console.log('Loaded universal semester dates:', semesterDates);
+      }
+    } catch (error) {
+      console.error('Error loading semester dates:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadUniversalSemesterDates();
+  }, [loadUniversalSemesterDates]);
+
+  // Update event listener for semester dates changes
+  useEffect(() => {
+    const handleSemesterDatesUpdated = (event: CustomEvent) => {
+      const { startDate, endDate } = event.detail;
+      setUniversalSemesterDates({
+        startDate: new Date(startDate),
+        endDate: new Date(endDate)
+      });
+      
+      // Refresh class schedules with new semester dates
+      fetchClassSchedules();
+    };
+
+    window.addEventListener('semesterDatesUpdated', handleSemesterDatesUpdated as EventListener);
+
+    return () => {
+      window.removeEventListener('semesterDatesUpdated', handleSemesterDatesUpdated as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     async function loadInitialSchedule() {
@@ -583,11 +625,21 @@ const Schedule: React.FC = () => {
     );
   }, [multiWeekSchedule, hasUniversitySchedule, showStudyEvents, showClassEvents]);
 
-  // Handler for adding a university class
+  // Handler for adding a university class - updated to use universal semester dates
   const handleAddClass = async (classData: ClassData) => {
     try {
       setLoading(true);
-      const { allClasses } = await scheduleService.addClass(classData);
+      
+      // Add universal semester dates to the class data
+      const classDataWithSemesterDates = {
+        ...classData,
+        semesterDates: {
+          startDate: universalSemesterDates.startDate,
+          endDate: universalSemesterDates.endDate
+        }
+      };
+      
+      const { allClasses } = await scheduleService.addClass(classDataWithSemesterDates);
       console.log('Added class, received all classes:', allClasses);
       
       // Use the same direct conversion method as in the fetchClasses function
@@ -596,7 +648,15 @@ const Schedule: React.FC = () => {
       console.log('Formatted class events for normal calendar:', formattedEvents);
       
       // Set the events directly 
-      setEvents(formattedEvents);
+      setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...formattedEvents]);
+
+      // Save updated events to localStorage for the Tracker page
+      const updatedEvents = [...events.filter(e => e.category !== 'class'), ...formattedEvents];
+      localStorage.setItem('scheduleEvents', JSON.stringify(updatedEvents));
+      
+      // Dispatch event to update Tracker page
+      window.dispatchEvent(new CustomEvent('scheduleUpdated'));
+
       setShowAddClassModal(false);
       toast.success('Class added successfully!');
     } catch (error) {
@@ -964,45 +1024,6 @@ const Schedule: React.FC = () => {
               onChange={(e) => setNewClass({ ...newClass, location: e.target.value })}
               className="form-input"
             />
-          </div>
-        </div>
-
-        {/* Add semester dates */}
-        <div className="form-group">
-          <h3>Semester Dates</h3>
-          <div className="date-inputs">
-            <div className="input-group">
-              <label>Start Date</label>
-              <input
-                type="date"
-                value={formatDateForInput(newClass.semesterDates.startDate)}
-                onChange={(e) => handleDateChange('startDate', e.target.value)}
-                className="form-input"
-              />
-              <span className="date-format">Current format: {
-                newClass.semesterDates.startDate.toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                })
-              }</span>
-            </div>
-            <div className="input-group">
-              <label>End Date</label>
-              <input
-                type="date"
-                value={formatDateForInput(newClass.semesterDates.endDate)}
-                onChange={(e) => handleDateChange('endDate', e.target.value)}
-                className="form-input"
-              />
-              <span className="date-format">Current format: {
-                newClass.semesterDates.endDate.toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric'
-                })
-              }</span>
-            </div>
           </div>
         </div>
 
@@ -2347,6 +2368,45 @@ const savePreferences = async () => {
       setLoading(false);
     }
   };
+
+  // Fetch all schedule data in a single call
+  const fetchCombinedSchedule = async () => {
+    try {
+      setLoading(true);
+      
+      // Use the new combined function to get both class and study events
+      const combinedEvents = await scheduleService.fetchCombinedSchedule();
+      
+      if (combinedEvents.length > 0) {
+        console.log(`Loaded ${combinedEvents.length} combined events`);
+        setEvents(combinedEvents);
+        
+        // Also update localStorage for persistence
+        localStorage.setItem('scheduleEvents', JSON.stringify(combinedEvents));
+        
+        // Extract classes for grid/list views
+        const classes = combinedEvents.filter(event => event.category === 'class');
+        setRawClasses(classes);
+        
+        // Organize by day for the grid/list views
+        const classesByDayObject = organizeClassesByDay(classes);
+        setClassesByDay(classesByDayObject);
+        localStorage.setItem('scheduleClassesByDay', JSON.stringify(classesByDayObject));
+      } else {
+        console.warn('No events returned from fetchCombinedSchedule()');
+      }
+    } catch (error) {
+      console.error('Error fetching combined schedule:', error);
+      toast.error('Failed to load schedule');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add this useEffect to call the new function on component mount
+  useEffect(() => {
+    fetchCombinedSchedule();
+  }, []);
 
   return (
     <motion.div 
