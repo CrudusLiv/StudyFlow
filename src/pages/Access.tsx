@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BsMicrosoft, BsGoogle } from 'react-icons/bs';
-import { signInWithMicrosoft, handleRedirectResult } from '../config/firebase';
+import {  BsGoogle } from 'react-icons/bs';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
-  pageVariants, 
   containerVariants, 
-  buttonVariants,
   fadeIn
 } from '../utils/animationConfig';
 import '../styles/pages/Access.css';
@@ -36,42 +32,19 @@ const Access: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const processAuth = async () => {
-      // Only process if we have an auth in progress
-      if (!localStorage.getItem('authInProgress')) {
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const result = await handleRedirectResult();
-        if (result?.user) {
-          const idToken = await result.user.getIdToken();
-          const response = await axios.post('http://localhost:5000/auth/microsoft', {
-            token: idToken,
-            email: result.user.email,
-            name: result.user.displayName
-          });
-
-          if (response.data.token) {
-            // Pass the user role to the login function
-            login(
-              response.data.token, 
-              response.data.userKey, 
-              response.data.role || 'user' // Use returned role or default to 'user'
-            );
-            navigate('/schedule');
-          }
-        }
-      } catch (err) {
-        console.error('Auth processing error:', err);
-        setError('Authentication failed. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    processAuth();
+    // Clear any previous auth attempts
+    localStorage.removeItem('authInProgress');
+    
+    // Check if we're returning from an OAuth redirect
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userKey = params.get('userKey');
+    const userRole = params.get('userRole');
+    
+    if (token && userKey) {
+      login(token, userKey, userRole || 'user');
+      navigate('/schedule');
+    }
   }, [navigate, login]);
 
   const handleGoogleAuth = () => {
@@ -83,19 +56,6 @@ const Access: React.FC = () => {
     }
   };
 
-  const handleMicrosoftAuth = async () => {
-    try {
-      setError(null);
-      setLoading(true);
-      localStorage.setItem('authInProgress', 'true');
-      await signInWithMicrosoft();
-    } catch (err) {
-      console.error('Microsoft auth error:', err);
-      setError('Failed to start authentication');
-      localStorage.removeItem('authInProgress');
-      setLoading(false);
-    }
-  };
 
   return (
     <motion.div 
@@ -140,7 +100,6 @@ const Access: React.FC = () => {
               <motion.button
                 onClick={handleGoogleAuth}
                 className="auth-button google-button"
-                variants={buttonLoadingVariants}
                 animate={loading ? "loading" : "idle"}
                 whileHover={{ scale: 1.02, y: -3 }}
                 whileTap={{ scale: 0.98 }}
@@ -155,23 +114,7 @@ const Access: React.FC = () => {
                 Sign in with Google
               </motion.button>
 
-              <motion.button
-                onClick={handleMicrosoftAuth}
-                className="auth-button microsoft-button"
-                variants={buttonLoadingVariants}
-                animate={loading ? "loading" : "idle"}
-                whileHover={{ scale: 1.02, y: -3 }}
-                whileTap={{ scale: 0.98 }}
-                disabled={loading}
-              >
-                <motion.div
-                  animate={{ rotate: loading ? 360 : 0 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                >
-                  <BsMicrosoft className="auth-icon" />
-                </motion.div>
-                {loading ? 'Signing in...' : 'Sign in with Microsoft'}
-              </motion.button>
+
             </motion.div>
           </div>
 

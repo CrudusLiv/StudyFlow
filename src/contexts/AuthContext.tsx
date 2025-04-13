@@ -1,7 +1,5 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { auth } from '../config/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -9,8 +7,8 @@ interface AuthContextType {
   loading: boolean;
   login: (token: string, userKey: string, role?: string) => void;
   logout: () => void;
-  checkAuth: () => boolean;  // Change return type to match implementation
-  refreshUserData: () => Promise<void>; // Add new method to refresh user data
+  checkAuth: () => boolean;  
+  refreshUserData: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {},
   logout: () => {},
   checkAuth: () => false,
-  refreshUserData: async () => {} // Add default implementation
+  refreshUserData: async () => {}
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -116,36 +114,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // Handle Firebase auth state (Microsoft auth)
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
-          const idToken = await user.getIdToken();
-          const response = await axios.post('http://localhost:5000/auth/microsoft', {
-            token: idToken,
-            email: user.email,
-            name: user.displayName
-          });
+    // Microsoft auth is now handled directly via our backend API
+    // The Firebase auth listener has been removed
 
-          if (response.data.token) {
-            // Set expiry time - 1 hour from now
-            const expiryTime = new Date().getTime() + (60 * 60 * 1000);
-            
-            localStorage.setItem('token', response.data.token);
-            localStorage.setItem('userKey', response.data.userKey);
-            localStorage.setItem('userRole', response.data.role || 'user');
-            localStorage.setItem('tokenExpiry', expiryTime.toString());
-            
-            setIsAuthenticated(true);
-            setUserRole(response.data.role || 'user');
-          }
-        } catch (error) {
-          console.error('Error processing Firebase auth:', error);
-        }
-      }
-    });
-
-    return () => unsubscribe();
   }, []);
 
   const verifyAuth = async () => {
@@ -256,7 +227,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       login,
       logout,
       checkAuth,
-      refreshUserData // Add the new method to the context
+      refreshUserData
     }}>
       {children}
     </AuthContext.Provider>
