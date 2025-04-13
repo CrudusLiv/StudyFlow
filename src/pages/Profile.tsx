@@ -252,7 +252,7 @@ const Profile: React.FC = () => {
             </h2>
             <button
               onClick={() => setIsEditing(!isEditing)}
-              className="edit-button"
+              className="edit-profile-button"
             >
               <FiEdit3 className="button-icon" />
               {isEditing ? 'Cancel' : 'Edit'}
@@ -295,7 +295,7 @@ const Profile: React.FC = () => {
           {isEditing && (
             <motion.button
               onClick={handleProfileUpdate}
-              className="save-button"
+              className="save-profile-button"
               variants={buttonVariants}
               whileHover="hover"
               whileTap="tap"
@@ -305,17 +305,18 @@ const Profile: React.FC = () => {
             </motion.button>
           )}
         </motion.div>
+        <motion.button
+          onClick={handleLogout}
+          className="logout-button"
+          variants={buttonVariants}
+          whileHover="hover"
+          whileTap="tap"
+        >
+          <FiLogOut className="button-icon" />
+          Logout
+        </motion.button>
       </motion.div>
-      <motion.button
-        onClick={handleLogout}
-        className="logout-button"
-        variants={buttonVariants}
-        whileHover="hover"
-        whileTap="tap"
-      >
-        <FiLogOut className="button-icon" />
-        Logout
-      </motion.button>
+
     </motion.div>
   );
 };

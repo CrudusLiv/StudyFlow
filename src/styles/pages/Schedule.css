@@ -92,7 +92,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.settings-button {
+.settings-button, semester-date-button, action-button {
   padding: 0.6rem;
   background: var(--accent);
   color: white;
@@ -191,19 +191,7 @@
   transform: translateY(-4px);
 }
 
-.rbc-time-header {
-  display: flex;
-  flex: 0 0 auto;
-  min-height: 0;
-}
 
-.rbc-time-header-content {
-  flex: 1;
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  border-left: 1px solid var(--border);
-}
 
 .rbc-time-content {
   display: flex;
@@ -255,16 +243,6 @@
   /* Fourth color */
 }
 
-
-/* Make sure event content is scrollable
-.rbc-day-slot .rbc-events-container {
-  position: absolute;
-  z-index: 3;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-} */
 
 .rbc-slot-selection {
   z-index: 10;
@@ -364,24 +342,6 @@
   background-color: var(--accent);
 }
 
-/* Nice scrollbar styling */
-.rbc-time-content::-webkit-scrollbar {
-  width: 8px;
-}
-
-.rbc-time-content::-webkit-scrollbar-track {
-  background: var(--card-alt-bg, #f3f4f6);
-  border-radius: 4px;
-}
-
-.rbc-time-content::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb, #cbd5e1);
-  border-radius: 4px;
-}
-
-.rbc-time-content::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-thumb-hover, #94a3b8);
-}
 
 /* Grid View Styles */
 .schedule-grid-container {
@@ -1287,7 +1247,7 @@
 
 .rbc-toolbar button.rbc-active {
   background-color: var(--primary);
-  color: white;
+  color: #4f46e5;
   box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
   border-color: var(--primary);
 }
@@ -1357,7 +1317,7 @@
   display: flex;
   min-height: 0;
   flex-direction: column;
-
+  border-left: 1px solid var(--border);
 }
 
 .rbc-time-content {
@@ -1369,7 +1329,6 @@
   overflow-y: auto;
   position: relative;
   max-height: calc(100% - 80px);
-  /* Ensure content doesn't overflow */
 }
 
 /* Enhanced time gutter styling */
@@ -1457,32 +1416,6 @@
   align-items: center;
 }
 
-
-@media (max-width: 768px) {
-  .onboarding-guide {
-    padding: 1.25rem;
-  }
-
-  .step {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 1rem;
-  }
-
-  .step-number {
-    margin-bottom: 0.75rem;
-    margin-right: 0;
-  }
-
-  .step .add-button,
-  .step .generate-button {
-    margin-left: 0;
-    margin-top: 0.75rem;
-    width: 100%;
-    justify-content: center;
-  }
-}
-
 /* Enhanced responsive styles */
 @media (max-width: 1024px) {
   .calendar-container {
@@ -1505,7 +1438,7 @@
   .calendar-container {
     height: 550px;
     border-radius: 1rem;
-    padding-bottom: 10px; /* Further adjusted padding */
+    padding-bottom: 10px; 
   }
 
   .rbc-toolbar {
@@ -1536,6 +1469,43 @@
     padding: 0.5rem 0;
     font-size: 0.8rem;
   }
+
+  .onboarding-guide {
+    padding: 1.25rem;
+  }
+
+  .step {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .step-number {
+    margin-bottom: 0.75rem;
+    margin-right: 0;
+  }
+
+  .step .add-button,
+  .step .generate-button {
+    margin-left: 0;
+    margin-top: 0.75rem;
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .schedule-header {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .schedule-title {
+    font-size: 1.3rem;
+  }
+  
+  .header-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1557,6 +1527,53 @@
   .rbc-event-content {
     font-size: 12px !important;
   }
+
+  .title-group {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .schedule-header {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .schedule-title {
+    font-size: 1.2rem;
+  }
+  
+  .current-date {
+    font-size: 0.75rem;
+  }
+  
+  .header-button {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.75rem;
+  }
+  
+  /* If there are multiple buttons that might not fit */
+  .header-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    align-items: flex-end;
+    width: 100%;
+  }
+  
 }
 
 .dark{

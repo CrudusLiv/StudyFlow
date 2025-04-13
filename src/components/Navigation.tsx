@@ -128,7 +128,7 @@ const Navigation: React.FC = () => {
             <motion.div variants={rightSideItemVariants}>
               <Link to="/tracker" className={location.pathname === '/tracker' ? 'active' : ''}>
                 <FiBarChart2 className="nav-icon" />
-                <span>Progress</span>
+                <span>Tracker</span>
               </Link>
             </motion.div>
             

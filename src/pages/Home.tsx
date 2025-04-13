@@ -196,64 +196,7 @@ const Home: React.FC = () => {
           ))}
         </motion.div>
 
-        <motion.div 
-          className="dashboard-section"
-          variants={containerVariants}
-        >
-          <h2 className="section-title">
-            <FaTasks className="section-icon" />
-            Upcoming Assignments
-          </h2>
-          
-          {loading ? (
-            <div className="loading-container">
-              <FaSpinner className="loading-spinner" />
-              <p>Loading your assignments...</p>
-            </div>
-          ) : (
-            <motion.div 
-              className="assignments-grid"
-              variants={staggeredGrid}
-              initial="hidden"
-              animate="visible"
-            >
-              {assignments.map((assignment) => (
-                <motion.div 
-                  key={assignment._id}
-                  className={`assignment-item priority-${assignment.priority}`}
-                  variants={gridItemVariants}
-                  whileHover="hover"
-                >
-                  <div className="assignment-header">
-                    <h3 className="assignment-title">{assignment.title}</h3>
-                    <span className="assignment-course">{assignment.courseCode}</span>
-                  </div>
-                  <div className="assignment-details">
-                    <div className="assignment-due">
-                      Due: {formatDate(assignment.dueDate)}
-                    </div>
-                    <div className="assignment-days-left">
-                      {getDaysRemaining(assignment.dueDate)} days left
-                    </div>
-                  </div>
-                  <div className="assignment-progress">
-                    <div className="progress-text">
-                      Progress: {assignment.progress}%
-                    </div>
-                    <div className="progress-bar">
-                      <motion.div 
-                        className="progress-fill"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${assignment.progress}%` }}
-                        transition={{ duration: 1, delay: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </motion.div>
+
       </div>
     </motion.div>
   );

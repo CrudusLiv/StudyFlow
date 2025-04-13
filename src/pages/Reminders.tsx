@@ -427,7 +427,7 @@ const Reminders: React.FC = () => {
 
       <header className="reminders-header">
         <div className="title-section">
-          <h1><FiClock className="header-icon" /> Reminders & Assignments</h1>
+          <h1><FiClock className="clock-icon" /> Reminders & Assignments</h1>
           <p>Keep track of your upcoming tasks and deadlines</p>
         </div>
         <button 
@@ -520,12 +520,12 @@ const Reminders: React.FC = () => {
           </div>
 
           <div className="reminders-section">
-            <h2>Active Reminders</h2>
+            <h2>Reminders</h2>
 
             {sortedReminders.length === 0 ? (
               <div className="empty-state">
                 <FiAlertCircle className="empty-icon" />
-                <p>No active reminders. Reminders appear here for assignments due within a week or when manually created.</p>
+                <p>No reminders. Reminders appear here for assignments due within a week or when manually created.</p>
               </div>
             ) : (
               <motion.div 

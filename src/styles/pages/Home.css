@@ -36,20 +36,18 @@
 
 .main-title {
   font-size: clamp(2.5rem, 8vw, 5rem);
-  font-weight: 800;
   background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #4f46e5 100%);
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
   animation: shine 8s linear infinite;
-}
-
-.subtitle {
-  font-size: clamp(1.2rem, 4vw, 1.75rem);
-  color: #6b7280;
-  max-width: 800px;
-  margin: 2rem auto;
+  font-weight: 800;
+  margin-bottom: 2rem;
+  text-align: center;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letter-spacing: -0.04em;
+  padding: 1rem;
 }
 
 .features-grid {
@@ -182,19 +180,6 @@
     0 15px 15px -5px rgba(0, 0, 0, 0.08);
 }
 
-.main-title {
-  font-size: 4.5rem;
-  font-weight: 800;
-  margin-bottom: 2rem;
-  background: linear-gradient(90deg, #4f46e5, #7c3aed, #4f46e5);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  animation: gradient 8s ease infinite;
-  letter-spacing: -0.04em;
-  line-height: 1.1;
-}
 
 .subtitle {
   font-size: 1.75rem;
