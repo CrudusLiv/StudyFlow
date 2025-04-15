@@ -460,7 +460,7 @@ app.post('/auth/login', async (req, res) => {
 // Google authentication routes
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], accessType: 'offline', prompt: 'consent' }));
 
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/login' }), async (req, res) => {
+app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }), async (req, res) => {
   try {
     // Get or create the user
     let user = await User.findOne({ email: req.user.email });
@@ -582,9 +582,11 @@ app.get('/auth/google/callback',
   }
 );
 
-// Fix Google callback route to use HTTP status 302 for redirect
+// Fix Google auth callback route to use client-side URL for redirects
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/access?error=auth_failed' }),
+  passport.authenticate('google', { 
+    failureRedirect: `${process.env.CORS_ORIGIN || 'http://localhost:5173'}/access?error=auth_failed` 
+  }),
   async (req, res) => {
     try {
       if (!req.user) {
@@ -606,8 +608,8 @@ app.get('/auth/google/callback',
         { expiresIn: '24h' } // Extend token expiration
       );
 
-      // Create redirect URL with auth data
-      const redirectUrl = new URL('/access', process.env.CORS_ORIGIN);
+      // Create redirect URL with auth data - use the client URL, not the server URL
+      const redirectUrl = new URL('/access', process.env.CORS_ORIGIN || 'http://localhost:5173');
       redirectUrl.searchParams.append('token', token);
       redirectUrl.searchParams.append('userKey', user.uniqueKey);
       redirectUrl.searchParams.append('userRole', user.role || 'user');
@@ -618,7 +620,7 @@ app.get('/auth/google/callback',
       res.redirect(302, redirectUrl.toString());
     } catch (error) {
       console.error('Auth callback error:', error);
-      res.redirect(302, `${process.env.CORS_ORIGIN}/access?error=auth_failed`);
+      res.redirect(302, `${process.env.CORS_ORIGIN || 'http://localhost:5173'}/access?error=auth_failed`);
     }
   }
 );
@@ -1287,13 +1289,52 @@ app.delete('/assignments/:id', authenticateJWT, async (req, res) => {
 // Add reminder routes
 app.get('/api/reminders', authenticateJWT, async (req, res) => {
   try {
-    const reminders = await Reminder.find({
+    // Get both system reminders and upcoming assignments
+    const now = new Date();
+    const oneWeekFromNow = new Date(now);
+    oneWeekFromNow.setDate(now.getDate() + 7);
+    
+    // Find existing reminders that are due and not read
+    const systemReminders = await Reminder.find({
       userId: req.user.userId,
-      reminderDate: { $lte: new Date() },
+      reminderDate: { $lte: now },
       isRead: false
     }).populate('assignmentId');
-    res.json(reminders);
+    
+    // Find assignments due within a week that should show as reminders
+    const upcomingAssignments = await Assignment.find({
+      userId: req.user.userId,
+      dueDate: { $gte: now, $lte: oneWeekFromNow },
+      completed: false
+    });
+    
+    // Convert upcoming assignments to virtual reminders if they don't have active reminders
+    const existingReminderAssignmentIds = new Set(
+      systemReminders
+        .filter(r => r.assignmentId && typeof r.assignmentId !== 'string')
+        .map(r => r.assignmentId._id.toString())
+    );
+    
+    // Create virtual reminders for assignments without active reminders
+    const virtualReminders = upcomingAssignments
+      .filter(a => !existingReminderAssignmentIds.has(a._id.toString()))
+      .map(assignment => ({
+        _id: `virtual-${assignment._id}`,
+        assignmentId: assignment,
+        title: `Due Soon: ${assignment.title}`,
+        message: `This assignment is due soon - make sure to complete it on time!`,
+        dueDate: assignment.dueDate,
+        reminderDate: now,
+        isRead: false,
+        isVirtual: true
+      }));
+    
+    // Combine both types of reminders
+    const allReminders = [...systemReminders, ...virtualReminders];
+    
+    res.json(allReminders);
   } catch (error) {
+    console.error('Error fetching reminders:', error);
     res.status(500).json({ error: 'Error fetching reminders' });
   }
 });
@@ -1388,6 +1429,37 @@ app.get('/api/check-upcoming-assignments', authenticateJWT, async (req, res) => 
   } catch (error) {
     console.error('Error checking upcoming assignments:', error);
     res.status(500).json({ error: 'Error checking upcoming assignments' });
+  }
+});
+
+// Add endpoint to create a new reminder
+app.post('/api/reminders', authenticateJWT, async (req, res) => {
+  try {
+    const { assignmentId, title, message, dueDate, reminderDate } = req.body;
+    
+    // Validate required fields
+    if (!assignmentId || !title || !message || !dueDate) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Create new reminder
+    const reminder = new Reminder({
+      userId: req.user.userId,
+      assignmentId,
+      title,
+      message,
+      dueDate,
+      reminderDate: reminderDate || new Date(),
+      isRead: false
+    });
+
+    await reminder.save();
+    
+    // Return the created reminder
+    res.status(201).json(reminder);
+  } catch (error) {
+    console.error('Error creating reminder:', error);
+    res.status(500).json({ error: 'Error creating reminder' });
   }
 });
 
@@ -1921,6 +1993,36 @@ app.post('/api/pdf/generate-schedule', upload.array('files'), async (req, res) =
   } catch (error) {
     console.error('Error generating schedule:', error);
     res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Add notifications endpoint
+app.post('/api/notifications', authenticateJWT, async (req, res) => {
+  try {
+    const { title, body, type } = req.body;
+    const userId = req.user.userId;
+    
+    // Validate required fields
+    if (!title || !body) {
+      return res.status(400).json({ error: 'Title and body are required' });
+    }
+    
+    // In a real-world application, you might:
+    // 1. Store this notification in the database
+    // 2. Send it through a push notification service
+    // 3. Trigger a real-time event to connected clients
+    
+    // For now, we'll just log it and return success
+    console.log(`Notification created for user ${userId}:`, { title, body, type });
+    
+    // Return success
+    res.status(201).json({ 
+      success: true,
+      message: 'Notification sent successfully'
+    });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    res.status(500).json({ error: 'Error creating notification' });
   }
 });
 

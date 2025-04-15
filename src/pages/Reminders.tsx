@@ -127,14 +127,28 @@ const Reminders: React.FC = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
+        // Only include assignments due within the next 7 days
         return dueDate >= today && dueDate <= oneWeekFromNow;
       })
       .map(assignment => {
+        // Format due date text
+        const dueDate = new Date(assignment.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const diffTime = dueDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        let dueDateText;
+        if (diffDays === 0) dueDateText = 'today';
+        else if (diffDays === 1) dueDateText = 'tomorrow';
+        else dueDateText = `in ${diffDays} days`;
+        
         return {
           _id: `virtual-${assignment._id}`,
           assignmentId: assignment._id,
           title: `Due Soon: ${assignment.title}`,
-          message: `Your assignment "${assignment.title}" is due ${formatRelativeDate(assignment.dueDate)}`,
+          message: `Your assignment "${assignment.title}" is due ${dueDateText}`,
           dueDate: assignment.dueDate,
           reminderDate: new Date().toISOString(),
           isRead: false
@@ -270,7 +284,10 @@ const Reminders: React.FC = () => {
 
       await assignmentService.deleteAssignment(id);
 
+      // Remove the deleted assignment from state
       setAssignments(assignments.filter(assignment => assignment._id !== id));
+      
+      // Remove any reminders associated with this assignment from state
       setReminders(reminders.filter(reminder => {
         if (typeof reminder.assignmentId === 'string') {
           return reminder.assignmentId !== id;
@@ -278,6 +295,11 @@ const Reminders: React.FC = () => {
           return reminder.assignmentId._id !== id;
         }
       }));
+      
+      // Remove any virtual reminders associated with this assignment
+      setVirtualReminders(virtualReminders.filter(reminder => 
+        reminder.assignmentId !== id
+      ));
 
       toast.success('Assignment deleted successfully!');
 
@@ -389,17 +411,51 @@ const Reminders: React.FC = () => {
   }
 
   const getAllReminders = (): Reminder[] => {
-    const realReminderIds = new Set(reminders.map(r => 
-      typeof r.assignmentId === 'string' 
-        ? r.assignmentId 
-        : r.assignmentId._id
-    ));
+    // Get today and one week from now for filtering
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
-    const filteredVirtual = virtualReminders.filter(vr => 
-      !realReminderIds.has(vr.assignmentId as string)
-    );
+    const oneWeekFromNow = new Date(today);
+    oneWeekFromNow.setDate(today.getDate() + 7);
     
-    return [...reminders, ...filteredVirtual];
+    // Track assignments by ID to prevent duplicates
+    const assignmentReminders = new Map<string, Reminder>();
+    
+    // Process real reminders from the server first (they take priority)
+    reminders.forEach(reminder => {
+      const assignmentId = typeof reminder.assignmentId === 'string' 
+        ? reminder.assignmentId 
+        : reminder.assignmentId._id;
+      
+      // Check if due date is within a week
+      const dueDate = new Date(reminder.dueDate);
+      const isWithinWeek = dueDate >= today && dueDate <= oneWeekFromNow;
+      
+      // Only include reminders due within a week
+      if (isWithinWeek) {
+        // Use the assignment ID as the key, overwriting duplicates
+        assignmentReminders.set(assignmentId, reminder);
+      }
+    });
+    
+    // Now process virtual reminders, but only add them if there's no real reminder for that assignment
+    virtualReminders.forEach(virtualReminder => {
+      const assignmentId = virtualReminder.assignmentId as string;
+      
+      // Check if due date is within a week
+      const dueDate = new Date(virtualReminder.dueDate);
+      const isWithinWeek = dueDate >= today && dueDate <= oneWeekFromNow;
+      
+      // Only add this virtual reminder if:
+      // 1. It's within a week
+      // 2. We don't already have a real reminder for this assignment
+      if (isWithinWeek && !assignmentReminders.has(assignmentId)) {
+        assignmentReminders.set(assignmentId, virtualReminder);
+      }
+    });
+    
+    // Convert the Map values back to an array
+    return Array.from(assignmentReminders.values());
   };
 
   const sortedAssignments = [...assignments].sort((a, b) => {

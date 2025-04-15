@@ -19,10 +19,12 @@ import {
   FiCheck,
   FiPlus,
   FiUser,
-  FiDatabase
+  FiDatabase,
+  FiBarChart2
 } from 'react-icons/fi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { Link } from 'react-router-dom';
 
 import { WeeklySchedule, DaySchedule, CalendarEvent, ClassData } from '../types/types';
 import '../styles/pages/Schedule.css';
@@ -2469,6 +2471,10 @@ const savePreferences = async () => {
             <FiDatabase className="button-icon" />
             Saved Schedules
           </button>
+          <Link to="/tracker" className="tracker-link-button">
+            <FiBarChart2 className="icon" />
+            <span>View Tracker</span>
+          </Link>
         </div>
       </motion.header>
 
