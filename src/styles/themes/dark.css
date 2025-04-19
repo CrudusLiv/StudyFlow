@@ -80,4 +80,32 @@
     --button-secondary-text: #e5e7eb;
     --button-danger-bg: #b91c1c;
     --button-danger-text: #ffffff;
+    
+    /* AI-themed elements */
+    --ai-primary: #7c3aed;
+    --ai-secondary: #6366f1;
+    --ai-accent: #8b5cf6;
+    --ai-glow: rgba(124, 58, 237, 0.5);
+    --ai-text: #e0e7ff;
+    --ai-border: #6d28d9;
+    
+    /* AI Badge and Indicators */
+    --ai-badge-bg: rgba(124, 58, 237, 0.15);
+    --ai-badge-border: #7c3aed;
+    --ai-badge-text: #c4b5fd;
+    
+    /* AI Gradient effects */
+    --ai-gradient-start: #6366f1;
+    --ai-gradient-mid: #7c3aed;
+    --ai-gradient-end: #8b5cf6;
+    
+    /* AI Pulse animation variables */
+    --ai-pulse-color-1: rgba(124, 58, 237, 0.7);
+    --ai-pulse-color-2: rgba(99, 102, 241, 0.7);
+    
+    /* AI Feature Cards */
+    --ai-card-bg: rgba(42, 42, 42, 0.7);
+    --ai-card-border: #6d28d9;
+    --ai-card-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+    --ai-card-highlight: #8b5cf6;
 }

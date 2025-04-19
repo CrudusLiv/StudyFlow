@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiX, FiSave, FiClock, FiSun, FiMoon, FiSettings, FiAlertCircle, FiCalendar, FiSlack } from 'react-icons/fi';
 import '../styles/components/PreferencesPanel.css';
 
@@ -21,6 +21,40 @@ const PreferencesPanel: React.FC<PreferencesPanelProps> = ({
   error,
   success
 }) => {
+  // Format date for input type="date" (YYYY-MM-DD)
+  const formatDateForInput = (date: string | Date | null | undefined): string => {
+    if (!date) return '';
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    if (isNaN(dateObj.getTime())) return '';
+    return dateObj.toISOString().split('T')[0];
+  };
+
+  // Get today and a date 4 months in the future as defaults if needed
+  const defaultStartDate = new Date();
+  const defaultEndDate = new Date();
+  defaultEndDate.setMonth(defaultEndDate.getMonth() + 4);
+  
+  // Initialize semester dates from preferences or defaults
+  const [semesterStartDate, setSemesterStartDate] = useState<string>(
+    formatDateForInput(preferences.semesterDates?.startDate) || formatDateForInput(defaultStartDate)
+  );
+  const [semesterEndDate, setSemesterEndDate] = useState<string>(
+    formatDateForInput(preferences.semesterDates?.endDate) || formatDateForInput(defaultEndDate)
+  );
+
+  // Update semesterDates in preferences when the date inputs change
+  useEffect(() => {
+    if (semesterStartDate && semesterEndDate) {
+      setPreferences({
+        ...preferences,
+        semesterDates: {
+          startDate: semesterStartDate,
+          endDate: semesterEndDate
+        }
+      });
+    }
+  }, [semesterStartDate, semesterEndDate]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     
@@ -72,6 +106,32 @@ const PreferencesPanel: React.FC<PreferencesPanelProps> = ({
       )}
 
       <div className="preferences-content">
+        <div className="preference-section">
+          <h4><FiCalendar /> Semester Dates</h4>
+          
+          <div className="preference-row">
+            <label>Semester Start Date</label>
+            <input
+              type="date"
+              value={semesterStartDate}
+              onChange={(e) => setSemesterStartDate(e.target.value)}
+            />
+          </div>
+          
+          <div className="preference-row">
+            <label>Semester End Date</label>
+            <input
+              type="date"
+              value={semesterEndDate}
+              onChange={(e) => setSemesterEndDate(e.target.value)}
+            />
+          </div>
+          
+          <p className="preference-info-text">
+            These dates will be used to set course date ranges and estimate assignment due dates.
+          </p>
+        </div>
+
         <div className="preference-section">
           <h4><FiClock /> Daily Schedule</h4>
           

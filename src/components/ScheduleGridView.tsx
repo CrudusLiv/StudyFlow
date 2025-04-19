@@ -21,16 +21,27 @@ const ScheduleGridView: React.FC<ScheduleGridViewProps> = ({ events, onEventClic
     
     // Group events by day of the week
     events.forEach(event => {
-      const dayOfWeek = new Date(event.start).getDay();
-      const dayName = days[dayOfWeek];
-      groupedEvents[dayName].push(event);
+      const eventDate = new Date(event.start);
+      if (!isNaN(eventDate.getTime())) {
+        const dayOfWeek = eventDate.getDay();
+        const dayName = days[dayOfWeek];
+        groupedEvents[dayName].push(event);
+      }
     });
     
     return groupedEvents;
   };
 
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
+  const formatTime = (date: Date | string) => {
+    // Make sure date is a valid Date object
+    const dateObj = date instanceof Date ? date : new Date(date);
+    
+    // Check if the date is valid before calling toLocaleTimeString
+    if (isNaN(dateObj.getTime())) {
+      return "Invalid time";
+    }
+    
+    return dateObj.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
@@ -57,9 +68,9 @@ const ScheduleGridView: React.FC<ScheduleGridViewProps> = ({ events, onEventClic
             </div>
             <div className="day-events">
               {groupedEvents[day]?.length > 0 ? (
-                groupedEvents[day].map(event => (
+                groupedEvents[day].map((event, index) => (
                   <motion.div 
-                    key={event.id}
+                    key={event.id || `${day}-event-${index}`}
                     className={`grid-class-item ${event.category === 'class' ? 'class-event' : 'task-event'}`}
                     whileHover={{ y: -4, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                     onClick={() => onEventClick(event)}
@@ -84,7 +95,7 @@ const ScheduleGridView: React.FC<ScheduleGridViewProps> = ({ events, onEventClic
                   </motion.div>
                 ))
               ) : (
-                <div className="no-events">No events</div>
+                <div key={`${day}-no-events`} className="no-events">No events</div>
               )}
             </div>
           </div>

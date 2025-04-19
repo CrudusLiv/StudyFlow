@@ -30,6 +30,16 @@ const userPreferencesSchema = new mongoose.Schema({
     type: String,
     default: '18:00'
   },
+  semesterDates: {
+    startDate: {
+      type: Date,
+      default: null
+    },
+    endDate: {
+      type: Date, 
+      default: null
+    }
+  },
   spacingPreference: {
     type: String,
     enum: ['intense', 'moderate', 'relaxed'],

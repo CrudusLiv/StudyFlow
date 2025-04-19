@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { ClassData, CalendarEvent } from '../types/types';
 import { toast } from 'react-toastify';
+import { ensureDateObjects } from '../utils/calendarHelpers';
 
 const BASE_URL = 'http://localhost:5000/api/schedule';
 const API_URL = 'http://localhost:5000/api';
@@ -94,6 +95,42 @@ export const scheduleService = {
       console.error('Error fetching classes:', error);
       // Return empty array instead of null to prevent errors
       return [];
+    }
+  },
+
+  /**
+   * Fetch all saved schedules for the current user
+   * @returns Promise with saved schedules metadata
+   */
+  async fetchSavedSchedules(): Promise<SavedSchedule[]> {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Authentication token not found');
+      }
+
+      const response = await axios.get(`${API_URL}/schedule/schedules`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      // Sort by creation date, newest first
+      return response.data.schedules.sort((a: SavedSchedule, b: SavedSchedule) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+    } catch (error) {
+      console.error('Error fetching saved schedules:', error);
+      return [];
+    }
+  },
+
+  // Add a function to cache the schedule
+  cacheSchedule(schedule: any) {
+    try {
+      localStorage.setItem('currentSchedule', JSON.stringify(schedule));
+    } catch (error) {
+      console.error('Error caching schedule:', error);
     }
   },
 
@@ -291,6 +328,13 @@ export const scheduleService = {
    */
   async getUserPreferences() {
     try {
+      // First check for cached preferences in localStorage
+      const cachedPrefs = this.getCachedPreferences();
+      if (cachedPrefs) {
+        console.log('Using cached preferences from localStorage');
+        return cachedPrefs;
+      }
+
       const token = localStorage.getItem('token');
       if (!token) {
         console.log('No token found, returning default preferences');
@@ -319,10 +363,20 @@ export const scheduleService = {
       // If we have preferences from the server, return them
       if (response.data && response.data.preferences) {
         console.log('Successfully loaded user preferences from server');
+        
+        // Cache these preferences for future use
+        localStorage.setItem('userPreferences', JSON.stringify(response.data.preferences));
+        
         return response.data.preferences;
       } else {
-        // If no preferences in response, return defaults
-        console.log('No preferences in response, using defaults');
+        // If no preferences in response, check cache one more time
+        const cachedPrefs = this.getCachedPreferences();
+        if (cachedPrefs) {
+          console.log('No preferences in response, using cached preferences');
+          return cachedPrefs;
+        }
+        
+        console.log('No preferences in response or cache, using defaults');
         return this.getDefaultPreferences();
       }
     } catch (error) {
@@ -335,7 +389,15 @@ export const scheduleService = {
         // window.location.href = '/login';
       }
       
-      // Fall back to default preferences
+      // Try to get preferences from localStorage as fallback
+      const cachedPrefs = this.getCachedPreferences();
+      if (cachedPrefs) {
+        console.log('Error fetching from server, using cached preferences');
+        return cachedPrefs;
+      }
+      
+      // Fall back to default preferences as last resort
+      console.log('No cached preferences found, using defaults');
       return this.getDefaultPreferences();
     }
   },
@@ -367,20 +429,42 @@ export const scheduleService = {
     try {
       const token = localStorage.getItem('token');
       
+      // Ensure dates are properly formatted before saving
+      const preferencesToSave = { ...preferences };
+      
+      // Format semester dates as ISO strings if they exist
+      if (preferencesToSave.semesterDates) {
+        if (preferencesToSave.semesterDates.startDate) {
+          // Make sure startDate is a proper Date object before converting to ISO string
+          const startDate = new Date(preferencesToSave.semesterDates.startDate);
+          if (!isNaN(startDate.getTime())) {
+            preferencesToSave.semesterDates.startDate = startDate.toISOString();
+          }
+        }
+        
+        if (preferencesToSave.semesterDates.endDate) {
+          // Make sure endDate is a proper Date object before converting to ISO string
+          const endDate = new Date(preferencesToSave.semesterDates.endDate);
+          if (!isNaN(endDate.getTime())) {
+            preferencesToSave.semesterDates.endDate = endDate.toISOString();
+          }
+        }
+      }
+
       // Always store preferences locally first as a backup
-      localStorage.setItem('userPreferences', JSON.stringify(preferences));
-      console.log('Preferences saved locally as backup');
+      localStorage.setItem('userPreferences', JSON.stringify(preferencesToSave));
+      console.log('Preferences saved locally as backup', preferencesToSave);
       
       // If no token, just return the locally saved preferences
       if (!token) {
         console.warn('No authentication token found, saving preferences locally only');
-        return preferences;
+        return preferencesToSave;
       }
 
-      console.log('Updating preferences on server:', preferences);
+      console.log('Updating preferences on server:', preferencesToSave);
       
       // Make a shallow copy to avoid modifying the original object
-      const preferencesToSend = { ...preferences };
+      const preferencesToSend = { ...preferencesToSave };
       
       // Remove any undefined or null values
       Object.keys(preferencesToSend).forEach(key => {
@@ -399,18 +483,20 @@ export const scheduleService = {
         
         console.log('Preferences updated on server successfully');
         if (response.data && response.data.preferences) {
+          // Update the local storage with server response to ensure consistency
+          localStorage.setItem('userPreferences', JSON.stringify(response.data.preferences));
           return response.data.preferences;
         }
         
         // If server doesn't return preferences, return the local ones
-        return preferences;
+        return preferencesToSave;
       } catch (err: any) {
         // Handle auth errors gracefully
         console.error('Error updating preferences on server:', err.response?.data?.error || err.message);
         console.log('Using locally saved preferences instead');
         
         // Return locally saved preferences instead of throwing error
-        return preferences;
+        return preferencesToSave;
       }
     } catch (error) {
       console.error('Error in updateUserPreferences:', error);
@@ -569,7 +655,8 @@ export const scheduleService = {
       const combinedEvents = [...classEvents, ...studyEvents];
       console.log(`Returning ${combinedEvents.length} combined events (${classEvents.length} class + ${studyEvents.length} study)`);
       
-      return combinedEvents;
+      // Ensure all events have proper Date objects before returning
+      return ensureDateObjects(combinedEvents);
     } catch (error) {
       console.error('Error fetching combined schedule:', error);
       return [];

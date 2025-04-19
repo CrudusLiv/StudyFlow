@@ -1,6 +1,125 @@
 import { CalendarEvent } from '../types/types';
 
 /**
+ * Ensures a value is a proper Date object
+ * @param {Date | string | number} date - The date value to check/convert
+ * @returns {Date} A proper Date object
+ */
+export function ensureDate(date: Date | string | number | undefined | null): Date {
+  if (!date) {
+    return new Date();
+  }
+  
+  if (date instanceof Date) {
+    return new Date(date); // Return a clone to avoid mutation
+  }
+  
+  try {
+    // Convert from string or number
+    const dateObj = new Date(date);
+    
+    // Check if the date is valid
+    if (isNaN(dateObj.getTime())) {
+      console.warn('Invalid date value converted to current date:', date);
+      return new Date();
+    }
+    
+    return dateObj;
+  } catch (error) {
+    console.error('Error converting to Date object:', error);
+    return new Date(); // Return current date as fallback
+  }
+}
+
+/**
+ * Ensures that all date properties in an event or array of events are proper Date objects.
+ * This resolves issues with React Big Calendar which expects real Date objects, not string dates.
+ */
+export const ensureDateObjects = (events: any[] | any): any[] | any => {
+  if (!events) return [];
+  
+  // Handle single event
+  if (!Array.isArray(events)) {
+    try {
+      const event = { ...events };
+      
+      // Handle start date
+      if (event.start) {
+        event.start = ensureDate(event.start);
+      } else {
+        event.start = new Date(); // Default to current date
+        console.warn('Event missing start date, defaulting to current date');
+      }
+      
+      // Handle end date
+      if (event.end) {
+        event.end = ensureDate(event.end);
+        
+        // Make sure end is after start
+        if (event.end <= event.start) {
+          event.end = new Date(event.start.getTime() + 60 * 60 * 1000); // 1 hour after start
+          console.warn('End date is before or equal to start date, setting to 1 hour after start');
+        }
+      } else {
+        // Default end date to 1 hour after start
+        event.end = new Date(event.start.getTime() + 60 * 60 * 1000);
+        console.warn('Event missing end date, defaulting to 1 hour after start');
+      }
+      
+      return event;
+    } catch (error) {
+      console.error('Error processing single event:', error);
+      return {
+        start: new Date(),
+        end: new Date(new Date().getTime() + 60 * 60 * 1000),
+        title: 'Error processing event'
+      };
+    }
+  }
+  
+  // Handle array of events with detailed validation
+  return events
+    .map(event => {
+      try {
+        if (!event) return null;
+        
+        const newEvent = { ...event };
+        
+        // Handle start date
+        if (newEvent.start) {
+          newEvent.start = ensureDate(newEvent.start);
+        } else {
+          newEvent.start = new Date();
+          console.warn('Event missing start date, defaulting to current date:', newEvent.title || 'Untitled');
+        }
+        
+        // Handle end date
+        if (newEvent.end) {
+          newEvent.end = ensureDate(newEvent.end);
+          
+          // Make sure end is after start
+          if (newEvent.end <= newEvent.start) {
+            newEvent.end = new Date(newEvent.start.getTime() + 60 * 60 * 1000);
+            console.warn('End date is before or equal to start date, setting to 1 hour after start:', 
+                         newEvent.title || 'Untitled');
+          }
+        } else {
+          // Default end date to 1 hour after start
+          newEvent.end = new Date(newEvent.start.getTime() + 60 * 60 * 1000);
+          console.warn('Event missing end date, defaulting to 1 hour after start:', 
+                       newEvent.title || 'Untitled');
+        }
+        
+        return newEvent;
+      } catch (error) {
+        console.error('Error processing event in array:', error);
+        return null;
+      }
+    })
+    .filter(event => event !== null); // Remove any events that failed processing
+}
+
+/**
  * Convert tasks to calendar events
  * @param tasks Array of tasks or study sessions
  * @returns Array of calendar events

@@ -287,7 +287,7 @@ const Admin: React.FC = () => {
         </motion.div>
       </motion.div>
 
-      {/* User Activity Chart */}
+      {/* User Activity Chart
       <motion.div 
         className="chart-section"
         variants={containerVariants}
@@ -363,7 +363,7 @@ const Admin: React.FC = () => {
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </motion.div>
+      </motion.div> */}
 
       {/* User Roles Distribution Chart */}
       <motion.div 
