@@ -1514,7 +1514,7 @@ app.get('/api/admin/analytics', authenticateJWT, checkAdminRole, async (req, res
         name: u.name || 'Unknown User',
         email: u.email || 'No Email',
         role: u.role || 'user',
-        lastLogin: u.lastLogin || null,
+        lastLogin: u.updatedAt || null,
         totalSessions: u.sessionDurations?.length || 0,
         averageSessionDuration: u.sessionDurations?.reduce((acc, session) =>
           acc + (session.duration || 0), 0) / (u.sessionDurations?.length || 1) || 0

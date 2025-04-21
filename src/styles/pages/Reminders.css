@@ -104,7 +104,13 @@
   color: var(--heading);
 }
 
-.assignments-list,
+.assignmentsReminders-list{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0;
+  background-color: transparent;
+}
 .reminders-list {
   display: flex;
   flex-direction: column;
@@ -223,49 +229,43 @@
 .assignment-actions,
 .reminder-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
-.edit-button,
-.delete-button,
+.editReminders-icon {
+
+  color: #4caf50; /* Green for edit */
+}
+
+.deleteReminders-icon {
+
+  color: #f44336; /* Red for delete */
+}
+
+/* Enhanced design for the mark as read button */
 .mark-read-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: transparent;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  color: var(--muted-foreground);
-  transition: all 0.2s ease;
-}
-
-.edit-button:hover {
-  background-color: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-}
-
-.delete-button:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-}
-
-.mark-read-button {
-  display: flex;
-  align-items: center;
   gap: 0.5rem;
-  background-color: rgba(16, 185, 129, 0.1);
-  color: #10b981;
-  padding: 0.4rem 0.8rem;
-  border-radius: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  background-color: #e8f5e9; /* Light green background */
+  color: #2e7d32; /* Dark green text */
+  padding: 0.6rem 1.2rem; /* Adjusted padding for better spacing */
+  border-radius: 0.75rem; /* More rounded corners */
+  font-size: 0.9rem; /* Slightly larger font size */
+  font-weight: 600; /* Semi-bold text */
+  border: 1px solid #2e7d32; /* Dark green border */
+  cursor: pointer;
+  transition: all 0.3s ease; /* Smooth transition for hover effects */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  width: fit-content; /* Adjust width to fit content */
 }
 
 .mark-read-button:hover {
-  background-color: rgba(16, 185, 129, 0.2);
+  background-color: #c8e6c9; /* Slightly darker green on hover */
+  color: #1b5e20; /* Darker text on hover */
+  transform: scale(1.05); /* Slight scaling effect */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Enhanced shadow on hover */
 }
 
 .mark-read-button span {
@@ -665,4 +665,55 @@
 
 .dark .empty-state {
   background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+}
+
+/* Enhanced design for edit and delete buttons */
+.editReminders-button,
+.deleteReminders-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent; /* Transparent background */
+  border: 2px solid transparent;
+  width: 50px; /* Larger size for better usability */
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for better visibility */
+  padding: 0; /* No extra padding */
+}
+
+.editReminders-button {
+  border-color: #4caf50;
+}
+
+.deleteReminders-button {
+  border-color: #f44336;
+}
+
+.editReminders-button:hover {
+  background-color: rgba(76, 175, 80, 0.1);
+  transform: scale(1.1);
+}
+
+.deleteReminders-button:hover {
+  background-color: rgba(244, 67, 54, 0.1);
+  transform: scale(1.1);
+}
+
+.editReminders-icon {
+  color: #4caf50;
+}
+
+.deleteReminders-icon {
+  color: #f44336;
+}
+
+/* Enhanced design and placement for edit and delete buttons */
+.assignment-actions {
+  display: flex;
+  gap: 1rem; /* Increased spacing between buttons */
+  justify-content: flex-end; /* Align buttons to the right */
+  margin-top: 0.5rem; /* Added spacing from the content above */
 }

@@ -243,7 +243,7 @@ const Profile: React.FC = () => {
           variants={containerVariants}
         >
           <motion.div
-            className="card-header"
+            className="profile-card-header"
             variants={fadeIn}
           >
             <h2 className="card-title">
@@ -307,7 +307,7 @@ const Profile: React.FC = () => {
         </motion.div>
         <motion.button
           onClick={handleLogout}
-          className="logout-button"
+          className="profile-logout-button"
           variants={buttonVariants}
           whileHover="hover"
           whileTap="tap"

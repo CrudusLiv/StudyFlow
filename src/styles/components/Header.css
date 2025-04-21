@@ -255,7 +255,6 @@ h1 {
   width: 100%;
   text-align: left;
   border: none;
-  background: none;
 }
 
 .dropdown-item:hover {
@@ -264,15 +263,49 @@ h1 {
 
 .dropdown-item svg {
   font-size: 1rem;
-  color: var(--text-muted, #6b7280);
+  margin-right: 1rem;
 }
 
+/* Enhanced design for .logout-button */
 .logout-button {
-  color: var(--danger, #ef4444);
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ff5151 0%, #dc2620 100%);
+  color: white;
+  border: none;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1rem;
+  transition: all 0.3s ease;
+  display: block;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
-.logout-button svg {
-  color: var(--danger, #ef4444);
+.logout-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(220, 38, 38, 0.4);
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.logout-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+/* Updated design for .logout-button with blue-themed colors */
+.dropdown-item .logout-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); /* Blue gradient */
+}
+
+.dropdown-item .logout-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); /* Darker blue gradient on hover */
+}
+
+.dropdown-item .logout-button:active {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%); /* Even darker blue gradient on active */
 }
 
 /* Style for empty notifications */

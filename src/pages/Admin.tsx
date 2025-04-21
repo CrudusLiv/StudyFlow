@@ -25,13 +25,13 @@ interface UserActivity {
   role: string;
   lastLogin: string;
   totalSessions: number;
-  averageSessionDuration: number;
+  // averageSessionDuration: number;
 }
 
 interface Analytics {
   totalUsers: number;
   activeToday: number;
-  averageSessionDuration: number;
+  // averageSessionDuration: number;
   userActivity: UserActivity[];
 }
 
@@ -161,14 +161,14 @@ const Admin: React.FC = () => {
     return result;
   }, [analytics, searchTerm, sortConfig]);
 
-  // Prepare activity data for bar chart
-  const activityData = useMemo(() => {
-    if (!analytics) return [];
-    return analytics.userActivity.map(user => ({
-      name: user.name.split(' ')[0],
-      'Study Time': user.averageSessionDuration,
-    }));
-  }, [analytics]);
+  // // Prepare activity data for bar chart
+  // const activityData = useMemo(() => {
+  //   if (!analytics) return [];
+  //   return analytics.userActivity.map(user => ({
+  //     name: user.name.split(' ')[0],
+  //     'Study Time': user.averageSessionDuration,
+  //   }));
+  // }, [analytics]);
 
   // Prepare role distribution data for pie chart
   const roleData = useMemo(() => {
@@ -273,7 +273,7 @@ const Admin: React.FC = () => {
           <p className="stat-value">{analytics.activeToday}</p>
         </motion.div>
 
-        <motion.div 
+        {/* <motion.div 
           className="stat-card"
           variants={gridItemVariants}
           whileHover="hover"
@@ -284,86 +284,9 @@ const Admin: React.FC = () => {
           </div>
           <p className="stat-description">In minutes per user</p>
           <p className="stat-value">{Math.round(analytics.averageSessionDuration)}m</p>
-        </motion.div>
+        </motion.div> */}
       </motion.div>
 
-      {/* User Activity Chart */}
-      <motion.div 
-        className="chart-section"
-        variants={containerVariants}
-      >
-        <h3 className="section-title">
-          <FaChartLine className="section-icon" />User Activity
-        </h3>
-        <div className="chart-wrapper" style={{ height: getChartDimensions().height }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={activityData}
-              margin={getResponsiveMargin()}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis 
-                dataKey="name"
-                interval={0}
-                tick={{ 
-                  fill: '#6b7280', 
-                  fontSize: getChartDimensions().fontSize,
-                  width: window.innerWidth <= 480 ? 60 : 100 
-                }}
-                tickLine={{ stroke: '#e5e7eb' }}
-                axisLine={{ stroke: '#e5e7eb' }}
-                height={window.innerWidth <= 480 ? 60 : 80}
-                angle={-45}
-                textAnchor="end"
-                label={{ 
-                  value: "Users", 
-                  position: "bottom", 
-                  offset: window.innerWidth <= 480 ? 30 : 50,
-                  style: { fill: '#4b5563', fontSize: window.innerWidth <= 480 ? 12 : 14 }
-                }}
-              />
-              <YAxis 
-                tick={{ 
-                  fill: '#6b7280', 
-                  fontSize: window.innerWidth <= 480 ? 10 : 12 
-                }}
-                tickLine={{ stroke: '#e5e7eb' }}
-                axisLine={{ stroke: '#e5e7eb' }}
-                label={{ 
-                  value: "Study Time (min)", 
-                  angle: -90, 
-                  position: "insideLeft",
-                  offset: window.innerWidth <= 480 ? -25 : -35,
-                  style: { 
-                    fill: '#4b5563',
-                    fontSize: window.innerWidth <= 480 ? 12 : 14
-                  }
-                }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#ffffff',
-                  borderRadius: '8px',
-                  border: 'none',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
-                  padding: '12px',
-                  fontSize: window.innerWidth <= 480 ? '12px' : '14px'
-                }}
-                cursor={{ fill: 'rgba(129, 140, 248, 0.1)' }}
-              />
-              <Bar 
-                dataKey="Study Time" 
-                fill="#8884d8" 
-                name="Avg Study Time (min)"
-                radius={[8, 8, 0, 0]}
-                maxBarSize={getChartDimensions().barSize}
-                animationDuration={1500}
-                animationEasing="ease-in-out"
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </motion.div>
 
       {/* User Roles Distribution Chart */}
       <motion.div 
@@ -456,12 +379,12 @@ const Admin: React.FC = () => {
                 <th onClick={() => requestSort('lastLogin')}>
                   Last Active {getSortIcon('lastLogin')}
                 </th>
-                <th onClick={() => requestSort('totalSessions')}>
+                {/* <th onClick={() => requestSort('totalSessions')}>
                   Total Sessions {getSortIcon('totalSessions')}
                 </th>
                 <th onClick={() => requestSort('averageSessionDuration')}>
                   Avg. Duration {getSortIcon('averageSessionDuration')}
-                </th>
+                </th> */}
               </tr>
             </thead>
             <motion.tbody
@@ -490,9 +413,9 @@ const Admin: React.FC = () => {
                         </span>
                       </td>
                       <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}</td>
-                      <td>{user.totalSessions !== undefined ? user.totalSessions : 0}</td>
+                      {/* <td>{user.totalSessions !== undefined ? user.totalSessions : 0}</td>
                       <td>{user.averageSessionDuration !== undefined ? 
-                        `${Math.round(user.averageSessionDuration)}m` : '0m'}</td>
+                        `${Math.round(user.averageSessionDuration)}m` : '0m'}</td> */}
                     </motion.tr>
                   );
                 })

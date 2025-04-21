@@ -512,7 +512,7 @@ const Reminders: React.FC = () => {
               </div>
             ) : (
               <motion.div 
-                className="assignments-list"
+                className="assignmentsReminders-list"
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
@@ -530,7 +530,7 @@ const Reminders: React.FC = () => {
                       </div>
                       <div className="assignment-actions">
                         <button 
-                          className="edit-button"
+                          className="editReminders-button"
                           onClick={() => {
                             setEditingAssignment({
                               ...assignment,
@@ -539,13 +539,13 @@ const Reminders: React.FC = () => {
                             setShowEditForm(true);
                           }}
                         >
-                          <FiEdit / >
+                          <FiEdit className='editReminders-icon'/ >
                         </button>
                         <button 
-                          className="delete-button"
+                          className="deleteReminders-button"
                           onClick={() => handleDeleteAssignment(assignment._id)}
                         >
-                          <FiTrash2 />
+                          <FiTrash2 className='deleteReminders-icon' />
                         </button>
                       </div>
                     </div>

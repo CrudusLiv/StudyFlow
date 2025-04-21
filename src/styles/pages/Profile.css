@@ -21,6 +21,10 @@
 }
 
 .profile-card {
+  flex-direction: column;
+  justify-content: center;
+  gap: auto;
+  display: flex;
   background: var(--card);
   border-radius: 1.2rem;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
@@ -35,7 +39,7 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
-.card-header {
+.profile-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -125,7 +129,7 @@
   box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 }
 
-.logout-button {
+.profile-logout-button {
   width: 100%;
   max-width: 48rem;
   margin: 0 auto;
@@ -142,7 +146,7 @@
   display: block;
 }
 
-.logout-button:hover {
+.profile-logout-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
 }
@@ -207,7 +211,15 @@
   animation: pulse 2s infinite;
 }
 
-.edit-profile-button, .save-profile-button{
+.edit-profile-button{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.save-profile-button {
+  margin-top: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -472,10 +484,14 @@
     font-size: 1.1rem;
   }
   
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
+  .profile-card-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f1f5f9;
   }
   
   .edit-button {
