@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiUser, FiBell, FiLogOut, FiMoon, FiSun, FiMenu } from 'react-icons/fi';
+import { FiUser, FiBell, FiLogOut, FiMoon, FiSun } from 'react-icons/fi';
 import '../styles/components/Header.css';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -104,9 +104,12 @@ const Header: React.FC = () => {
     return null;
   }
 
+  // Add dark mode support to the header
+  const headerClass = `app-header ${theme === 'dark' ? 'light' : ''}`;
+
   return (
     <motion.header 
-      className="app-header"
+      className={headerClass}
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}

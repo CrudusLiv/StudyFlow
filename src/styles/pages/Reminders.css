@@ -1,13 +1,21 @@
 .reminders-container {
-  max-width: 1200px;
   height: 100%;
   min-height: 100vh;
   margin: 0 auto;
   padding: 2rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
   transition: background 0.5s ease;
+  padding: 2rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
-
+.reminders-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
 .reminders-header {
   display: flex;
   align-items: center;
@@ -470,24 +478,23 @@
   color: var(--heading);
 }
 
-.close-button {
+.assignment-close-button {
   background: transparent;
   border: none;
-  color: var(--muted-foreground);
+  color: white;
   font-size: 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: fit-content;
+  height: fit-content;
   border-radius: 0.5rem;
-  transition: all 0.2s ease;
 }
-
-.close-button:hover {
-  background-color: var(--hover-bg);
-  color: var(--foreground);
+.assignment-close-button:hover {
+  background-color: transparent;
+  border: #ffffff 1px solid;
+  transition: all 0.2s ease;
 }
 
 /* Form styling */
@@ -495,7 +502,6 @@
   margin-bottom: 1.5rem;
 }
 
-.form-group input,
 .form-group textarea {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -513,6 +519,19 @@
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background-color: white;
+  color: var(--foreground);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
 
 .form-actions {
   display: flex;
@@ -583,12 +602,25 @@
     justify-content: center;
   }
 }
-
+.dark .reminders-container {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+.dark .reminders-wrapper {
+  background: rgba(17, 24, 39, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(99, 102, 241, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.dark .mark-read-button {
+  color: #10b981;
+}
+  
+.dark .mark-read-button:hover {
+  color: #10b981;
+}
 /* Dark mode styles */
 @media (prefers-color-scheme: dark) {
-  .reminders-container {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  }
+
 
   .reminders-title {
     color: #f9fafb;
@@ -631,13 +663,7 @@
     border-left: 5px solid #d97706;
   }
 
-  .mark-read-button {
-    background-color: #059669;
-  }
 
-  .mark-read-button:hover {
-    background-color: #047857;
-  }
 
   .empty-state {
     background: rgba(30, 41, 59, 0.8);
@@ -652,6 +678,25 @@
   .notification.error {
     background-color: #dc2626;
   }
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+  
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background-color: var(--input-bg);
+      color: var(--foreground);
+      font-size: 1rem;
+      transition: all 0.2s ease;
+    }
+  
 }
 
 .dark .reminder-item {
@@ -704,6 +749,8 @@
 
 .editReminders-icon {
   color: #4caf50;
+  width: auto; /* Auto width for better alignment */
+  height: auto; /* Auto height for better alignment */
 }
 
 .deleteReminders-icon {
