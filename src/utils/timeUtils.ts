@@ -133,3 +133,63 @@ export const generateWeekDates = (baseDate: Date = new Date(), startDayOfWeek = 
   
   return dates;
 };
+
+/**
+ * Ensures all date properties in calendar events are proper JavaScript Date objects
+ * @param events Array of calendar events
+ * @returns Array of events with proper Date objects
+ */
+export const ensureDateObjects = (events: any[]): any[] => {
+  if (!Array.isArray(events)) {
+    console.warn('ensureDateObjects: Input is not an array', events);
+    return [];
+  }
+  
+  return events.map(event => {
+    if (!event) return event;
+    
+    const newEvent = { ...event };
+    
+    // Convert start date if it exists and isn't already a Date object
+    if (newEvent.start) {
+      if (!(newEvent.start instanceof Date)) {
+        try {
+          newEvent.start = new Date(newEvent.start);
+          if (isNaN(newEvent.start.getTime())) {
+            console.warn('Invalid start date, falling back to current date:', event.start);
+            newEvent.start = new Date();
+          }
+        } catch (error) {
+          console.error('Error converting start date:', error, event.start);
+          newEvent.start = new Date();
+        }
+      }
+    } else {
+      // No start date provided, use current date as fallback
+      newEvent.start = new Date();
+      console.warn('Event missing start date, using current date as fallback');
+    }
+    
+    // Convert end date if it exists and isn't already a Date object
+    if (newEvent.end) {
+      if (!(newEvent.end instanceof Date)) {
+        try {
+          newEvent.end = new Date(newEvent.end);
+          if (isNaN(newEvent.end.getTime())) {
+            console.warn('Invalid end date, creating end date from start:', event.end);
+            newEvent.end = new Date(newEvent.start.getTime() + 60 * 60 * 1000); // 1 hour later
+          }
+        } catch (error) {
+          console.error('Error converting end date:', error, event.end);
+          newEvent.end = new Date(newEvent.start.getTime() + 60 * 60 * 1000);
+        }
+      }
+    } else {
+      // No end date provided, create one 1 hour after start
+      newEvent.end = new Date(newEvent.start.getTime() + 60 * 60 * 1000);
+      console.warn('Event missing end date, using start date + 1 hour as fallback');
+    }
+    
+    return newEvent;
+  });
+};

@@ -8,30 +8,49 @@
   --base-font-size: 16px;
   --heading-line-height: 1.2;
   --body-line-height: 1.6;
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --accent: #818cf8;
+  --accent-dark: #6366f1;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --background: #ffffff;
+  --foreground: #1f2937;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --card: #ffffff;
+  --card-foreground: #1f2937;
+  --popover: #ffffff;
+  --popover-foreground: #1f2937;
+  --border: #e5e7eb;
+  --input: #f3f4f6;
+  --ring: rgba(79, 70, 229, 0.2);
+  --radius: 0.75rem;
 }
 
 /* Apply dark theme only when .dark class is present */
 .dark {
   /* Dark theme overrides for all variables from light theme */
-  --background: #1a1a1a;
-  --foreground: #e0e0e0;
-  --card: #2a2a2a;
-  --card-foreground: #e0e0e0;
-  --popover: #222222;
-  --popover-foreground: #e0e0e0;
-  --primary: #4a90e2;
+  --background: #0f172a;
+  --foreground: #f3f4f6;
+  --card: #1e293b;
+  --card-foreground: #f3f4f6;
+  --popover: #1e293b;
+  --popover-foreground: #f3f4f6;
+  --primary: #818cf8;
   --primary-foreground: #ffffff;
   --secondary: #2c3e50;
   --secondary-foreground: #ffffff;
-  --muted: #333333;
-  --muted-foreground: #ccc;
-  --accent: #4a90e2;
+  --muted: #1f2937;
+  --muted-foreground: #94a3b8;
+  --accent: #c7d2fe;
   --accent-foreground: #ffffff;
   --destructive: #e3342f;
   --destructive-foreground: #ffffff;
-  --border: #444444;
-  --input: #444444;
-  --ring: #646cff;
+  --border: #374151;
+  --input: #1f2937;
+  --ring: rgba(129, 140, 248, 0.2);
   
   /* Calendar variables */
   --calendar-bg: #1f2937;
@@ -80,6 +99,8 @@
 /* Global resets and more comfortable typography */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 /* Responsive base styles */
@@ -251,4 +272,140 @@ textarea {
 :focus {
   outline: 3px solid var(--ring);
   outline-offset: 2px;
+}
+
+/* Glass effect */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Improved scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: var(--radius);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.5s ease-out;
+}
+
+/* Button styles */
+button, .button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.button-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+}
+
+.button-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+.button-secondary {
+  background: var(--muted);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.button-secondary:hover {
+  background: var(--input);
+  transform: translateY(-1px);
+}
+
+/* Card styles */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+/* Input styles */
+input, textarea, select {
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  color: var(--foreground);
+  font-size: 1rem;
+  transition: all 0.2s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--foreground);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.875rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.25rem; }
+h5 { font-size: 1.125rem; }
+h6 { font-size: 1rem; }
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.625rem; }
+  h3 { font-size: 1.375rem; }
 }

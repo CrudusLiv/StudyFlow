@@ -28,7 +28,7 @@ import { Link } from 'react-router-dom';
 
 import { WeeklySchedule, DaySchedule, CalendarEvent, ClassData } from '../types/types';
 import '../styles/pages/Schedule.css';
-import { tasksToEvents, classesToEvents } from '../utils/calendarHelpers';
+import { tasksToEvents, classesToEvents, ensureDateObjects } from '../utils/calendarHelpers';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import TaskModal from '../components/TaskModal';
 import ClassModal from '../components/ClassModal';
@@ -650,7 +650,7 @@ const Schedule: React.FC = () => {
       console.log('Formatted class events for normal calendar:', formattedEvents);
       
       // Set the events directly 
-      setEvents(prev => [...prev.filter(e => e.category !== 'class'), ...formattedEvents]);
+      setEvents(prev => ensureDateObjects([...prev.filter(e => e.category !== 'class'), ...formattedEvents]));
 
       // Save updated events to localStorage for the Tracker page
       const updatedEvents = [...events.filter(e => e.category !== 'class'), ...formattedEvents];
@@ -732,8 +732,15 @@ const Schedule: React.FC = () => {
         return;
       }
       
+      // Ensure we have proper Date objects
       const startDate = new Date(classData.semesterDates.startDate);
       const endDate = new Date(classData.semesterDates.endDate);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        console.warn('Invalid semester dates:', classData.semesterDates);
+        return;
+      }
+      
       let currentDate = new Date(startDate);
       
       while (currentDate <= endDate) {
@@ -753,6 +760,12 @@ const Schedule: React.FC = () => {
             
             const eventEnd = new Date(currentDate);
             eventEnd.setHours(parseInt(endHours), parseInt(endMinutes), 0);
+            
+            // Verify that the dates are valid
+            if (isNaN(eventStart.getTime()) || isNaN(eventEnd.getTime())) {
+              console.warn('Invalid event time created:', { eventStart, eventEnd });
+              continue;
+            }
             
             // Create a unique ID using more parameters and a counter
             const uniqueId = `class-${classData._id || Math.random().toString(36).substring(2)}-${
@@ -2096,14 +2109,24 @@ const Schedule: React.FC = () => {
   const loadPreferences = async () => {
     try {
       setPreferencesLoading(true);
+      console.log('Loading preferences...');
       const userPrefs = await scheduleService.getUserPreferences();
       
       if (userPrefs) {
         console.log('Loaded preferences:', userPrefs);
+        // Use a functional update to ensure we're working with the latest state
         setPreferences(prevPrefs => ({
           ...prevPrefs,
           ...userPrefs
         }));
+        
+        // If preferences include semester dates, update the universal state
+        if (userPrefs.semesterDates?.startDate && userPrefs.semesterDates?.endDate) {
+          setUniversalSemesterDates({
+            startDate: new Date(userPrefs.semesterDates.startDate),
+            endDate: new Date(userPrefs.semesterDates.endDate)
+          });
+        }
       }
       
       setPreferencesError(null);
@@ -2124,9 +2147,47 @@ const savePreferences = async () => {
     
     console.log('Saving preferences:', preferences);
     
+    // Ensure semester dates are properly formatted for the server
+    const preferencesToSave = { ...preferences };
+    
+    // Format semester dates as ISO strings if they exist
+    if (preferencesToSave.semesterDates) {
+      if (preferencesToSave.semesterDates.startDate) {
+        // Make sure startDate is a proper Date object before converting to ISO string
+        const startDate = new Date(preferencesToSave.semesterDates.startDate);
+        if (!isNaN(startDate.getTime())) {
+          preferencesToSave.semesterDates.startDate = startDate.toISOString();
+        }
+      }
+      
+      if (preferencesToSave.semesterDates.endDate) {
+        // Make sure endDate is a proper Date object before converting to ISO string
+        const endDate = new Date(preferencesToSave.semesterDates.endDate);
+        if (!isNaN(endDate.getTime())) {
+          preferencesToSave.semesterDates.endDate = endDate.toISOString();
+        }
+      }
+    }
+    
     try {
       // This will now always return preferences (either from server or local)
-      const savedPrefs = await scheduleService.updateUserPreferences(preferences);
+      const savedPrefs = await scheduleService.updateUserPreferences(preferencesToSave);
+      
+      // Also update the universal semester dates state so it's available throughout the app
+      if (preferencesToSave.semesterDates?.startDate && preferencesToSave.semesterDates?.endDate) {
+        setUniversalSemesterDates({
+          startDate: new Date(preferencesToSave.semesterDates.startDate),
+          endDate: new Date(preferencesToSave.semesterDates.endDate)
+        });
+        
+        // Dispatch event to notify components of semester dates change
+        window.dispatchEvent(new CustomEvent('semesterDatesUpdated', { 
+          detail: { 
+            startDate: preferencesToSave.semesterDates.startDate, 
+            endDate: preferencesToSave.semesterDates.endDate 
+          } 
+        }));
+      }
       
       // Success message - even if we only saved locally
       setPreferencesSuccess('Preferences saved successfully!');
@@ -2225,18 +2286,21 @@ const savePreferences = async () => {
 
   // Render the view based on the selected view type
   const renderView = () => {
+    // First ensure all events have proper Date objects
+    const safeEvents = ensureDateObjects(events);
+    
     switch (viewType) {
       case 'grid':
         return (
           <ScheduleGridView 
-            events={deduplicateClassEvents(events)}
+            events={deduplicateClassEvents(safeEvents)}
             onEventClick={handleEventClick}
           />
         );
       case 'list':
         return (
           <ScheduleListView 
-            events={deduplicateClassEvents(events)}
+            events={deduplicateClassEvents(safeEvents)}
             onEventClick={handleEventClick}
           />
         );
@@ -2244,7 +2308,7 @@ const savePreferences = async () => {
         return (
           <div className="calendar-container">
             <Calendar
-              events={events}
+              events={safeEvents}
               defaultView="week"
               views={["day", "week", "month"]}
               defaultDate={new Date()}
@@ -2381,13 +2445,17 @@ const savePreferences = async () => {
       
       if (combinedEvents.length > 0) {
         console.log(`Loaded ${combinedEvents.length} combined events`);
-        setEvents(combinedEvents);
+        
+        // Ensure all events have proper Date objects
+        const safeEvents = ensureDateObjects(combinedEvents);
+        
+        setEvents(safeEvents);
         
         // Also update localStorage for persistence
-        localStorage.setItem('scheduleEvents', JSON.stringify(combinedEvents));
+        localStorage.setItem('scheduleEvents', JSON.stringify(safeEvents));
         
         // Extract classes for grid/list views
-        const classes = combinedEvents.filter(event => event.category === 'class');
+        const classes = safeEvents.filter(event => event.category === 'class');
         setRawClasses(classes);
         
         // Organize by day for the grid/list views
@@ -2455,14 +2523,6 @@ const savePreferences = async () => {
           >
             <FiSettings className="button-icon" />
             Preferences
-          </motion.button>
-          <motion.button
-            className="semester-dates-button"
-            onClick={() => setSemesterDatesModalOpen(true)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            Set Semester Dates
           </motion.button>
           <button 
             className="action-button"

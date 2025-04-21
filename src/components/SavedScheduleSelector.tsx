@@ -24,12 +24,17 @@ const SavedScheduleSelector: React.FC<SavedScheduleSelectorProps> = ({ onSchedul
     async function loadSavedSchedules() {
       try {
         setLoading(true);
-        const savedSchedules = await scheduleService.fetchSavedSchedules();
-        setSchedules(savedSchedules);
-        
-        // Auto-select the most recent schedule if any exist
-        if (savedSchedules.length > 0) {
-          onScheduleSelected(savedSchedules[0].id);
+        // Ensure scheduleService is properly imported and available
+        if (scheduleService && typeof scheduleService.fetchSavedSchedules === 'function') {
+          const savedSchedules = await scheduleService.fetchSavedSchedules();
+          setSchedules(savedSchedules);
+          
+          // Auto-select the most recent schedule if any exist
+          if (savedSchedules.length > 0) {
+            onScheduleSelected(savedSchedules[0].id);
+          }
+        } else {
+          throw new Error('fetchSavedSchedules is not available in the scheduleService');
         }
       } catch (err) {
         console.error('Error loading saved schedules:', err);

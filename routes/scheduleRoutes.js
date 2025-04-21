@@ -475,6 +475,38 @@ router.get('/schedules', async (req, res) => {
   }
 });
 
+// Route to fetch the most recent schedule
+router.get('/schedules/recent', async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get all schedules for the user
+    const schedules = getUserSchedules(userId);
+    
+    if (!schedules || schedules.length === 0) {
+      return res.status(404).json({ error: 'No saved schedules found' });
+    }
+    
+    // Sort schedules by creation date, newest first
+    const sortedSchedules = schedules.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    // Get the most recent schedule
+    const mostRecentScheduleId = sortedSchedules[0].id;
+    const recentScheduleData = loadSchedule(userId, mostRecentScheduleId);
+    
+    if (!recentScheduleData) {
+      return res.status(404).json({ error: 'Most recent schedule data not found' });
+    }
+    
+    res.status(200).json(recentScheduleData);
+  } catch (error) {
+    console.error('Error fetching recent schedule:', error);
+    res.status(500).json({ error: 'Error fetching recent schedule' });
+  }
+});
+
 router.get('/schedules/:id', async (req, res) => {
   try {
     const userId = req.user.id;
