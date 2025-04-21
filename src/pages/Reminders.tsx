@@ -479,6 +479,7 @@ const Reminders: React.FC = () => {
 
   return (
     <div className="reminders-container">
+      <div className="reminders-wrapper">
       <ToastContainer position="top-right" />
 
       <header className="reminders-header">
@@ -639,7 +640,7 @@ const Reminders: React.FC = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Add New Assignment</h2>
-              <button className="close-button" onClick={() => setShowAddForm(false)}>
+              <button className="assignment-close-button" onClick={() => setShowAddForm(false)}>
                 <FiX />
               </button>
             </div>
@@ -698,7 +699,7 @@ const Reminders: React.FC = () => {
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Edit Assignment</h2>
-              <button className="close-button" onClick={() => setShowEditForm(false)}>
+              <button className="assignment-close-button" onClick={() => setShowEditForm(false)}>
                 <FiX />
               </button>
             </div>
@@ -749,7 +750,8 @@ const Reminders: React.FC = () => {
             </form>
           </div>
         </div>
-      )}
+        )}
+        </div>
     </div>
   );
 };

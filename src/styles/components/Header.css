@@ -1,3 +1,13 @@
+.dropdown-menu,
+.notification-item,
+.dropdown-item,
+.theme-toggle,
+.notifications-button,
+.profile-button,
+.view-all {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -77,6 +87,7 @@ h1 {
   z-index: 100;
   width: 100%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .header-container {
@@ -136,7 +147,7 @@ h1 {
 .profile-button {
   background: none;
   border: none;
-  color: var(--text, #374151);
+  color: #374151;
   font-size: 1.25rem;
   cursor: pointer;
   padding: 0.5rem;
@@ -340,33 +351,6 @@ h1 {
   opacity: 1;
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .app-header {
-    background-color: var(--header-bg, #1f2937);
-    border-bottom-color: var(--border, #374151);
-  }
-  
-  .dropdown-menu {
-    background-color: var(--card-bg, #1f2937);
-    border-color: var(--border, #4b5563);
-  }
-  
-  .notification-item {
-    border-color: var(--border, #4b5563);
-  }
-  
-  .view-all {
-    border-color: var(--border, #4b5563);
-  }
-  
-  .notification-item:hover,
-  .dropdown-item:hover,
-  .view-all:hover {
-    background-color: var(--hover-bg, #374151);
-  }
-}
-
 /* Responsive adjustments */
 @media (max-width: 1024px) {
   .app-header {
@@ -469,4 +453,85 @@ h1 {
   .dropdown-menu {
     width: 220px;
   }
+}
+
+
+/* Dark mode adjustments - replace the existing dark mode section */
+.dark .app-header {
+  background-color: var(--header-bg, #111827);
+  border-bottom-color: var(--border, #374151);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.dark .dropdown-menu {
+  border-color: var(--border, #4b5563);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  background-color: rgba(31, 41, 55, 0.95);
+}
+
+.dark .notification-item {
+  border-color: var(--border, #374151);
+  transition: all 0.2s ease;
+}
+
+.dark .notification-item:hover,
+.dark .dropdown-item:hover,
+.dark .view-all:hover {
+  background-color: var(--hover-bg, #2d3748);
+}
+
+.dark .view-all {
+  border-color: var(--border, #374151);
+  color: var(--primary, #6366f1);
+}
+
+.dark .theme-toggle,
+.dark .notifications-button,
+.dark .profile-button {
+  color:  #e5e7eb;
+}
+
+.dark .theme-toggle:hover,
+.dark .notifications-button:hover,
+.dark .profile-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.dark .notification-item p {
+  color: var(--text, #e5e7eb);
+}
+
+.dark .notification-item small,
+.dark .empty-notifications {
+  color: var(--text-muted, #9ca3af);
+}
+
+.dark .dropdown-item {
+  color: var(--text, #e5e7eb);
+}
+
+.dark .notification-badge {
+  background-color: var(--primary, #6366f1);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.6);
+}
+
+.dark .mark-read-btn {
+  background-color: var(--primary, #6366f1);
+}
+
+/* Enhance the dark mode logout button */
+.dark .dropdown-item.logout-button {
+  background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.25);
+}
+
+.dark .dropdown-item.logout-button:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+  box-shadow: 0 6px 15px rgba(79, 70, 229, 0.4);
+}
+
+.dark .dropdown-item.logout-button:active {
+  background: linear-gradient(135deg, #3730a3 0%, #312e81 100%);
 }

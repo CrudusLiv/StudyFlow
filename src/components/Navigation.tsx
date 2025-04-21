@@ -3,9 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { 
   FiHome, 
   FiCalendar, 
-  FiBarChart2, 
-  FiBell, 
-  FiSettings, 
+  FiBarChart2,
   FiMenu, 
   FiX, 
   FiCheckSquare, 
@@ -16,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import '../styles/components/Navigation.css';
 import { useAuth } from '../contexts/AuthContext';
 import { rightSideNavVariants, rightSideItemVariants } from '../utils/rightSideNavigation';
+
 
 const Navigation: React.FC = () => {
   const location = useLocation();
@@ -71,7 +70,7 @@ const Navigation: React.FC = () => {
     <nav className="navigation">
       <div className="nav-container">
         <div className="nav-left">
-          <div className="logo">
+          <div className="na">
             <Link to="/">
               <motion.div 
                 initial={{ scale: 0.9, rotate: -5 }}

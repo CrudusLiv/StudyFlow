@@ -1,5 +1,6 @@
 @import './styles/main.css';
 @import './styles/themes/light.css';
+@import './styles/themes/dark.css';
 
 /* Root variables that apply to both themes */
 :root {

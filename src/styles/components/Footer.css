@@ -119,48 +119,41 @@
   animation: heartbeat 1.5s infinite;
 }
 
-@keyframes heartbeat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+/* Dark mode adjustments */
+.dark .app-footer {
+  background-color: var(--footer-bg, #111827);
+  border-top-color: var(--border, #1f2937);
+  color: var(--text, #e5e7eb);
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-  .app-footer {
-    background-color: var(--footer-bg, #111827);
-    border-top-color: var(--border, #1f2937);
-    color: var(--text, #e5e7eb);
-  }
-  
-  .footer-title {
-    color: var(--heading, #f3f4f6);
-  }
-  
-  .footer-description {
-    color: var(--text-muted, #9ca3af);
-  }
-  
-  .footer-links a {
-    color: var(--text, #d1d5db);
-  }
-  
-  .footer-links a:hover {
-    color: var(--primary, #818cf8);
-  }
-  
-  .social-links a {
-    background-color: var(--icon-bg, #1f2937);
-    color: var(--text, #d1d5db);
-  }
-  
-  .social-links a:hover {
-    background-color: var(--primary, #6366f1);
-  }
-  
-  .footer-bottom {
-    border-top-color: var(--border, #1f2937);
-    color: var(--text-muted, #9ca3af);
-  }
+.dark .footer-title {
+  color: var(--heading, #f3f4f6);
+}
+
+.dark .footer-description {
+  color: var(--text-muted, #9ca3af);
+}
+
+.dark .footer-links a {
+  color: var(--text, #d1d5db);
+}
+
+.dark .footer-links a:hover {
+  color: var(--primary, #818cf8);
+}
+
+.dark .social-links a {
+  background-color: var(--icon-bg, #1f2937);
+  color: var(--text, #d1d5db);
+}
+
+.dark .social-links a:hover {
+  background-color: var(--primary, #6366f1);
+}
+
+.dark .footer-bottom {
+  border-top-color: var(--border, #1f2937);
+  color: var(--text-muted, #9ca3af);
 }
 
 /* Tablet and larger screens */
