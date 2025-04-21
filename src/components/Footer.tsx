@@ -82,7 +82,7 @@ const Footer: React.FC = () => {
             </ul>
           </motion.div>
           
-          <motion.div 
+          {/* <motion.div 
             className="footer-section contact-section"
             variants={itemVariants}
           >
@@ -138,7 +138,7 @@ const Footer: React.FC = () => {
             >
               Have questions? Get in touch with us.
             </motion.p>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
         
         <motion.div 
