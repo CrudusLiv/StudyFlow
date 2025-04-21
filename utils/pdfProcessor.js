@@ -579,11 +579,12 @@ export async function processDocuments(filePaths, userId, options = {}) {
               ? parseInt(assignmentNumberMatch[1] || assignmentNumberMatch[2], 10) 
               : 1;
             
-            // Use the fixed due date function
+            // Use the fixed due date function WITH FILE NAME
             const fixedDueDate = createFallbackDueDate(
-              `${courseCode} Assignment ${assignmentNumber}`, 
+              assignment.title, 
               options.classSchedule || [], 
-              options.preferences || {}
+              options.preferences || {},
+              fileInfo.name // Pass the file name here to check for file-based fixed dates
             );
             
             // Use ISO date format string for the due date

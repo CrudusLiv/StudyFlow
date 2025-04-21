@@ -1348,8 +1348,20 @@ const Schedule: React.FC = () => {
           const currentClassEvents = events.filter(event => event.category === 'class');
           console.log(`Preserving ${currentClassEvents.length} existing class events`);
           
+          // Process and simplify assignment titles before adding to calendar
+          const processedEvents = scheduleEvents.map(event => {
+            // Simplify assignment titles using the existing function in scheduleService
+            if (event.category === 'assignment' || event.title?.includes('Assignment')) {
+              return {
+                ...event,
+                title: scheduleService.extractSimpleAssignmentTitle(event, event.courseCode)
+              };
+            }
+            return event;
+          });
+          
           // Combine the study schedule with existing class events
-          setEvents([...currentClassEvents, ...scheduleEvents]);
+          setEvents([...currentClassEvents, ...processedEvents]);
           
           // Save the document ID for reference
           if (response.documentId) {
@@ -1360,7 +1372,7 @@ const Schedule: React.FC = () => {
           if (response.localOnly) {
             toast.warning('Schedule was saved locally due to size limitations.');
           } else {
-            toast.success(`Generated ${scheduleEvents.length} study events successfully!`);
+            toast.success(`Generated ${processedEvents.length} study events successfully!`);
           }
           
           setShowUploadModal(false);
@@ -2414,11 +2426,29 @@ const savePreferences = async () => {
         const nonClassEvents = scheduleData.schedule.filter(event => event.category !== 'class');
         console.log(`Schedule has ${nonClassEvents.length} non-class events`);
         
+        // Process and simplify assignment titles
+        const processedEvents = nonClassEvents.map(event => {
+          if (event.category === 'assignment' || event.title?.includes('Assignment')) {
+            return {
+              ...event,
+              title: scheduleService.extractSimpleAssignmentTitle(event, event.courseCode)
+            };
+          }
+          return event;
+        });
+        
         // Combine preserved class events with loaded non-class events
-        const combinedEvents = [...classEvents, ...nonClassEvents];
-        console.log(`Setting combined events: ${combinedEvents.length} total (${classEvents.length} class + ${nonClassEvents.length} non-class)`);
+        const combinedEvents = [...classEvents, ...processedEvents];
+        console.log(`Setting combined events: ${combinedEvents.length} total (${classEvents.length} class + ${processedEvents.length} non-class)`);
         
         setEvents(combinedEvents);
+        
+        // IMPORTANT: Save events to localStorage for Tracker component
+        localStorage.setItem('scheduleEvents', JSON.stringify(combinedEvents));
+        
+        // Notify other components that schedule data has changed
+        window.dispatchEvent(new CustomEvent('scheduleUpdated'));
+        
         setSavedScheduleId(scheduleId);
         setShowSavedSchedules(false); // Hide selector after selection
         
@@ -2451,8 +2481,11 @@ const savePreferences = async () => {
         
         setEvents(safeEvents);
         
-        // Also update localStorage for persistence
+        // Always save events to localStorage for the Tracker component
         localStorage.setItem('scheduleEvents', JSON.stringify(safeEvents));
+        
+        // Notify other components (like Tracker) that schedule data has changed
+        window.dispatchEvent(new CustomEvent('scheduleUpdated'));
         
         // Extract classes for grid/list views
         const classes = safeEvents.filter(event => event.category === 'class');

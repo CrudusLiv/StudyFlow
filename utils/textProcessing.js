@@ -545,70 +545,137 @@ export function parseDate(dateStr) {
   return null;
 }
 
-// Map of course codes and assignment numbers to fixed due dates (YYYY-MM-DD format)
-const FIXED_DUE_DATES = {
-  'DIP105': {
-    1: '2025-06-15',  // DIP105 Assignment 1
-    2: '2025-07-30',  // DIP105 Assignment 2
-  },
-  // Add more course codes and assignments as needed
+// Map of file names to fixed due dates (YYYY-MM-DD format)
+const FILE_NAME_DUE_DATES = {
+  'DIP102_Assignment_1': '2025-05-28',
+  'DIP102_Assignment_2': '2025-07-02',
+  'DIP103_Assignment_1': '2025-05-05',
+  'DIP103_Assignment_2': '2025-07-13',
+  'DIP105_Assignment_1': '2025-06-22',
+  'DIP105_Assignment_2': '2025-07-20',
+  'DIP211_Assignment_1': '2025-05-30',
+  'DIP211_Assignment_2': '2025-07-30'
 };
 
 // Store persistent semester dates across function calls
 let persistentSemesterDates = null;
 
 /**
- * Create a due date based on course code and assignment number
+ * Create a due date based on file name or fallback to semester dates
  * @param {string} assignmentTitle - The title of the assignment or document content
- * @param {Array} classSchedule - User's class schedule data (not used with fixed dates)
- * @param {Object} preferences - User preferences (not used with fixed dates)
+ * @param {Array} classSchedule - User's class schedule data (used for semester dates)
+ * @param {Object} preferences - User preferences (used for semester dates)
+ * @param {string} fileName - File name to check for fixed due dates
  * @returns {Date} - Due date for the assignment
  */
-export function createFallbackDueDate(assignmentTitle, classSchedule = [], preferences = {}) {
-  // Extract course code - matches patterns like CS101, DIP-105, MATH2040, etc.
+export function createFallbackDueDate(assignmentTitle, classSchedule = [], preferences = {}, fileName = '') {
+  // PRIORITY: Check if we have a fixed due date for this file name
+  if (fileName) {
+    // Remove file extension and clean up the name
+    const cleanFileName = fileName.replace(/\.[^/.]+$/, '').replace(/\s+/g, '_');
+    console.log(`Looking for due date for file: "${cleanFileName}"`);
+    
+    // Check for exact matches in our defined dates
+    if (FILE_NAME_DUE_DATES[cleanFileName]) {
+      console.log(`Found exact match in fixed due dates: ${cleanFileName} -> ${FILE_NAME_DUE_DATES[cleanFileName]}`);
+      const fixedDueDate = new Date(FILE_NAME_DUE_DATES[cleanFileName]);
+      fixedDueDate.setHours(23, 59, 0, 0);
+      return fixedDueDate;
+    }
+    
+    // Check for pattern matches (partial matches)
+    for (const [filePattern, dueDate] of Object.entries(FILE_NAME_DUE_DATES)) {
+      if (cleanFileName.includes(filePattern) || filePattern.includes(cleanFileName)) {
+        console.log(`Found pattern match in fixed due dates: ${cleanFileName} matches ${filePattern} -> ${dueDate}`);
+        const fixedDueDate = new Date(dueDate);
+        fixedDueDate.setHours(23, 59, 0, 0);
+        return fixedDueDate;
+      }
+    }
+    
+    // Try to extract course code and assignment number from file name
+    const courseCodeMatch = fileName.match(/([A-Z]{2,}\d{3})/i);
+    const assignmentMatch = fileName.match(/assignment[_\s]*(\d+)/i) || 
+                           fileName.match(/a(\d+)[_\.]/i) ||
+                           fileName.match(/(\d+)[_\s]*assignment/i);
+    
+    if (courseCodeMatch && assignmentMatch) {
+      const courseCode = courseCodeMatch[1].toUpperCase();
+      const assignmentNumber = parseInt(assignmentMatch[1], 10);
+      
+      console.log(`Extracted from filename: ${courseCode} Assignment ${assignmentNumber}`);
+      
+      // Look for a matching pattern in FILE_NAME_DUE_DATES
+      const potentialPattern = `${courseCode}_Assignment_${assignmentNumber}`;
+      console.log(`Looking for pattern match: ${potentialPattern}`);
+      
+      for (const [filePattern, dueDate] of Object.entries(FILE_NAME_DUE_DATES)) {
+        if (filePattern.includes(courseCode) && filePattern.includes(`Assignment_${assignmentNumber}`)) {
+          const fixedDueDate = new Date(dueDate);
+          console.log(`Found course code + assignment number match: ${courseCode} Assignment ${assignmentNumber} = ${filePattern} -> ${dueDate}`);
+          
+          // Set time to end of day (11:59 PM)
+          fixedDueDate.setHours(23, 59, 0, 0);
+          return fixedDueDate;
+        }
+      }
+    }
+  }
+
+  // Extract assignment information from title for logging purposes only
   const courseCodeMatch = assignmentTitle.match(/\b([A-Z]{2,}[-\s]?[A-Z0-9]*\d{3}[A-Z0-9]*)\b/i);
   const courseCode = courseCodeMatch ? courseCodeMatch[1].toUpperCase().replace(/[-\s]/g, '') : null;
   
-  // Extract assignment number - matches "Assignment 1", "A1", "Assignment #2", etc.
   const assignmentNumberMatch = assignmentTitle.match(/(?:assignment|project|homework|hw|lab)\s*(?:no\.?|number|#)?\s*(\d+)|(?:^|\s+)a(\d+)\b/i);
   const assignmentNumber = assignmentNumberMatch 
     ? parseInt(assignmentNumberMatch[1] || assignmentNumberMatch[2], 10) 
     : 1;
   
-  console.log(`Looking for fixed due date for: ${courseCode || 'Unknown'} Assignment ${assignmentNumber}`);
-  
-  // PRIORITY 1: Check if we have a fixed due date for this course code and assignment number
-  if (courseCode && FIXED_DUE_DATES[courseCode] && FIXED_DUE_DATES[courseCode][assignmentNumber]) {
-    const fixedDueDate = new Date(FIXED_DUE_DATES[courseCode][assignmentNumber]);
-    console.log(`Found fixed due date for ${courseCode} Assignment ${assignmentNumber}: ${fixedDueDate.toISOString()}`);
+  // ADDITIONAL ATTEMPT: Try to match course code and assignment number from title with our fixed dates
+  if (courseCode && assignmentNumber) {
+    const potentialKey = `${courseCode}_Assignment_${assignmentNumber}`;
+    console.log(`Trying potential key from title: ${potentialKey}`);
     
-    // Set time to end of day (11:59 PM)
-    fixedDueDate.setHours(23, 59, 0, 0);
-    return fixedDueDate;
+    if (FILE_NAME_DUE_DATES[potentialKey]) {
+      console.log(`Found match from title-derived key: ${potentialKey} -> ${FILE_NAME_DUE_DATES[potentialKey]}`);
+      const fixedDueDate = new Date(FILE_NAME_DUE_DATES[potentialKey]);
+      fixedDueDate.setHours(23, 59, 0, 0);
+      return fixedDueDate;
+    }
+    
+    // Check for partial matches too
+    for (const [filePattern, dueDate] of Object.entries(FILE_NAME_DUE_DATES)) {
+      if (filePattern.includes(courseCode) && filePattern.includes(`Assignment_${assignmentNumber}`)) {
+        const fixedDueDate = new Date(dueDate);
+        console.log(`Found course code + assignment number match from title: ${courseCode} Assignment ${assignmentNumber} = ${filePattern} -> ${dueDate}`);
+        fixedDueDate.setHours(23, 59, 0, 0);
+        return fixedDueDate;
+      }
+    }
   }
   
-  console.log(`No fixed due date found for ${courseCode || 'Unknown'} Assignment ${assignmentNumber}, generating estimated date`);
+  console.log(`No file name match found for: ${courseCode || 'Unknown'} Assignment ${assignmentNumber}, using semester date calculation`);
   
-  // PRIORITY 2: Use persistent semester dates if available
+  // FALLBACK: Use semester dates approach
   let semesterStart, semesterEnd;
+  let foundSemesterDates = false;
   
+  // Use persistent semester dates if available
   if (persistentSemesterDates) {
     console.log('Using persistent semester dates');
     semesterStart = new Date(persistentSemesterDates.startDate);
     semesterEnd = new Date(persistentSemesterDates.endDate);
+    foundSemesterDates = true;
   } else {
     // Try to get semester dates from class schedule
-    let foundSemesterDates = false;
     if (classSchedule && classSchedule.length > 0) {
-      // Find the class that matches the course code
-      const classData = courseCode 
-        ? classSchedule.find(cls => cls.courseCode && cls.courseCode.toUpperCase().replace(/[-\s]/g, '') === courseCode)
-        : null;
+      // Try to find a class with semester dates
+      const classWithDates = classSchedule.find(cls => cls.semesterDates?.startDate && cls.semesterDates?.endDate);
       
-      if (classData && classData.semesterDates) {
+      if (classWithDates) {
         try {
-          semesterStart = new Date(classData.semesterDates.startDate);
-          semesterEnd = new Date(classData.semesterDates.endDate);
+          semesterStart = new Date(classWithDates.semesterDates.startDate);
+          semesterEnd = new Date(classWithDates.semesterDates.endDate);
           foundSemesterDates = true;
           
           // Store these for future use
@@ -616,9 +683,9 @@ export function createFallbackDueDate(assignmentTitle, classSchedule = [], prefe
             startDate: semesterStart,
             endDate: semesterEnd
           };
-          console.log(`Saved semester dates from class ${courseCode}: ${semesterStart.toISOString()} to ${semesterEnd.toISOString()}`);
+          console.log(`Saved semester dates from class: ${semesterStart.toISOString()} to ${semesterEnd.toISOString()}`);
         } catch (error) {
-          console.warn(`Invalid semester dates for ${courseCode}, using defaults`);
+          console.warn('Invalid semester dates from class, using defaults');
         }
       } else {
         // If no matching class, use the first class with semester dates
@@ -641,15 +708,15 @@ export function createFallbackDueDate(assignmentTitle, classSchedule = [], prefe
         }
       }
     }
-    
-    // PRIORITY 3: If no semester dates were found, create default dates
-    if (!foundSemesterDates) {
-      // Default semester: current date to current date + 4 months
-      semesterStart = new Date();
-      semesterEnd = new Date();
-      semesterEnd.setMonth(semesterEnd.getMonth() + 4);
-      console.log(`Using default semester dates: ${semesterStart.toISOString()} to ${semesterEnd.toISOString()}`);
-    }
+  }
+  
+  // If no semester dates were found, create default dates
+  if (!foundSemesterDates) {
+    // Default semester: current date to current date + 4 months
+    semesterStart = new Date();
+    semesterEnd = new Date();
+    semesterEnd.setMonth(semesterEnd.getMonth() + 4);
+    console.log(`Using default semester dates: ${semesterStart.toISOString()} to ${semesterEnd.toISOString()}`);
   }
   
   // Calculate total semester duration in days
@@ -1403,7 +1470,7 @@ function generateLearningStages(assignmentType, numberOfSessions = 4) {
       
       // Add intermediate stages if needed
       const intermediateStagesNeeded = Math.floor(stageRatio) - 1;
-      for (let j = 0; j < intermediateStagesNeeded && expandedStages.length < numberOfSessions - 1; j++) {
+      for (let j = 0; intermediateStagesNeeded && expandedStages.length < numberOfSessions - 1; j++) {
         expandedStages.push(`${currentStage} - continued (${j+1})`);
       }
     }

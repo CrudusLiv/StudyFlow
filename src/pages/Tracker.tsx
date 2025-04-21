@@ -44,18 +44,28 @@ const Tracker: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'all' | 'upcoming' | 'completed'>('all');
   const [events, setEvents] = useState<CalendarEvent[]>([]);
 
-  // Get events from localStorage where Schedule component saves them
+  // Improve getEventsFromStorage to handle date conversion properly
   const getEventsFromStorage = useCallback(() => {
     try {
       const cachedEvents = localStorage.getItem('scheduleEvents');
       if (cachedEvents) {
+        console.log('Found cached schedule events in localStorage');
         const parsedEvents = JSON.parse(cachedEvents);
+        
+        // Make sure we're working with valid data
+        if (!Array.isArray(parsedEvents)) {
+          console.error('Invalid scheduleEvents format in localStorage:', typeof parsedEvents);
+          return [];
+        }
+        
         // Convert string dates back to Date objects
         const eventsWithDates = parsedEvents.map((event: any) => ({
           ...event,
           start: new Date(event.start),
           end: new Date(event.end)
         }));
+        
+        console.log(`Loaded ${eventsWithDates.length} events from localStorage`);
         return eventsWithDates;
       }
       return [];
@@ -65,37 +75,67 @@ const Tracker: React.FC = () => {
     }
   }, []);
 
-  // Load events from Schedule and convert to assignments
+  // Update loadScheduleData to provide better fallbacks
   const loadScheduleData = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
+      
       // Get events from localStorage first (faster)
       const storedEvents = getEventsFromStorage();
       
       if (storedEvents.length > 0) {
+        console.log(`Processing ${storedEvents.length} events from localStorage`);
         setEvents(storedEvents);
+        
+        // Log a sample event to debug source file information
+        if (storedEvents.length > 0) {
+          console.log('Sample event resource:', storedEvents[0].resource);
+        }
+        
+        // Convert events to assignments for the tracker
         const assignments = scheduleService.eventsToAssignments(storedEvents);
         setAssignments(assignments);
-        setStats(scheduleService.calculateProgressStats(storedEvents));
-        setError(null);
+        
+        // Calculate progress stats
+        const stats = scheduleService.calculateProgressStats(storedEvents);
+        setStats(stats);
       } else {
+        console.log('No events in localStorage, trying to fetch from server');
+        
         // If no cached events, try to fetch from server
         try {
           const recentSchedule = await scheduleService.fetchMostRecentSchedule();
           
           if (recentSchedule && recentSchedule.schedule && recentSchedule.schedule.length > 0) {
-            setEvents(recentSchedule.schedule);
-            const assignments = scheduleService.eventsToAssignments(recentSchedule.schedule);
+            console.log(`Fetched ${recentSchedule.schedule.length} events from server`);
+            
+            // Ensure dates are proper Date objects
+            const scheduleWithDates = recentSchedule.schedule.map((event: any) => ({
+              ...event,
+              start: new Date(event.start),
+              end: new Date(event.end)
+            }));
+            
+            setEvents(scheduleWithDates);
+            
+            // Also save to localStorage for future use
+            localStorage.setItem('scheduleEvents', JSON.stringify(recentSchedule.schedule));
+            
+            // Convert events to assignments for the tracker
+            const assignments = scheduleService.eventsToAssignments(scheduleWithDates);
             setAssignments(assignments);
-            setStats(scheduleService.calculateProgressStats(recentSchedule.schedule));
-            setError(null);
+            
+            // Calculate progress stats
+            const stats = scheduleService.calculateProgressStats(scheduleWithDates);
+            setStats(stats);
           } else {
-            // No real assignments found, show empty state
+            // No real assignments found, show empty state with a message
             setAssignments(fallbackAssignments);
             setError('No schedule data found. Create a schedule in the Schedule page to track your progress.');
           }
         } catch (fetchError) {
-          console.error('Error fetching schedule:', fetchError);
+          console.error('Error fetching schedule from server:', fetchError);
           setAssignments(fallbackAssignments);
           setError('Failed to load schedule data. Please check your connection.');
         }
@@ -109,7 +149,7 @@ const Tracker: React.FC = () => {
     }
   }, [getEventsFromStorage]);
 
-  // Initial data load
+  // Update the useEffect that handles schedule updates
   useEffect(() => {
     loadScheduleData();
     
@@ -121,7 +161,8 @@ const Tracker: React.FC = () => {
     
     window.addEventListener('scheduleUpdated', handleScheduleUpdate);
     
-    // Set up periodic refresh
+    // No need for polling if we have event listeners
+    // Only set up polling as fallback for very old browsers
     const interval = setInterval(loadScheduleData, 300000); // Refresh every 5 minutes
     
     return () => {
@@ -493,11 +534,21 @@ const Tracker: React.FC = () => {
                         <FaExclamationTriangle style={{ color: '#ef4444' }} />
                       </div>
                     )}
+                    
+                    {/* Add priority indicator */}
+                    {assignment.priority && (
+                      <div className={`priority-badge ${assignment.priority}`}>
+                        {assignment.priority}
+                      </div>
+                    )}
                   </div>
                   
                   <div className="assignment-header">
                     <h4 className="assignment-title">{assignment.title}</h4>
                     <div className="assignment-meta">
+                      {assignment.courseCode && (
+                        <span className="course-code">{assignment.courseCode}</span>
+                      )}
                       <span className="meta-icon"><FaCalendarAlt /></span>
                       <span className="assignment-date">{formatDate(assignment.dueDate)}</span>
                     </div>

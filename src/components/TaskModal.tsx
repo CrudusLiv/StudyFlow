@@ -14,9 +14,12 @@ import {
   FiFile, 
   FiFileText,
   FiChevronDown,
-  FiChevronRight
+  FiChevronRight,
+  FiLink,
+  FiExternalLink
 } from 'react-icons/fi';
 import { modalVariants } from '../utils/animationConfig';
+import { scheduleService } from '../services/scheduleService';
 
 interface TaskModalProps {
   task: CalendarEvent;
@@ -62,6 +65,50 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
       console.error('Error formatting date:', error);
       return '';
     }
+  };
+  
+  // Generate a better title for the task
+  const getEnhancedTitle = () => {
+    // If title isn't "Untitled Assignment", use it
+    if (task?.title && !task.title.includes("Untitled")) {
+      return task.title;
+    }
+    
+    // Use extractSimpleAssignmentTitle from scheduleService to get a better title
+    const courseCode = task?.courseCode || task?.resource?.courseCode;
+    const enhancedTitle = scheduleService.extractSimpleAssignmentTitle(task, courseCode);
+    
+    // If we got a good title from the service, use it
+    if (enhancedTitle && !enhancedTitle.includes("Untitled")) {
+      return enhancedTitle;
+    }
+    
+    // Try to extract assignment number from file name if available
+    if (task?.resource?.sourceDetails?.fileName || task?.resource?.sourceFile) {
+      const fileName = task.resource.sourceDetails?.fileName || task.resource.sourceFile;
+      const assignmentMatch = fileName?.match(/assignment[_\s]*(\d+)/i) || 
+                             fileName?.match(/a(\d+)[_\.]/i) ||
+                             fileName?.match(/(\d+)[_\s]*assignment/i);
+      
+      if (assignmentMatch && assignmentMatch[1]) {
+        return courseCode 
+          ? `${courseCode} - Assignment ${assignmentMatch[1]}`
+          : `Assignment ${assignmentMatch[1]}`;
+      }
+    }
+    
+    // Try to extract assignment number from extracted text if available
+    if (task?.resource?.extractedText) {
+      const assignmentNoMatch = task.resource.extractedText.match(/Assignment\s*No\s*:\s*(\d+)/i);
+      if (assignmentNoMatch && assignmentNoMatch[1]) {
+        return courseCode 
+          ? `${courseCode} - Assignment ${assignmentNoMatch[1]}`
+          : `Assignment ${assignmentNoMatch[1]}`;
+      }
+    }
+    
+    // Final fallback
+    return courseCode ? `${courseCode} Assignment` : 'Assignment';
   };
 
   // Get stage-specific guidance from the task resource
@@ -226,53 +273,6 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
           </motion.div>
         );
         
-      case 'source':
-        return (
-          <motion.div 
-            className="task-section"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-          >
-            <h3 className="task-section-title">
-              <FiFile className="section-icon" /> Source Document
-            </h3>
-            
-            {task.pdfDetails?.fileName && (
-              <div className="source-file-info">
-                <FiFileText className="file-icon" />
-                <span className="file-name">{task.pdfDetails.fileName.split('\\').pop()}</span>
-              </div>
-            )}
-            
-            <div className="extracted-text-section">
-              <div 
-                className="text-preview-header"
-                onClick={() => setShowFullText(!showFullText)}
-              >
-                <h4>Document Text</h4>
-                {showFullText ? 
-                  <FiChevronDown className="chevron-icon" /> : 
-                  <FiChevronRight className="chevron-icon" />
-                }
-              </div>
-              
-              {showFullText ? (
-                <div className="full-text-content">
-                  <pre>{extractedText}</pre>
-                </div>
-              ) : (
-                <div className="text-preview">
-                  {extractedText.substring(0, 200)}... 
-                  <span className="show-more" onClick={() => setShowFullText(true)}>
-                    Show more
-                  </span>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        );
-        
       default:
         return null;
     }
@@ -297,7 +297,7 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
         exit="exit"
       >
         <div className="modal-header">
-          <h2>{task?.title || 'Untitled Event'}</h2>
+          <h2>{getEnhancedTitle()}</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
 
@@ -393,17 +393,40 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose }) => {
               >
                 Assignment Details
               </button>
-              <button 
-                className={`tab-button ${activeTab === 'source' ? 'active' : ''}`}
-                onClick={() => setActiveTab('source')}
-              >
-                Source Document
-              </button>
             </div>
           )}
           
           {renderTabContent()}
         </motion.div>
+
+        {/* Task details */}
+        <div className="task-details">
+          {/* ...existing code... */}
+        </div>
+        
+        {/* Resources section - Keep this if it's still useful */}
+        {task.resource?.resources && task.resource.resources.length > 0 && (
+          <div className="resources-section">
+            <h3 className="section-header">
+              <FiLink className="section-icon" /> Resources
+            </h3>
+            <div className="resources-list">
+              {task.resource.resources.map((resource, index) => (
+                <a key={index} href={resource.url} target="_blank" rel="noopener noreferrer" className="resource-link">
+                  <FiExternalLink className="resource-icon" />
+                  {resource.title || resource.url}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Source Document section removed */}
+        
+        {/* Task actions */}
+        <div className="task-actions">
+          {/* ...existing code... */}
+        </div>
       </motion.div>
     </motion.div>
   );

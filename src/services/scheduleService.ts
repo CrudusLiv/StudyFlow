@@ -524,50 +524,194 @@ export const scheduleService = {
    * @returns Array of assignments for tracking
    */
   eventsToAssignments(events: CalendarEvent[]): Assignment[] {
-    // Filter out class events and only keep task/study events
-    const taskEvents = events.filter(event => event.category !== 'class');
+    if (!Array.isArray(events) || events.length === 0) {
+      console.log('No events to convert to assignments');
+      return [];
+    }
     
-    // Group events by title (assume events with same title are part of same assignment)
-    const assignmentMap = new Map<string, CalendarEvent[]>();
+    console.log(`Converting ${events.length} events to assignments`);
     
-    taskEvents.forEach(event => {
-      const title = event.title;
-      if (!assignmentMap.has(title)) {
-        assignmentMap.set(title, []);
+    // Filter to get assignment-related events and exclude class events
+    const assignmentEvents = events.filter(event => 
+      event.category !== 'class' && (
+        // Include events that are directly marked as assignments
+        event.category === 'assignment' || 
+        // Or events that are study sessions related to assignments
+        (event.resource?.documentType === 'assignment' || 
+         event.resource?.type === 'assignment' ||
+         event.title?.includes('Assignment'))
+      )
+    );
+    
+    // If no assignment events were found, try to use all non-class events
+    const eventsToProcess = assignmentEvents.length > 0 
+      ? assignmentEvents 
+      : events.filter(event => event.category !== 'class');
+    
+    console.log(`Found ${eventsToProcess.length} potential assignment events`);
+    
+    // Create a Map to track unique assignments by ID or other identifier
+    const assignmentMap = new Map<string, Assignment>();
+    
+    // Process all assignment-related events
+    eventsToProcess.forEach(event => {
+      try {
+        // Skip events without proper dates
+        if (!event.start || !event.end) {
+          console.warn('Skipping event without proper dates:', event.title);
+          return;
+        }
+        
+        // Extract course code
+        const courseCode = event.courseCode || event.resource?.courseCode || '';
+        
+        // Try to get a unique identifier for the assignment
+        const assignmentId = event.resource?.assignmentId || 
+                            event.resource?._id || 
+                            event.id ||
+                            `${courseCode}-${event.title}`.toLowerCase().replace(/\s+/g, '-');
+        
+        // Extract simple assignment title
+        const title = this.extractSimpleAssignmentTitle(event, courseCode);
+        
+        // If this is the first event for this assignment, create an entry
+        if (!assignmentMap.has(assignmentId)) {
+          const dueDate = event.resource?.dueDate ? new Date(event.resource.dueDate) : event.end;
+          
+          assignmentMap.set(assignmentId, {
+            _id: assignmentId,
+            title: title,
+            description: event.description || event.resource?.description || '',
+            courseCode: courseCode,
+            startDate: event.start.toISOString(),
+            dueDate: dueDate.toISOString(),
+            progress: event.resource?.progress || event.progress || 0,
+            completed: event.resource?.completed || event.completed || false,
+            priority: event.priority || 'medium'
+          });
+        }
+        
+        // If we already have this assignment, update the progress calculation
+        // based on related study sessions
+        else if (event.resource?.sessionNumber && event.resource?.totalSessions) {
+          const assignment = assignmentMap.get(assignmentId)!;
+          const totalSessions = event.resource.totalSessions;
+          const isCompleted = event.status === 'completed' || event.completed;
+          
+          // Count this session toward progress if completed
+          if (isCompleted) {
+            // Increment progress based on completed sessions
+            const progressIncrement = 100 / totalSessions;
+            assignment.progress = Math.min(100, assignment.progress + progressIncrement);
+            assignment.completed = assignment.progress >= 100;
+          }
+          
+          // Update the assignment in the map
+          assignmentMap.set(assignmentId, assignment);
+        }
+      } catch (error) {
+        console.error('Error processing event to assignment:', error, event);
       }
-      assignmentMap.get(title)?.push(event);
     });
     
-    // Convert grouped events to assignments
-    return Array.from(assignmentMap.entries()).map(([title, events]) => {
-      // Sort events by date
-      const sortedEvents = events.sort((a, b) => a.start.getTime() - b.start.getTime());
-      
-      // Get start date from earliest event
-      const startDate = sortedEvents[0].start;
-      
-      // Get due date from latest event
-      const dueDate = sortedEvents[sortedEvents.length - 1].end;
-      
-      // Calculate progress based on completed events
-      const completedEvents = events.filter(event => event.status === 'completed').length;
-      const progress = events.length > 0 ? (completedEvents / events.length) * 100 : 0;
-      
-      // Create a unique ID based on title
-      const _id = title.toLowerCase().replace(/\s+/g, '-') + '-' + Math.random().toString(36).substring(2, 9);
-      
-      return {
-        _id,
-        title,
-        description: events[0].description || '',
-        startDate: startDate.toISOString(),
-        dueDate: dueDate.toISOString(),
-        progress,
-        completed: progress >= 100
-      };
-    });
+    console.log(`Created ${assignmentMap.size} unique assignments`);
+    
+    // Get the assignments as an array and sort by due date
+    return Array.from(assignmentMap.values())
+      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
   },
-  
+
+  /**
+   * Extract a simple, clean assignment title from an event
+   * @param event The calendar event
+   * @param courseCode Optional course code
+   * @returns A simple assignment title
+   */
+  extractSimpleAssignmentTitle(event: CalendarEvent, courseCode?: string): string {
+    // First try to extract course code and assignment number from source file if available
+    if (event.resource?.sourceDetails?.fileName || event.resource?.sourceFile) {
+      const fileName = event.resource.sourceDetails?.fileName || event.resource.sourceFile;
+      
+      // Extract course code from filename first - looking for patterns like DIP103
+      const courseCodeFromFile = fileName?.match(/([A-Z]{2,}\d{3})/i);
+      const extractedCourseCode = courseCodeFromFile ? courseCodeFromFile[1].toUpperCase() : null;
+      
+      // Use the most specific course code available
+      const bestCourseCode = extractedCourseCode || 
+                            courseCode || 
+                            event.courseCode || 
+                            event.resource?.courseCode;
+      
+      // Enhanced pattern to detect format like "DIP103_Assignment_1"
+      const filePatternMatch = fileName?.match(/([A-Z]{2,}\d{3})_Assignment_(\d+)/i);
+      if (filePatternMatch) {
+        // This handles the specific case of "DIP103_Assignment_1" format
+        const courseCodeFromPattern = filePatternMatch[1].toUpperCase();
+        const assignmentNumber = filePatternMatch[2];
+        return `${courseCodeFromPattern} - Assignment ${assignmentNumber}`;
+      }
+      
+      // Try other filename patterns if the specific pattern didn't match
+      const fileNameMatch = fileName?.match(/assignment[_\s]*(\d+)/i) ||
+                           fileName?.match(/a(\d+)[_\.]/i) ||
+                           fileName?.match(/hw(\d+)/i) ||
+                           fileName?.match(/(\d+)[_\s]*assignment/i);
+      
+      if (fileNameMatch && fileNameMatch[1]) {
+        const assignmentNumber = fileNameMatch[1];
+        return bestCourseCode 
+          ? `${bestCourseCode} - Assignment ${assignmentNumber}` 
+          : `Assignment ${assignmentNumber}`;
+      }
+    }
+    
+    // If we reach here, try to get assignment info from title or resource data
+    const title = event.title || '';
+    
+    // Try to extract assignment number from title
+    const titleAssignmentMatch = title.match(/assignment[_\s]*(\d+)/i) ||
+                                title.match(/a(\d+)[_\.]/i) ||
+                                title.match(/(\d+)[_\s]*assignment/i);
+    
+    if (titleAssignmentMatch && titleAssignmentMatch[1]) {
+      const assignmentNumber = titleAssignmentMatch[1];
+      const bestCourseCode = courseCode || 
+                            event.courseCode || 
+                            event.resource?.courseCode || '';
+      
+      return bestCourseCode 
+        ? `${bestCourseCode} - Assignment ${assignmentNumber}` 
+        : `Assignment ${assignmentNumber}`;
+    }
+    
+    // If we have resource.assignmentNumber, use that
+    if (event.resource?.assignmentNumber) {
+      const bestCourseCode = courseCode || 
+                            event.courseCode || 
+                            event.resource?.courseCode || '';
+      
+      return bestCourseCode 
+        ? `${bestCourseCode} - Assignment ${event.resource.assignmentNumber}` 
+        : `Assignment ${event.resource.assignmentNumber}`;
+    }
+    
+    // No assignment number found, but we have a title and course code
+    if (title && (courseCode || event.courseCode || event.resource?.courseCode)) {
+      const bestCourseCode = courseCode || event.courseCode || event.resource?.courseCode;
+      
+      // If title already contains course code, return it as is
+      if (title.includes(bestCourseCode)) {
+        return title;
+      }
+      
+      // Otherwise, add course code prefix if not already in the title
+      return `${bestCourseCode} - ${title}`;
+    }
+    
+    // If everything else fails, return original title or default
+    return title || 'Assignment';
+  },
+
   /**
    * Calculate progress stats from calendar events
    * @param events Calendar events to analyze

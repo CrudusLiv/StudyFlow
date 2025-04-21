@@ -873,3 +873,42 @@
   background-color: #e5e7eb;
   color: #1f2937;
 }
+
+/* Priority badge styling */
+.priority-badge {
+  position: absolute;
+  top: 1rem;
+  right: 3rem;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.priority-badge.high {
+  background-color: var(--priority-high-bg, rgba(239, 68, 68, 0.2));
+  color: var(--priority-high-text, #ef4444);
+}
+
+.priority-badge.medium {
+  background-color: var(--priority-medium-bg, rgba(245, 158, 11, 0.2));
+  color: var(--priority-medium-text, #f59e0b);
+}
+
+.priority-badge.low {
+  background-color: var(--priority-low-bg, rgba(16, 185, 129, 0.2));
+  color: var(--priority-low-text, #10b981);
+}
+
+.course-code {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: var(--accent-bg, rgba(99, 102, 241, 0.1));
+  color: var(--accent, #6366f1);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 8px;
+}

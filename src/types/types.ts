@@ -91,3 +91,15 @@ export interface ClassData {
   day: string;
   semesterDates?: SemesterDates;
 }
+
+export interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  courseCode?: string;
+  startDate: string;
+  dueDate: string;
+  progress: number;
+  completed: boolean;
+  priority?: 'high' | 'medium' | 'low';
+}

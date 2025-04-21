@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import '../styles/pages/Admin.css';
 import { FaChartLine, FaChartPie, FaUsers, FaUserClock, FaClock, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
 import { BiError } from 'react-icons/bi';
-import AdminDebug from '../components/AdminDebug';
 import { processUserData, extractAnalytics, directServerResponseHandler } from '../utils/adminUtils';
 
 import { 
@@ -230,8 +229,7 @@ const Admin: React.FC = () => {
       exit="exit"
       variants={pageVariants}
     >
-      {/* Add the debug component in development */}
-      {process.env.NODE_ENV !== 'production' && <AdminDebug />}
+
       
       <motion.header 
         className="admin-header"

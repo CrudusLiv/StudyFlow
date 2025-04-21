@@ -399,52 +399,67 @@ export const pdfService = {
   /**
    * Convert server schedule format to calendar events
    */
-  convertScheduleToEvents(schedule: any[]) {
-    if (!Array.isArray(schedule) || schedule.length === 0) {
-      console.warn('No schedule data to convert to events');
+  convertScheduleToEvents(schedule: any[]): CalendarEvent[] {
+    if (!Array.isArray(schedule)) {
+      console.warn('Schedule data is not an array');
       return [];
     }
+  
+    const events: CalendarEvent[] = [];
     
-    console.log('Converting schedule to events format, count:', schedule.length);
-    
-    return schedule.map(item => {
-      // Ensure start and end are Date objects
-      let start, end;
+    schedule.forEach(item => {
       try {
-        start = new Date(item.start || item.startTime);
-        // If end time is missing, create a default 1-hour event
-        end = item.end || item.endTime ? 
-          new Date(item.end || item.endTime) : 
-          new Date(start.getTime() + 60 * 60 * 1000);
-      } catch (e) {
-        console.error('Error parsing dates for item:', item, e);
-        // Use fallback dates
-        start = new Date();
-        end = new Date(start.getTime() + 60 * 60 * 1000);
-      }
-      
-      return {
-        id: item.id || `event-${Math.random().toString(36).substring(2)}`,
-        title: item.title || 'Study Session',
-        start,
-        end,
-        allDay: item.allDay || false,
-        category: item.category || 'study',
-        priority: item.priority || 'medium',
-        description: item.description || '',
-        courseCode: item.courseCode || '',
-        location: item.location || '',
-        resource: {
-          ...item.resource,
-          pdfDetails: item.pdfDetails || item.resource?.pdfDetails,
-          assignmentData: item.assignmentData || item.resource?.assignmentData,
-          sourceFile: item.sourceFile || item.resource?.sourceFile,
-          assignmentTitle: item.assignmentTitle || item.resource?.assignmentTitle,
-          dueDate: item.dueDate || item.resource?.dueDate,
-          extractedContent: item.extractedContent || item.resource?.extractedContent,
-          pageReference: item.pageReference || item.resource?.pageReference
+        // Convert dates to proper Date objects
+        const start = new Date(item.start || item.startTime);
+        const end = new Date(item.end || item.endTime || start.getTime() + 3600000); // Default to 1 hour
+        
+        // Ensure dates are valid
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          console.warn('Invalid date in schedule item:', item);
+          return;
         }
-      };
+        
+        // Determine if this is an assignment event
+        const isAssignment = 
+          item.category === 'assignment' || 
+          item.documentType === 'assignment' ||
+          (item.title && item.title.toLowerCase().includes('assignment'));
+        
+        // Create the event object
+        const event: CalendarEvent = {
+          id: item.id || `event-${Math.random().toString(36).substring(2)}`,
+          title: item.title || 'Study Session',
+          start: start,
+          end: end,
+          allDay: item.allDay || false,
+          category: item.category || 'study',
+          courseCode: item.courseCode || '',
+          priority: item.priority || 'medium',
+          description: item.description || '',
+          resource: {
+            type: item.documentType || 'study',
+            courseCode: item.courseCode || '',
+            ...(item.resource || {}),
+            assignmentId: item.assignmentId,
+            assignmentNumber: item.assignmentNumber,
+            dueDate: item.dueDate || end.toISOString(),
+            sourceFile: item.sourceFile // Preserve the source file name
+          }
+        };
+        
+        // If this is an assignment, simplify the title
+        if (isAssignment) {
+          // Import needed at the top of the file if not already present
+          const { scheduleService } = require('./scheduleService');
+          event.title = scheduleService.extractSimpleAssignmentTitle(event, event.courseCode);
+        }
+        
+        events.push(event);
+      } catch (error) {
+        console.error('Error converting schedule item to event:', error, item);
+      }
     });
+  
+    return events;
   }
 };

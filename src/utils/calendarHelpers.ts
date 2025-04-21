@@ -116,7 +116,7 @@ export const ensureDateObjects = (events: any[] | any): any[] | any => {
         return null;
       }
     })
-    .filter(event => event !== null); // Remove any events that failed processing
+    .filter(Boolean); // Remove any events that failed processing
 }
 
 /**
