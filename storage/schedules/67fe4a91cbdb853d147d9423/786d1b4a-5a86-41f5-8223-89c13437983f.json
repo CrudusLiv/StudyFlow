@@ -1,0 +1,628 @@
+{
+  "id": "786d1b4a-5a86-41f5-8223-89c13437983f",
+  "userId": "67fe4a91cbdb853d147d9423",
+  "schedule": [
+    {
+      "title": "DIP105 - Understanding requirements (Session 1/6)",
+      "start": "2025-04-30T01:00:00.000Z",
+      "end": "2025-04-30T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: Understanding requirements",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 1,
+        "totalSessions": 6,
+        "stage": "Understanding requirements",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-04-30T02:00:00.000Z",
+      "end": "2025-04-30T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - Understanding requirements (Session 1/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - Research (Session 2/6)",
+      "start": "2025-05-08T01:00:00.000Z",
+      "end": "2025-05-08T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: Research",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 2,
+        "totalSessions": 6,
+        "stage": "Research",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-08T02:00:00.000Z",
+      "end": "2025-05-08T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - Research (Session 2/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - First draft (Session 3/6)",
+      "start": "2025-05-19T04:15:00.000Z",
+      "end": "2025-05-19T05:15:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: First draft",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 3,
+        "totalSessions": 6,
+        "stage": "First draft",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-19T05:15:00.000Z",
+      "end": "2025-05-19T05:30:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - First draft (Session 3/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - Review and refine (Session 4/6)",
+      "start": "2025-05-26T04:15:00.000Z",
+      "end": "2025-05-26T05:15:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: Review and refine",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 4,
+        "totalSessions": 6,
+        "stage": "Review and refine",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-26T05:15:00.000Z",
+      "end": "2025-05-26T05:30:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - Review and refine (Session 4/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - Final review (Session 5/6)",
+      "start": "2025-06-03T01:00:00.000Z",
+      "end": "2025-06-03T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: Final review",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 5,
+        "totalSessions": 6,
+        "stage": "Final review",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-06-03T02:00:00.000Z",
+      "end": "2025-06-03T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - Final review (Session 5/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - Final review (Session 6/6)",
+      "start": "2025-06-12T01:00:00.000Z",
+      "end": "2025-06-12T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP105",
+      "type": "study-session",
+      "priority": "medium",
+      "description": "Study session for Untitled Assignment: Final review",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 6,
+        "totalSessions": 6,
+        "stage": "Final review",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-06-12T02:00:00.000Z",
+      "end": "2025-06-12T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP105",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP105 - Final review (Session 6/6)",
+          "courseCode": "DIP105"
+        }
+      }
+    },
+    {
+      "title": "DIP105 - Final Review Before Deadline",
+      "start": "2025-06-23T04:15:00.000Z",
+      "end": "2025-06-23T05:15:00.000Z",
+      "allDay": false,
+      "category": "reminder",
+      "courseCode": "DIP105",
+      "type": "reminder",
+      "priority": "high",
+      "description": "Final review session before the deadline for Untitled Assignment",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "Make sure at least FIVE (5) of the following features or any other features or animations are included in the created video: a.Transition and Cross Fades b.Filter Effects and Fades c.",
+        "dueDate": "2025-06-22",
+        "weight": 20,
+        "complexity": 2,
+        "estimatedHours": 4,
+        "objectives": [],
+        "topics": [
+          "business",
+          "marketing"
+        ],
+        "courseCode": "DIP105",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "details": {
+          "totalHours": 6,
+          "numberOfSessions": 6,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 7,
+        "totalSessions": 6,
+        "stage": "Final Review",
+        "type": "reminder",
+        "taskDetails": {
+          "tasks": [
+            "n IT student, you are required to form a group (two members in a group, if the class students’ amount is odd number, then only one group can have three members) to create a simple advertisement video about your own university for high school leavers",
+            "nd contrast a few suitable software to be used to create your video that is available in the market and then suggest the best software to be used with justifications"
+          ],
+          "deliverables": [
+            "Only one submission from each group by one student."
+          ]
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+          "courseCode": "DIP105"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf",
+        "courseCode": "DIP105",
+        "extractedText": "\n\nDIP105\nIntroduction to Computer Architecture\nGroup Assignment 1\n                                                                                                                                                                         \nRelease Date: 22/05/2025\nDue Date: 22/06/2025\nValue: 20% of total assessment\nMarks : Marked out of 100\nAssessment Mode: Group and Individual Assessment\n                                                                                                                                                                         \nRATIONALE\nThis assignment has been designed to allow students to research various computing issues\nimplemented in the real world to solve different business requirements or real-world issues like\npromoting a company. Upon completion of this coursework, students will be able to:\nCLO3: Discuss computing issues based on various online resources.\n\nCASE STUDY:\nHELP university marketing department needs a video to advertise the university’s IT\nprograms to the public to attract more high school leavers to join. However, they have no idea\nhow to create an advertisement video and promote it to the public. Even though HELP university\nprovides fantastic Diploma and Degree IT programs, high school leavers still have less chance to\nget to know more about the university’s facilities and programs offered.\nAs an IT student, you are required to form a group (two members in a group, if the class\nstudents’ amount is odd number, then only one group can have three members) to create a simple\nadvertisement video about your own university for high school leavers. Discuss how you would\nadvertise your video to them through any existing information technology tools in the market.\nCompare and contrast a few suitable software to be used to create your video that is available in\nthe market and then suggest the best software to be used with justifications.\nTASKS\ni.Create an advertisement video of less than 5 minutes based on the case study above. Make\nsure at least FIVE (5) of the following features or any other features or animations are\nincluded in the created video:\na.Transition and Cross Fades\nb.Filter Effects and Fades\nc.Improve Preview Performance with Proxy Editing\nd.Keyframes\ne.Adding Text\nf.Picture in Picture & Split Screen\ng.Record a Voice Over\nEnsure the created video meets the legal, national rules & regulations and copyright\nconsiderations.\nRecommended completion: 13\nth\n August 2025\n\nii.Write a report to discuss the following points:\na.Video advertisement methods. Each group member is required to research online and\ndiscuss advertising methods to high school leavers.\nb.Compare and contrast different software used to create videos. Each group member is\nrequired to research online and discuss one specific video editing software, and then\nconclude to justify which software is the best. Hardware requirements to support video\nediting, and video processing.\nRecommended completion: 28\nth\n June 2025\niii.Submit your completed video file (.mp4 / .wma) and video editing file into LMS video\nsubmission link. Only one submission from each group by one student.\nRecommended completion: 29\nth\n June 2025\niv.Submit your report to the Turnitin link provided in LMS.\nRecommended completion: 29\nth\n June 2025\nSUBMISSION CHECKLIST\nSoftcopy submitted in LMS MUST contains all the following items:\ni.Completed advertisement video (save as .mp4 / .wma format) – Group Submission\nii.Video editing file – Group Submission\niii.Report (Submit to Turnitin link provided in LMS) – Individual Submission\nREMARKS\ni.This assignment should be prepared using word processing software with 12 points Times\nNew Roman font, 1.5 spacing, and page numbering.\nii.If you are not clear about the assignment requirements, please contact the tutor.\niii.You may refer materials from textbooks or any other online references, but you must\nacknowledge the quotation, no matter how brief. Failure to do so will result in zero marks\nbeing awarded for the assignment.\niv.A penalty of 5 marks per working day (including Saturday) deduction from the marks\nobtained for this assignment will be imposed for late submission.\nv.Students will be awarded a failure grade for the whole course if students did not submit\nany item in the submission check list."
+      }
+    }
+  ],
+  "metadata": {
+    "title": "Schedule from 1 files",
+    "courseCode": "DIP105",
+    "fileCount": 1,
+    "fileNames": [
+      "D:\\GitHub\\studyflow\\uploads\\1745380515563-DIP105_Assignment_1.pdf"
+    ],
+    "preferences": {
+      "studyHoursPerDay": 4,
+      "preferredStudyTimes": [
+        "evening",
+        "night"
+      ],
+      "breakDuration": 15,
+      "longBreakDuration": 30,
+      "sessionsBeforeLongBreak": 4,
+      "weekendStudy": true,
+      "preferredSessionLength": 2,
+      "wakeUpTime": "10:00",
+      "sleepTime": "12:00",
+      "preferredStudyDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "minimumDaysBetweenSessions": 1,
+      "preferSpacedRepetition": true,
+      "semesterDates": {
+        "startDate": "2025-04-30T00:00:00.000Z",
+        "endDate": "2025-08-31T00:00:00.000Z"
+      },
+      "studySessionLength": 60,
+      "breakLength": 15,
+      "maxDailyStudyHours": 4,
+      "preferredStudyTimeStart": "09:00",
+      "preferredStudyTimeEnd": "18:00",
+      "spacingPreference": "moderate",
+      "productiveTimeOfDay": "morning",
+      "procrastinationProfile": "moderate",
+      "cognitiveLoadFactors": {
+        "exam": 1.5,
+        "project": 1.3,
+        "assignment": 1,
+        "reading": 0.8,
+        "homework": 1.1,
+        "presentation": 1.3,
+        "lab": 1.2
+      },
+      "maxDailyCognitiveLoad": 5,
+      "learningStyle": "balanced",
+      "weekendPreference": "minimal",
+      "subjectFamiliarity": {},
+      "breaksBetweenSessions": true,
+      "_id": "6800a6b705ad6cabeee6a75f",
+      "userId": "67fe4a91cbdb853d147d9423",
+      "__v": 0,
+      "createdAt": "2025-04-17T07:02:41.265Z",
+      "updatedAt": "2025-04-17T07:05:40.625Z",
+      "enableCognitiveOptimization": true
+    },
+    "createdAt": "2025-04-23T03:55:15.848Z",
+    "assignmentCount": 6,
+    "classCount": 0
+  }
+}

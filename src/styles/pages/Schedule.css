@@ -5,7 +5,6 @@
   min-height: 100vh;
   background: linear-gradient(to bottom right, #f0f4ff, #ffffff);
   transition: background 0.3s ease;
-
 }
 
 /* Header styling */
@@ -191,8 +190,6 @@
   transform: translateY(-4px);
 }
 
-
-
 .rbc-time-content {
   display: flex;
   flex: 1 0 0%;
@@ -223,26 +220,281 @@
 /* Ensure overlapping events are properly sized and positioned */
 .rbc-day-slot .rbc-events-container {
   margin-right: 0 !important;
+  width: 100% !important;
+  /* Increase z-index to ensure events appear above day background */
+  z-index: 5 !important;
 }
+
 .rbc-day-slot .rbc-event {
   position: absolute !important;
-  border-left-width: 4px !important;
-}
-/* Make sure overlapping events have distinct borders */
-.rbc-day-slot .rbc-event:nth-child(2n) {
-  border-left-color: #10b981 !important;
-  /* Different color for alternating events */
-}
-.rbc-day-slot .rbc-event:nth-child(3n) {
-  border-left-color: #f59e0b !important;
-  /* Third color for more variety */
+  border-radius: 8px !important;
+  /* Left border styling moved to individual event types */
+  overflow: visible !important; /* Allow elements to overflow for better visibility */
+  z-index: 1 !important; /* Base z-index */
 }
 
-.rbc-day-slot .rbc-event:nth-child(4n) {
-  border-left-color: #ef4444 !important;
-  /* Fourth color */
+/* Add visual separation between events */
+.rbc-event {
+  position: relative !important;
+  margin: 2px 4px !important;
+  padding: 6px 8px !important;
+  min-height: 30px !important;
+  border-radius: 8px !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.2s ease !important;
+  white-space: normal !important; /* Allow text to wrap */
+  word-break: break-word !important;
+  /* Apply subtle shadow for depth */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08) !important;
 }
 
+/* Enhance visibility on hover */
+.rbc-event:hover {
+  transform: scale(1.02) !important;
+  z-index: 20 !important; /* Bring to front on hover */
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Left border styling for event types */
+.rbc-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px; /* Slightly wider indicator */
+  height: 100%;
+  background: var(--primary, #4f46e5);
+  border-radius: 4px 0 0 4px;
+  opacity: 1;
+}
+
+/* Improved event content styling */
+.rbc-event-content {
+  font-size: 0.8rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important; /* Make text more visible */
+  padding-left: 2px !important; /* Add padding to separate from border */
+  color: var(--foreground) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Make event label more visible */
+.rbc-event-label {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+  opacity: 0.9;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Additional styling for task event component */
+.task-event {
+  width: 100%;
+  height: 100%;
+  padding: 1px;
+  overflow: hidden;
+}
+
+.task-event-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.task-event-course, .task-event-location {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.task-event-icon {
+  margin-right: 4px;
+  font-size: 0.7rem;
+}
+
+/* ENHANCED OVERLAPPING EVENTS - Staggered positioning for overlapping events */
+.rbc-day-slot .rbc-event:nth-child(odd) {
+  margin-left: 2px !important;
+}
+
+.rbc-day-slot .rbc-event:nth-child(even) {
+  margin-left: 5px !important;
+  border-left-width: 5px !important;
+}
+
+/* Alternate color scheme for better visual separation */
+.rbc-day-slot .rbc-event:nth-child(4n+1)::before {
+  background-color: #4f46e5 !important; /* Primary blue */
+}
+
+.rbc-day-slot .rbc-event:nth-child(4n+2)::before {
+  background-color: #8b5cf6 !important; /* Purple */
+}
+
+.rbc-day-slot .rbc-event:nth-child(4n+3)::before {
+  background-color: #06b6d4 !important; /* Cyan */
+}
+
+.rbc-day-slot .rbc-event:nth-child(4n+4)::before {
+  background-color: #f59e0b !important; /* Amber */
+}
+
+/* Ensure all events have a semi-transparent background for better text legibility */
+.rbc-event {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.dark .rbc-event {
+  background-color: rgba(30, 41, 59, 0.9) !important;
+}
+
+/* Refined Break Events - make them more distinct */
+.break-event {
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.95), rgba(204, 251, 241, 0.95)) !important;
+  color: #0f766e !important;
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  z-index: 0 !important; /* Send breaks to back */
+  height: auto !important;
+  min-height: 24px !important;
+}
+
+.break-event::before {
+  background-color: #14b8a6 !important;
+  width: 4px;
+}
+
+.break-event .rbc-event-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+}
+
+.break-event .task-event-title::before {
+  content: "☕";
+  margin-right: 5px;
+  font-size: 0.9rem;
+}
+
+.long-break-event {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.95), rgba(186, 230, 253, 0.95)) !important;
+  color: #0369a1 !important;
+}
+
+.long-break-event::before {
+  background-color: #0ea5e9 !important;
+}
+
+.long-break-event .task-event-title::before {
+  content: "🍽️";
+}
+
+/* Distinct styling for different event categories */
+.category-class::before {
+  background-color: #4f46e5 !important; /* Blue for classes */
+}
+
+.category-assignment::before {
+  background-color: #8b5cf6 !important; /* Purple for assignments */
+}
+
+.category-study::before {
+  background-color: #10b981 !important; /* Green for study sessions */
+}
+
+.category-reminder::before {
+  background-color: #ec4899 !important; /* Pink for reminders */
+}
+
+/* Improve priority indicators */
+.priority-high::before {
+  background-color: var(--priority-high-border, #ef4444) !important;
+}
+
+.priority-medium::before {
+  background-color: var(--priority-medium-border, #f59e0b) !important;
+}
+
+.priority-low::before {
+  background-color: var(--priority-low-border, #10b981) !important;
+}
+
+/* TOOLTIP ON HOVER - Add custom tooltip for truncated events */
+.rbc-event {
+  position: relative !important;
+}
+
+.rbc-event:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tooltip-bg, rgba(15, 23, 42, 0.9));
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 30;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dark .rbc-event:hover::after {
+  background: var(--tooltip-bg, rgba(240, 240, 240, 0.9));
+  color: #111;
+}
+
+/* Fix scrolling in month view */
+.rbc-month-view .rbc-month-row {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.rbc-row-content {
+  z-index: 0 !important;
+}
+
+/* RESPONSIVE ADJUSTMENTS */
+@media (max-width: 768px) {
+  .rbc-event {
+    padding: 3px 5px !important;
+  }
+  
+  .rbc-event-content {
+    font-size: 0.75rem !important;
+  }
+  
+  .task-event-title {
+    font-size: 0.75rem;
+  }
+  
+  .task-event-course, .task-event-location {
+    font-size: 0.65rem;
+  }
+  
+  /* Make staggering more pronounced on mobile */
+  .rbc-day-slot .rbc-event:nth-child(even):not(:only-child) {
+    margin-left: 20% !important;
+  }
+}
 
 .rbc-slot-selection {
   z-index: 10;
@@ -267,23 +519,34 @@
   margin: 3px !important;
   padding: 8px 10px !important;
   min-height: 30px !important;
-  border-radius: 8px !important;
+  border-radius: 10px !important;
   background: var(--card) !important;
   border: 1px solid var(--border) !important;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08) !important;
-  transition: all 0.25s ease !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
   overflow: hidden !important;
   /* Allow text to wrap in overlapping events */
   white-space: normal !important;
   word-break: break-word !important;
 }
 
-/* Improve event content readability when overlapping */
+.rbc-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary, #4f46e5);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.8;
+}
+
 .rbc-event-content {
-  font-size: 13px !important;
+  font-size: 0.85rem !important;
   line-height: 1.4 !important;
   font-weight: 500 !important;
-  color: var(--card-foreground) !important;
+  color: var(--foreground) !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 2px !important;
@@ -292,11 +555,12 @@
   text-overflow: ellipsis !important;
 }
 
-/* Ensure event label is always visible */
+/* Enhance event label styling */
 .rbc-event-label {
-  font-size: 11px !important;
+  font-size: 0.7rem !important;
   font-weight: 600 !important;
-  margin-bottom: 2px !important;
+  margin-bottom: 3px !important;
+  opacity: 0.8;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -305,7 +569,7 @@
 /* Add hover effect that brings event to front */
 .rbc-event:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
   z-index: 20 !important;
   /* Higher z-index to show above other events */
 }
@@ -317,12 +581,13 @@
   z-index: 10;
   background-color: var(--card-bg);
   border-bottom: 1px solid var(--border);
-  padding: 1rem;
+  padding: 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .rbc-toolbar button {
@@ -330,18 +595,205 @@
   border-radius: 0.5rem;
   font-weight: 500;
   transition: all 0.2s ease;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
 }
 
 .rbc-toolbar button.rbc-active {
-  background-color: var(--primary);
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
   color: white;
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  border-color: transparent;
 }
 
 .rbc-toolbar button:hover:not(.rbc-active) {
-  background-color: var(--accent);
+  background-color: var(--hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
+.rbc-toolbar-label {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--heading);
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Enhanced header styling */
+.rbc-header {
+  padding: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card-alt-bg, #f9fafb);
+}
+
+/* Today cell highlighting */
+.rbc-day-bg.rbc-today {
+  background-color: var(--calendar-today-bg, rgba(79, 70, 229, 0.08)) !important;
+  position: relative;
+}
+
+.rbc-day-bg.rbc-today::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+/* Fix time column to be always visible with enhanced styling */
+.rbc-time-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.rbc-time-header {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.rbc-time-header-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
+.rbc-time-content {
+  display: flex;
+  flex: 1 0 0%;
+  align-items: flex-start;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Enhanced time gutter styling */
+.rbc-time-gutter {
+  position: sticky;
+  left: 0;
+  background-color: var(--card-bg);
+  z-index: 5;
+  border-right: 1px solid var(--border);
+  width: 75px;
+}
+
+.rbc-time-view .rbc-time-gutter {
+  white-space: nowrap;
+  text-align: right;
+  padding-right: 10px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid var(--border);
+  min-height: 50px;
+}
+
+/* Enhanced current time indicator */
+.rbc-current-time-indicator {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  pointer-events: none;
+}
+
+.rbc-current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  background: #4f46e5;
+  border-radius: 50%;
+}
+
+/* Nice scrollbar styling - Enhanced */
+.rbc-time-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: var(--card-bg);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Calendar overlay better styling */
+.rbc-overlay {
+  position: absolute;
+  z-index: 30;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.rbc-overlay-header {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 5px;
+  padding: 0 5px 5px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Priority colors for events in calendar */
+.priority-high::before {
+  background-color: var(--priority-high-border, #ef4444) !important;
+}
+
+.priority-medium::before {
+  background-color: var(--priority-medium-border, #f59e0b) !important;
+}
+
+.priority-low::before {
+  background-color: var(--priority-low-border, #10b981) !important;
+}
+
+/* Category colors for events in calendar */
+.category-assignment::before {
+  background-color: #8b5cf6 !important;
+}
+
+.category-study::before {
+  background-color: #4f46e5 !important;
+}
+
+.category-reminder::before {
+  background-color: #ec4899 !important;
+}
 
 /* Grid View Styles */
 .schedule-grid-container {
@@ -1765,4 +2217,826 @@
     color: #e5e7eb;
   }
 
+}
+
+/* Break block styling */
+.break-event {
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.9), rgba(204, 251, 241, 0.9)) !important;
+  border-left: 3px solid #14b8a6 !important;
+  color: #0f766e !important;
+  transform: scale(0.98);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+}
+
+.break-event .rbc-event-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 500 !important;
+  font-size: 0.8rem !important;
+}
+
+.break-event::before {
+  content: "☕";
+  margin-right: 5px;
+  font-size: 0.9rem;
+}
+
+.long-break-event {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.9), rgba(186, 230, 253, 0.9)) !important;
+  border-left: 3px solid #0ea5e9 !important;
+  color: #0369a1 !important;
+  transform: scale(0.98);
+}
+
+.long-break-event::before {
+  content: "🍽️";
+  margin-right: 5px;
+  font-size: 0.9rem;
+}
+
+/* Improved event rendering */
+.rbc-event {
+  position: relative !important;
+  margin: 3px !important;
+  padding: 8px 10px !important;
+  min-height: 30px !important;
+  border-radius: 10px !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05) !important;
+  transition: all 0.2s ease !important;
+  overflow: hidden !important;
+  /* Allow text to wrap in overlapping events */
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+.rbc-event::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--primary, #4f46e5);
+  border-radius: 0 2px 2px 0;
+  opacity: 0.8;
+}
+
+.rbc-event-content {
+  font-size: 0.85rem !important;
+  line-height: 1.4 !important;
+  font-weight: 500 !important;
+  color: var(--foreground) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  /* Ensure text is readable even in smaller overlapping events */
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Enhance event label styling */
+.rbc-event-label {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 3px !important;
+  opacity: 0.8;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Add hover effect that brings event to front */
+.rbc-event:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
+  z-index: 20 !important;
+  /* Higher z-index to show above other events */
+}
+
+/* Fixed positioning for toolbar with enhanced styling */
+.rbc-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.rbc-toolbar button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  background: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+}
+
+.rbc-toolbar button.rbc-active {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  border-color: transparent;
+}
+
+.rbc-toolbar button:hover:not(.rbc-active) {
+  background-color: var(--hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.rbc-toolbar-label {
+  font-weight: 600;
+  font-size: 1.25rem;
+  color: var(--heading);
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Enhanced header styling */
+.rbc-header {
+  padding: 0.75rem;
+  font-weight: 600;
+  color: var(--foreground);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--card-alt-bg, #f9fafb);
+}
+
+/* Today cell highlighting */
+.rbc-day-bg.rbc-today {
+  background-color: var(--calendar-today-bg, rgba(79, 70, 229, 0.08)) !important;
+  position: relative;
+}
+
+.rbc-day-bg.rbc-today::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+}
+
+/* Fix time column to be always visible with enhanced styling */
+.rbc-time-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.rbc-time-header {
+  display: flex;
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+.rbc-time-header-content {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
+.rbc-time-content {
+  display: flex;
+  flex: 1 0 0%;
+  align-items: flex-start;
+  width: 100%;
+  border-top: 1px solid var(--border);
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Enhanced time gutter styling */
+.rbc-time-gutter {
+  position: sticky;
+  left: 0;
+  background-color: var(--card-bg);
+  z-index: 5;
+  border-right: 1px solid var(--border);
+  width: 75px;
+}
+
+.rbc-time-view .rbc-time-gutter {
+  white-space: nowrap;
+  text-align: right;
+  padding-right: 10px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+.rbc-timeslot-group {
+  border-bottom: 1px solid var(--border);
+  min-height: 50px;
+}
+
+/* Enhanced current time indicator */
+.rbc-current-time-indicator {
+  position: absolute;
+  z-index: 10;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #4f46e5, #7c3aed);
+  pointer-events: none;
+}
+
+.rbc-current-time-indicator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  background: #4f46e5;
+  border-radius: 50%;
+}
+
+/* Nice scrollbar styling - Enhanced */
+.rbc-time-content::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.rbc-time-content::-webkit-scrollbar-track {
+  background: var(--card-bg);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.rbc-time-content::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Calendar overlay better styling */
+.rbc-overlay {
+  position: absolute;
+  z-index: 30;
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  padding: 10px;
+  border-radius: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.rbc-overlay-header {
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 5px;
+  padding: 0 5px 5px;
+  text-align: center;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+/* Priority colors for events in calendar */
+.priority-high::before {
+  background-color: var(--priority-high-border, #ef4444) !important;
+}
+
+.priority-medium::before {
+  background-color: var(--priority-medium-border, #f59e0b) !important;
+}
+
+.priority-low::before {
+  background-color: var(--priority-low-border, #10b981) !important;
+}
+
+/* Category colors for events in calendar */
+.category-assignment::before {
+  background-color: #8b5cf6 !important;
+}
+
+.category-study::before {
+  background-color: #4f46e5 !important;
+}
+
+.category-reminder::before {
+  background-color: #ec4899 !important;
+}
+
+/* Dark mode support */
+.dark .break-event {
+  background: linear-gradient(135deg, rgba(19, 78, 74, 0.7), rgba(13, 148, 136, 0.5)) !important;
+  color: #5eead4 !important;
+}
+
+.dark .long-break-event {
+  background: linear-gradient(135deg, rgba(12, 74, 110, 0.7), rgba(14, 116, 144, 0.5)) !important;
+  color: #7dd3fc !important;
+}
+
+.dark .rbc-toolbar {
+  background-color: var(--card-bg, #1f2937);
+  border-bottom-color: var(--border, #374151);
+}
+
+.dark .rbc-toolbar button {
+  background-color: var(--card-bg, #1f2937);
+  color: var(--foreground, #f9fafb);
+  border-color: var(--border, #374151);
+}
+
+.dark .rbc-toolbar button.rbc-active {
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white;
+}
+
+.dark .rbc-toolbar button:hover:not(.rbc-active) {
+  background-color: var(--hover-bg, #374151);
+}
+
+.dark .rbc-header {
+  background-color: var(--card-alt-bg, #111827);
+  color: var(--foreground, #f9fafb);
+  border-bottom-color: var(--border, #374151);
+}
+
+.dark .rbc-time-view,
+.dark .rbc-time-header-content {
+  border-color: var(--border, #374151);
+}
+
+.dark .rbc-timeslot-group {
+  border-bottom-color: var(--border, #374151);
+}
+
+.dark .rbc-day-bg.rbc-today {
+  background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+.dark .rbc-event {
+  background-color: var(--card-bg, #1f2937) !important;
+  border-color: var(--border, #374151) !important;
+}
+
+.dark .rbc-event-content {
+  color: var(--foreground, #f9fafb) !important;
+}
+
+/* Empty calendar message styling */
+.empty-calendar-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 400px;
+  text-align: center;
+  color: var(--muted-foreground);
+}
+
+.empty-calendar-message h3 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(45deg, #4f46e5, #7c3aed);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Animation for gradient shifts */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* IMPROVED EVENT RENDERING - Advanced handling of overlapping events */
+.rbc-day-slot .rbc-events-container {
+  margin-right: 0 !important;
+  width: 100% !important;
+  /* Increase z-index to ensure events appear above day background */
+  z-index: 5 !important;
+}
+
+/* Base event styling */
+.rbc-event {
+  position: relative !important;
+  margin: 2px 4px !important;
+  padding: 6px 8px !important;
+  min-height: 30px !important;
+  border-radius: 8px !important;
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  transition: all 0.2s ease !important;
+  white-space: normal !important; /* Allow text to wrap */
+  word-break: break-word !important;
+  /* Apply subtle shadow for depth */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08) !important;
+  overflow: visible !important; /* Allow elements to overflow for better visibility */
+}
+
+/* ADVANCED EVENT GROUPING - Group events by course code */
+.rbc-event[data-course-code]:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+
+/* Generate course-specific colors dynamically using nth-child */
+.rbc-event[data-course-code="CS101"]:before,
+.category-CS101:before {
+  background-color: #4f46e5 !important; /* Primary blue */
+}
+
+.rbc-event[data-course-code="MATH201"]:before,
+.category-MATH201:before {
+  background-color: #8b5cf6 !important; /* Purple */
+}
+
+.rbc-event[data-course-code="PHYS103"]:before,
+.category-PHYS103:before {
+  background-color: #06b6d4 !important; /* Cyan */
+}
+
+.rbc-event[data-course-code="ENG105"]:before,
+.category-ENG105:before {
+  background-color: #f59e0b !important; /* Amber */
+}
+
+.rbc-event[data-course-code="BIO240"]:before,
+.category-BIO240:before {
+  background-color: #10b981 !important; /* Green */
+}
+
+.rbc-event[data-course-code="CHEM110"]:before,
+.category-CHEM110:before {
+  background-color: #ef4444 !important; /* Red */
+}
+
+.rbc-event[data-course-code="HIST122"]:before,
+.category-HIST122:before {
+  background-color: #ec4899 !important; /* Pink */
+}
+
+.rbc-event[data-course-code="PSYCH101"]:before,
+.category-PSYCH101:before {
+  background-color: #6366f1 !important; /* Indigo */
+}
+
+/* Event type differentiation */
+.rbc-event.event-class {
+  background-color: rgba(79, 70, 229, 0.1) !important;
+  border-left: 4px solid #4f46e5 !important;
+}
+
+.rbc-event.event-study {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+  border-left: 4px solid #10b981 !important;
+}
+
+.rbc-event.event-assignment {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+  border-left: 4px solid #ef4444 !important;
+}
+
+.rbc-event.event-reminder {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+  border-left: 4px solid #f59e0b !important;
+}
+
+/* NEW: ENHANCED STAGGERED POSITIONING FOR OVERLAPPING EVENTS */
+.rbc-day-slot .rbc-event {
+  width: calc(100% - 10px) !important; /* Default width */
+  max-width: calc(100% - 10px) !important;
+  z-index: 1 !important;
+  margin-left: 0 !important;
+}
+
+/* Apply aggressive staggering for overlapping events */
+.rbc-day-slot .rbc-event:not(:only-child) {
+  width: calc(85% - 10px) !important; /* Make overlapping events narrower */
+  max-width: calc(85% - 10px) !important;
+}
+
+/* Create alternating positions for better visibility */
+.rbc-day-slot .rbc-event:nth-child(odd):not(:only-child) {
+  margin-left: 0 !important;
+  left: 0 !important;
+}
+
+.rbc-day-slot .rbc-event:nth-child(even):not(:only-child) {
+  margin-left: 15% !important;
+  left: 0 !important;
+}
+
+/* Further staggering for 3+ events */
+.rbc-day-slot .rbc-event:nth-child(3n):not(:only-child) {
+  margin-left: 7% !important;
+  left: 0 !important;
+}
+
+.rbc-day-slot .rbc-event:nth-child(3n+1):not(:only-child) {
+  margin-left: 0% !important;
+  left: 0 !important;
+}
+
+.rbc-day-slot .rbc-event:nth-child(3n+2):not(:only-child) {
+  margin-left: 15% !important;
+  left: 0 !important;
+}
+
+/* Applied z-index management for sequential events */
+.rbc-day-slot .rbc-event:nth-child(1) { z-index: 10 !important; }
+.rbc-day-slot .rbc-event:nth-child(2) { z-index: 9 !important; }
+.rbc-day-slot .rbc-event:nth-child(3) { z-index: 8 !important; }
+.rbc-day-slot .rbc-event:nth-child(4) { z-index: 7 !important; }
+.rbc-day-slot .rbc-event:nth-child(5) { z-index: 6 !important; }
+.rbc-day-slot .rbc-event:nth-child(6) { z-index: 5 !important; }
+.rbc-day-slot .rbc-event:nth-child(7) { z-index: 4 !important; }
+.rbc-day-slot .rbc-event:nth-child(8) { z-index: 3 !important; }
+.rbc-day-slot .rbc-event:nth-child(9) { z-index: 2 !important; }
+.rbc-day-slot .rbc-event:nth-child(n+10) { z-index: 1 !important; }
+
+/* Bring hovered event to front */
+.rbc-day-slot .rbc-event:hover {
+  z-index: 20 !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* EVENT GROUPING STYLES - Group related events */
+.event-group {
+  position: relative;
+}
+
+.event-group-badge {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.event-series-marker {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  vertical-align: middle;
+}
+
+/* NEW: Hierarchy visual cues for related events */
+.rbc-event[data-series-id] {
+  position: relative;
+}
+
+.rbc-event[data-series-id]:after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Different sessions of the same series */
+.rbc-event[data-series-id][data-session-number]:after {
+  content: attr(data-session-number);
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  font-weight: bold;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Improved event content styling */
+.rbc-event-content {
+  font-size: 0.8rem !important;
+  line-height: 1.3 !important;
+  font-weight: 600 !important; /* Make text more visible */
+  padding-left: 4px !important; /* Add padding to separate from border */
+  color: var(--foreground) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Make event label more visible */
+.rbc-event-label {
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  margin-bottom: 2px !important;
+  opacity: 0.9;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Additional styling for task event component */
+.task-event {
+  width: 100%;
+  height: 100%;
+  padding: 1px;
+  overflow: hidden;
+}
+
+.task-event-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.task-event-course, .task-event-location {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.task-event-icon {
+  margin-right: 4px;
+  font-size: 0.7rem;
+}
+
+/* Refined Break Events - make them more distinct */
+.break-event {
+  background: linear-gradient(135deg, rgba(240, 253, 250, 0.95), rgba(204, 251, 241, 0.95)) !important;
+  color: #0f766e !important;
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  z-index: 0 !important; /* Send breaks to back */
+  height: auto !important;
+  min-height: 24px !important;
+}
+
+.break-event::before {
+  background-color: #14b8a6 !important;
+  width: 4px;
+}
+
+.break-event .rbc-event-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+}
+
+.break-event .task-event-title::before {
+  content: "☕";
+  margin-right: 5px;
+  font-size: 0.9rem;
+}
+
+.long-break-event {
+  background: linear-gradient(135deg, rgba(224, 242, 254, 0.95), rgba(186, 230, 253, 0.95)) !important;
+  color: #0369a1 !important;
+}
+
+.long-break-event::before {
+  background-color: #0ea5e9 !important;
+}
+
+.long-break-event .task-event-title::before {
+  content: "🍽️";
+}
+
+/* Distinct styling for different event categories */
+.category-class::before {
+  background-color: #4f46e5 !important; /* Blue for classes */
+}
+
+.category-assignment::before {
+  background-color: #8b5cf6 !important; /* Purple for assignments */
+}
+
+.category-study::before {
+  background-color: #10b981 !important; /* Green for study sessions */
+}
+
+.category-reminder::before {
+  background-color: #ec4899 !important; /* Pink for reminders */
+}
+
+/* NEW: Course-specific color grouping */
+/* Generate dynamic course-code specific styling classes */
+/* These are generated dynamically and will be applied to events with same course code */
+[class*="course-code-"] {
+  position: relative;
+}
+
+[class*="course-code-"]:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  border-radius: 4px 0 0 4px;
+}
+
+/* Base course colors that will be assigned to detected course codes */
+.course-code-1:before { background-color: #4f46e5 !important; }
+.course-code-2:before { background-color: #8b5cf6 !important; }
+.course-code-3:before { background-color: #06b6d4 !important; }
+.course-code-4:before { background-color: #f59e0b !important; }
+.course-code-5:before { background-color: #10b981 !important; }
+.course-code-6:before { background-color: #ef4444 !important; }
+.course-code-7:before { background-color: #ec4899 !important; }
+.course-code-8:before { background-color: #6366f1 !important; }
+.course-code-9:before { background-color: #84cc16 !important; }
+.course-code-10:before { background-color: #14b8a6 !important; }
+
+/* Improve priority indicators */
+.priority-high::before {
+  background-color: var(--priority-high-border, #ef4444) !important;
+}
+
+.priority-medium::before {
+  background-color: var(--priority-medium-border, #f59e0b) !important;
+}
+
+.priority-low::before {
+  background-color: var(--priority-low-border, #10b981) !important;
+}
+
+/* TOOLTIP ON HOVER - Add custom tooltip for truncated events */
+.rbc-event {
+  position: relative !important;
+}
+
+.rbc-event:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--tooltip-bg, rgba(15, 23, 42, 0.9));
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 30;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
+
+.dark .rbc-event:hover::after {
+  background: var(--tooltip-bg, rgba(240, 240, 240, 0.9));
+  color: #111;
+}
+
+/* NEW: EVENT SERIES VISUALIZATION */
+/* This displays lines connecting related events */
+.event-series-connector {
+  position: absolute;
+  background-color: var(--primary);
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: 0;
 }

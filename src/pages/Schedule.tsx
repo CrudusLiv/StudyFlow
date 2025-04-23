@@ -54,26 +54,43 @@ const localizer = momentLocalizer(moment);
 // Custom event component for the calendar
 const TaskEventComponent = ({ event }: { event: CalendarEvent }) => {
   const priorityClass = event.priority ? `priority-${event.priority}` : 'priority-medium';
-  const categoryClass = event.category || '';
-  const isClassEvent = event.resource?.type === 'class';
+  const categoryClass = event.category ? `category-${event.category}` : '';
+  const isBreak = event.category === 'break';
+  const isLongBreak = isBreak && event.resource?.isLongBreak;
+  
+  // Class names for styling
+  const classNames = [
+    'task-event',
+    priorityClass,
+    categoryClass,
+    isBreak ? 'break-event' : '',
+    isLongBreak ? 'long-break-event' : ''
+  ].filter(Boolean).join(' ');
+  
+  // Format course code display
   const courseCode = event.courseCode || event.resource?.courseCode;
   
   return (
     <div 
-      className={`task-event ${priorityClass} ${categoryClass}`}
-      onClick={() => handleEventSelect(event)}
+      className={classNames}
+      title={`${event.title}${courseCode ? ` | ${courseCode}` : ''}`}
     >
       <div className="task-event-title">
-        {isClassEvent && courseCode ? `${courseCode} - ` : ''}{event.title}
+        {event.title}
       </div>
-      {event.description && (
-        <div className="task-event-desc">{event.description}</div>
+      
+      {!isBreak && courseCode && (
+        <div className="task-event-course">
+          <FiBook className="task-event-icon" />
+          <span>{courseCode}</span>
+        </div>
       )}
-      {courseCode && !isClassEvent && (
-        <div className="task-event-course">📚 {courseCode}</div>
-      )}
-      {isClassEvent && event.resource?.location && (
-        <div className="task-event-location">📍 {event.resource.location}</div>
+      
+      {!isBreak && event.location && (
+        <div className="task-event-location">
+          <FiMapPin className="task-event-icon" />
+          <span>{event.location}</span>
+        </div>
       )}
     </div>
   );
@@ -81,26 +98,7 @@ const TaskEventComponent = ({ event }: { event: CalendarEvent }) => {
 
 // Define custom Event component for React Big Calendar
 const CustomEventComponent = ({ event }) => {
-  // Log event details for debugging
-  console.log('Rendering event:', event);
-  
-  return (
-    <div className="custom-event-wrapper">
-      <div className="custom-event-title">
-        {event.title}
-      </div>
-      {event.resource?.location && (
-        <div className="custom-event-location">
-          📍 {event.resource.location}
-        </div>
-      )}
-      {event.resource?.type === 'class' && (
-        <div className="custom-event-type">
-          Class
-        </div>
-      )}
-    </div>
-  );
+  return <TaskEventComponent event={event} />;
 };
 
 // Fix the organizeClassesByDay function to handle different input formats and prevent duplicates
@@ -566,58 +564,21 @@ const Schedule: React.FC = () => {
     }
   }, [processEvents, studyData, setMessage, setUniversitySchedule, setHasUniversitySchedule]);
 
-  // Event style getter for the calendar
-  const eventStyleGetter = (event: any) => {
-    console.log('Styling event:', event);
-    
-    // Handle class events with custom styling
-    if (event.category === 'class') {
-      return {
-        className: 'class-event',
-        style: {
-          backgroundColor: '#4f46e5',
-          color: 'white',
-          fontWeight: 500,
-          border: 'none',
-          borderRadius: '4px',
-          padding: '2px 5px'
-        }
-      };
-    }
-    
-    // Original event styling logic for other event types
-    const priorityColors = {
-      high: { backgroundColor: '#fee2e2', borderColor: '#ef4444', color: '#b91c1c' },
-      medium: { backgroundColor: '#fef3c7', borderColor: '#f59e0b', color: '#92400e' },
-      low: { backgroundColor: '#d1fae5', borderColor: '#10b981', color: '#065f46' }
-    };
-
-    const categoryColors = {
-      task: { backgroundColor: '#dbeafe', borderColor: '#3b82f6', color: '#1e40af' },
-      study: { backgroundColor: '#e0e7ff', borderColor: '#6366f1', color: '#4338ca' },
-      assignment: { backgroundColor: '#fae8ff', borderColor: '#d946ef', color: '#86198f' },
-      exam: { backgroundColor: '#fce7f3', borderColor: '#ec4899', color: '#9d174d' }
-    };
-
-    // Use priority colors as default, override with category if available
-    const priority = event.priority || 'medium';
-    const category = event.category;
-    
-    const styleObj = priorityColors[priority] || priorityColors.medium;
-    
-    if (category && categoryColors[category]) {
-      Object.assign(styleObj, categoryColors[category]);
-    }
-
-    return {
-      className: `event-${priority} event-${category || 'default'}`,
-      style: {
-        backgroundColor: styleObj.backgroundColor,
-        borderLeft: `4px solid ${styleObj.borderColor}`,
-        color: styleObj.color
-      }
-    };
+// Custom event style function to handle break sessions
+const eventStyleGetter = (event, start, end, isSelected) => {
+  const isBreak = event.category === 'break';
+  const isLongBreak = isBreak && event.resource?.isLongBreak;
+  
+  // Let CSS handle styling rather than inline styles
+  return {
+    className: [
+      isBreak ? 'break-event' : '',
+      isLongBreak ? 'long-break-event' : '',
+      event.priority ? `priority-${event.priority}` : 'priority-medium',
+      event.category ? `category-${event.category}` : ''
+    ].filter(Boolean).join(' ')
   };
+};
 
   // Check if there's any data to display in the calendar
   const hasCalendarData = useCallback(() => {

@@ -954,27 +954,43 @@ export const scheduleService = {
     }
     
     return tasks.map(task => {
-      // Ensure dates are Date objects
       const startDate = task.start instanceof Date ? task.start : new Date(task.start);
       const endDate = task.end instanceof Date ? task.end : new Date(task.end);
       
+      // Handle break events specifically
+      if (task.category === 'break' || task.type === 'break' || task.type === 'long-break') {
+        return {
+          id: task.id || `break-${Math.random().toString(36).substring(2)}`,
+          title: task.title || (task.type === 'long-break' ? 'Long Break' : 'Break'),
+          start: startDate,
+          end: endDate,
+          allDay: false,
+          category: 'break',
+          type: task.type || 'break',
+          priority: 'low',
+          description: task.description || 'Take a break to recharge',
+          className: task.type === 'long-break' ? 'long-break-event' : 'break-event',
+          resource: task.resource || {
+            type: 'break',
+            isLongBreak: task.type === 'long-break',
+            duration: (endDate.getTime() - startDate.getTime()) / (60 * 1000)
+          }
+        };
+      }
+      
+      // Return standard events for non-break tasks
       return {
-        id: task.id || Math.random().toString(36).substring(2),
-        title: task.title,
+        id: task.id || `task-${Math.random().toString(36).substring(2)}`,
+        title: task.title || 'Untitled Task',
         start: startDate,
         end: endDate,
         allDay: task.allDay || false,
-        category: task.category || 'study',
-        courseCode: task.courseCode,
-        description: task.description,
+        category: task.category || 'task',
+        type: task.type || 'task',
         priority: task.priority || 'medium',
-        status: task.status || 'pending',
-        resource: task.resource || {
-          type: 'study-session',
-          sessionNumber: task.sessionNumber,
-          totalSessions: task.totalSessions,
-          stage: task.stage
-        }
+        description: task.description || '',
+        className: `priority-${task.priority || 'medium'} category-${task.category || 'task'}`,
+        resource: task.resource || {}
       };
     });
   },
