@@ -490,7 +490,13 @@ function determineAssignmentType(text) {
  */
 export async function processDocuments(filePaths, userId, options = {}) {
   try {
-    console.log(`Processing ${filePaths ? filePaths.length : 0} PDFs for user ${userId}`);
+    // Add null checks before accessing length property
+    if (!filePaths || !Array.isArray(filePaths)) {
+      console.warn("No documents to process or filePaths is not an array");
+      return []; // Return empty array instead of failing
+    }
+    
+    console.log(`Processing ${filePaths.length} PDFs for user ${userId}`);
     
     // Add validation to ensure filePaths is defined and is an array
     if (!filePaths || !Array.isArray(filePaths)) {
@@ -523,7 +529,10 @@ export async function processDocuments(filePaths, userId, options = {}) {
         courseCode: '',
         instructor: '',
         semester: ''
-      }
+      },
+      // Initialize these arrays to prevent undefined errors later
+      tasks: [],
+      deliverables: []
     };
 
     const processedFiles = [];
@@ -550,13 +559,13 @@ export async function processDocuments(filePaths, userId, options = {}) {
       // Use enhanced PDF processor for rich data extraction
       const extractedData = await processPDF(dataBuffer, fileInfo);
       console.log(`Extracted data for file ${fileInfo.name}:`, {
-        assignmentsFound: extractedData.structuredContent?.assignments?.length || 0,
-        datesFound: extractedData.structuredContent?.dates?.length || 0,
-        deadlinesFound: extractedData.structuredContent?.deadlines?.length || 0,
-        topicsFound: extractedData.structuredContent?.topics?.length || 0,
-        tasksFound: extractedData.structuredContent?.tasks?.length || 0,
-        deliverablesFound: extractedData.structuredContent?.deliverables?.length || 0,
-        extractedCourseCode: extractedData.syllabus?.courseCode || 'none'
+        assignmentsFound: extractedData?.structuredContent?.assignments?.length || 0,
+        datesFound: extractedData?.structuredContent?.dates?.length || 0,
+        deadlinesFound: extractedData?.structuredContent?.deadlines?.length || 0,
+        topicsFound: extractedData?.structuredContent?.topics?.length || 0,
+        tasksFound: extractedData?.structuredContent?.tasks?.length || 0,
+        deliverablesFound: extractedData?.structuredContent?.deliverables?.length || 0,
+        extractedCourseCode: extractedData?.syllabus?.courseCode || 'none'
       });
       
       // Set course code from extracted data if available
@@ -566,7 +575,7 @@ export async function processDocuments(filePaths, userId, options = {}) {
       }
 
       // Merge structured content with comprehensive metadata
-      if (extractedData.structuredContent) {
+      if (extractedData?.structuredContent) {
         // Add assignments with assignment tag and detailed metadata
         if (Array.isArray(extractedData.structuredContent.assignments)) {
           extractedData.structuredContent.assignments.forEach(assignment => {
@@ -635,14 +644,10 @@ export async function processDocuments(filePaths, userId, options = {}) {
           });
         }
         
-        // Add tasks and deliverables - add null checks to prevent errors
+        // Add tasks and deliverables with proper null checks
         if (Array.isArray(extractedData.structuredContent.tasks)) {
           extractedData.structuredContent.tasks.forEach(task => {
-            // Initialize tasks array if it doesn't exist
-            if (!allDocumentContent.tasks) {
-              allDocumentContent.tasks = [];
-            }
-            
+            // No need to initialize tasks array, we did it at the beginning
             allDocumentContent.tasks.push({
               task,
               source: 'pdf',
@@ -653,11 +658,7 @@ export async function processDocuments(filePaths, userId, options = {}) {
         
         if (Array.isArray(extractedData.structuredContent.deliverables)) {
           extractedData.structuredContent.deliverables.forEach(deliverable => {
-            // Initialize deliverables array if it doesn't exist
-            if (!allDocumentContent.deliverables) {
-              allDocumentContent.deliverables = [];
-            }
-            
+            // No need to initialize deliverables array, we did it at the beginning
             allDocumentContent.deliverables.push({
               deliverable,
               source: 'pdf',
@@ -698,16 +699,16 @@ export async function processDocuments(filePaths, userId, options = {}) {
         });
       }
 
-      if (!allDocumentContent.metadata.courseTitle && extractedData.syllabus?.courseTitle) {
+      if (extractedData?.syllabus?.courseTitle && !allDocumentContent.metadata.courseTitle) {
         allDocumentContent.metadata.courseTitle = extractedData.syllabus.courseTitle;
       }
-      if (!allDocumentContent.metadata.courseCode && extractedData.syllabus?.courseCode) {
+      if (extractedData?.syllabus?.courseCode && !allDocumentContent.metadata.courseCode) {
         allDocumentContent.metadata.courseCode = extractedData.syllabus.courseCode;
       }
-      if (!allDocumentContent.metadata.instructor && extractedData.syllabus?.instructor) {
+      if (extractedData?.syllabus?.instructor && !allDocumentContent.metadata.instructor) {
         allDocumentContent.metadata.instructor = extractedData.syllabus.instructor;
       }
-      if (!allDocumentContent.metadata.semester && extractedData.syllabus?.semester) {
+      if (extractedData?.syllabus?.semester && !allDocumentContent.metadata.semester) {
         allDocumentContent.metadata.semester = extractedData.syllabus.semester;
       }
 
@@ -723,13 +724,13 @@ export async function processDocuments(filePaths, userId, options = {}) {
       numberOfAssignments: allDocumentContent.assignments.length,
       numberOfTopics: allDocumentContent.topics.length,
       numberOfDeadlines: allDocumentContent.deadlines.length,
-      numberOfTasks: allDocumentContent.tasks.length,
-      numberOfDeliverables: allDocumentContent.deliverables.length,
+      numberOfTasks: allDocumentContent.tasks ? allDocumentContent.tasks.length : 0,
+      numberOfDeliverables: allDocumentContent.deliverables ? allDocumentContent.deliverables.length : 0,
       numberOfFiles: filePaths.length,
       courseCode: allDocumentContent.metadata.courseCode || 'none'
     });
 
-    const classSchedule = options.classSchedule || [];
+    const classSchedule = options?.classSchedule || [];
     
     const taggedClassSchedule = classSchedule.map(cls => ({
       ...cls,
@@ -747,11 +748,17 @@ export async function processDocuments(filePaths, userId, options = {}) {
         ...allDocumentContent.metadata, 
         topics: allDocumentContent.topics,
         deadlines: allDocumentContent.deadlines,
-        tasks: allDocumentContent.tasks,
-        deliverables: allDocumentContent.deliverables,
-        userPreferences: { ...options.preferences, classSchedule: taggedClassSchedule }
+        tasks: allDocumentContent.tasks || [],
+        deliverables: allDocumentContent.deliverables || [],
+        userPreferences: { ...(options?.preferences || {}), classSchedule: taggedClassSchedule }
       }
     );
+
+    // Make sure schedule is an array before accessing its properties
+    if (!Array.isArray(schedule) || schedule.length === 0) {
+      console.log('No schedule items were generated');
+      return [];
+    }
 
     console.log('Enhanced student-friendly schedule generated:', {
       numberOfEvents: schedule.length,

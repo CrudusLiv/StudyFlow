@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   FiEdit3, FiUser, FiMail, FiLogOut, FiCheck, FiX,
-  FiUserCheck, FiUpload, FiTrash2
+  FiUserCheck
 } from 'react-icons/fi';
 import '../styles/pages/Profile.css';
 import {
@@ -20,37 +20,31 @@ interface UserProfile {
   name: string;
   email: string;
   username: string;
-  avatar?: string;
-  profilePicture?: string;
 }
 
 const Profile: React.FC = () => {
   const [profile, setProfile] = useState<UserProfile>({
     name: '',
     email: '',
-    username: '',
-    avatar: ''
+    username: ''
   });
 
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [profilePicture, setProfilePicture] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [retryCount, setRetryCount] = useState(0);
+  const [showRefreshButton, setShowRefreshButton] = useState(false);
 
   useEffect(() => {
     fetchUserProfile();
-  }, []);
-
-  const getFullImageUrl = (profilePicturePath: string) => {
-    if (!profilePicturePath) return null;
-    if (profilePicturePath.startsWith('http')) return profilePicturePath;
-    return `http://localhost:5000${profilePicturePath}`;
-  };
+  }, [retryCount]);
 
   const fetchUserProfile = async () => {
     try {
+      setLoading(true);
+      setShowRefreshButton(false);
+      
       const token = localStorage.getItem('token');
       if (!token) {
         navigate('/access');
@@ -65,18 +59,13 @@ const Profile: React.FC = () => {
         name: response.data.name || '',
         email: response.data.email || '',
         username: response.data.username || '',
-        profilePicture: response.data.profilePicture || ''
       });
-
-      if (response.data.profilePicture) {
-        const fullImageUrl = getFullImageUrl(response.data.profilePicture);
-        setProfilePicture(fullImageUrl);
-      }
 
       setLoading(false);
     } catch (error) {
       console.error('Error fetching profile:', error);
       setMessage({ text: 'Error fetching profile', type: 'error' });
+      setShowRefreshButton(true);
       setLoading(false);
     }
   };
@@ -106,59 +95,8 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handleProfilePictureChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setMessage({ text: 'Please upload an image file', type: 'error' });
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setMessage({ text: 'Image size should be less than 5MB', type: 'error' });
-      return;
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('profilePicture', file);
-
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        'http://localhost:5000/api/user/profile-picture',
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-
-      const fullImageUrl = getFullImageUrl(response.data.profilePictureUrl);
-      setProfilePicture(fullImageUrl);
-      setProfile(prev => ({ ...prev, profilePicture: response.data.profilePictureUrl }));
-      setMessage({ text: 'Profile picture updated successfully!', type: 'success' });
-    } catch (error) {
-      console.error('Error uploading profile picture:', error);
-      setMessage({ text: 'Failed to upload profile picture', type: 'error' });
-    }
-  };
-
-  const handleRemoveProfilePicture = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete('http://localhost:5000/api/user/profile-picture', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setProfilePicture(null);
-      setMessage({ text: 'Profile picture removed successfully!', type: 'success' });
-    } catch (error) {
-      console.error('Error removing profile picture:', error);
-      setMessage({ text: 'Failed to remove profile picture', type: 'error' });
-    }
+  const handleRefresh = () => {
+    setRetryCount(prev => prev + 1);
   };
 
   if (loading) return <div>Loading...</div>;
@@ -175,49 +113,6 @@ const Profile: React.FC = () => {
         className="profile-wrapper"
         variants={containerVariants}
       >
-        <motion.div
-          className="profile-picture-section"
-          variants={fadeIn}
-        >
-          <div className="profile-picture-container">
-            {profilePicture ? (
-              <img
-                src={profilePicture}
-                alt="Profile"
-                className="profile-picture"
-              />
-            ) : (
-              <div className="profile-picture-placeholder">
-                <FiUser size={40} />
-              </div>
-            )}
-            <div className="profile-picture-overlay">
-              <button
-                className="picture-upload-button"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FiUpload />
-                <span>Upload</span>
-              </button>
-              {profilePicture && (
-                <button
-                  className="picture-remove-button"
-                  onClick={handleRemoveProfilePicture}
-                >
-                  <FiTrash2 />
-                  <span>Remove</span>
-                </button>
-              )}
-            </div>
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleProfilePictureChange}
-            accept="image/*"
-            style={{ display: 'none' }}
-          />
-        </motion.div>
         <motion.div
           className="profile-header"
           variants={fadeIn}
@@ -316,7 +211,6 @@ const Profile: React.FC = () => {
           Logout
         </motion.button>
       </motion.div>
-
     </motion.div>
   );
 };

@@ -938,6 +938,7 @@ export function generateSchedule(assignments, dates, userId, metadata = {}) {
  */
 function distributeStudySessions(assignments, classSchedule = [], preferences = {}, semesterDates = null) {
   const studySessions = [];
+  const breakSessions = []; // New array to store break sessions
   
   // Create a map of all class times to avoid scheduling conflicts
   const classTimesMap = createClassTimesMap(classSchedule);
@@ -947,7 +948,9 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
   const preferredStudyTimeStart = preferences.preferredStudyTimeStart || '09:00';
   const preferredStudyTimeEnd = preferences.preferredStudyTimeEnd || '18:00';
   const preferredSessionLength = preferences.studySessionLength || 120; // 2 hours default in minutes
-  const breaksBetweenSessions = preferences.breaksBetweenSessions || 30; // 30 minutes default
+  const breakDuration = preferences.breakDuration || 15; // 15 minutes default
+  const longBreakDuration = preferences.longBreakDuration || 30; // 30 minutes default
+  const sessionsBeforeLongBreak = preferences.sessionsBeforeLongBreak || 4; // Default 4 sessions before long break
   const spacingPreference = preferences.spacingPreference || 'moderate'; // 'compressed', 'moderate', 'spaced'
   const productiveTimeOfDay = preferences.productiveTimeOfDay || 'morning'; // 'morning', 'afternoon', 'evening'
   const maxDailyStudyHours = preferences.maxDailyStudyHours || 4; // Max study hours per day
@@ -971,6 +974,9 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
   } else {
     console.log('No semester dates available, using current date for scheduling');
   }
+  
+  // Track sessions count per day for pomodoro technique
+  const dailySessionCounts = {};
   
   // Process each assignment to create study sessions
   for (const assignment of assignments) {
@@ -1044,7 +1050,7 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
         productiveTimeOfDay,
         weekendPreference,
         maxDailyStudyHours * 60, // Convert to minutes
-        studySessions
+        studySessions.concat(breakSessions) // Include breaks when checking for conflicts
       );
       
       if (!sessionInfo) {
@@ -1086,6 +1092,41 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
           type: 'study-session'
         }
       });
+      
+      // Track daily session count for pomodoro technique
+      const dateKey = sessionInfo.date.toISOString().split('T')[0];
+      dailySessionCounts[dateKey] = (dailySessionCounts[dateKey] || 0) + 1;
+      
+      // Add a break after this session
+      // Determine if this should be a long break or regular break
+      const isLongBreak = dailySessionCounts[dateKey] % sessionsBeforeLongBreak === 0;
+      const currentBreakDuration = isLongBreak ? longBreakDuration : breakDuration;
+      
+      // Create break session starting when the study session ends
+      const breakStart = new Date(sessionEnd);
+      const breakEnd = new Date(breakStart);
+      breakEnd.setMinutes(breakEnd.getMinutes() + currentBreakDuration);
+      
+      breakSessions.push({
+        title: isLongBreak ? `Long Break (${currentBreakDuration} min)` : `Break (${currentBreakDuration} min)`,
+        start: breakStart,
+        end: breakEnd,
+        allDay: false,
+        category: 'break',
+        type: isLongBreak ? 'long-break' : 'break',
+        description: isLongBreak 
+          ? `Long break after ${sessionNumber} study sessions` 
+          : `Short break after studying ${assignment.courseCode || 'assignment'}`,
+        resource: {
+          type: 'break',
+          isLongBreak,
+          duration: currentBreakDuration,
+          afterSession: {
+            title: sessionTitle,
+            courseCode: assignment.courseCode || ''
+          }
+        }
+      });
     }
     
     // Always add a final reminder session on the day before the due date
@@ -1103,7 +1144,7 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
       productiveTimeOfDay,
       'always', // Use any day for the reminder
       maxDailyStudyHours * 60,
-      studySessions
+      studySessions.concat(breakSessions)
     );
     
     if (reminderInfo) {
@@ -1134,82 +1175,14 @@ function distributeStudySessions(assignments, classSchedule = [], preferences = 
     }
   }
   
+  // Combine study sessions and breaks
+  const allSessions = [...studySessions, ...breakSessions];
+  
   // Sort sessions by start time
-  studySessions.sort((a, b) => a.start.getTime() - b.start.getTime());
+  allSessions.sort((a, b) => a.start.getTime() - b.start.getTime());
   
-  console.log(`Generated ${studySessions.length} study sessions across all assignments`);
-  return studySessions;
-}
-
-/**
- * Creates a map of all class times to avoid scheduling conflicts
- * @param {Array} classSchedule - Array of class schedule objects
- * @returns {Object} Map of busy times by date
- */
-function createClassTimesMap(classSchedule) {
-  const classTimesMap = {};
-  
-  if (!Array.isArray(classSchedule) || classSchedule.length === 0) {
-    return classTimesMap;
-  }
-  
-  // Process class schedule to create a map of busy times
-  for (const classItem of classSchedule) {
-    if (!classItem.day) continue;
-    
-    // Extract the day name
-    const day = String(classItem.day).trim();
-    
-    if (!classTimesMap[day]) {
-      classTimesMap[day] = [];
-    }
-    
-    // Extract start and end times in minutes
-    let startMinute = 0;
-    let endMinute = 0;
-    
-    if (classItem.startTime && classItem.endTime) {
-      startMinute = timeStringToMinutes(classItem.startTime);
-      endMinute = timeStringToMinutes(classItem.endTime);
-    }
-    
-    // Add buffer before and after class
-    const bufferMinutes = 15;
-    startMinute = Math.max(0, startMinute - bufferMinutes);
-    endMinute = Math.min(24 * 60, endMinute + bufferMinutes);
-    
-    // Add to the map
-    classTimesMap[day].push({
-      start: startMinute,
-      end: endMinute,
-      courseCode: classItem.courseCode || '',
-      name: classItem.courseName || 'Class'
-    });
-  }
-  
-  // Sort busy times in each day
-  for (const day in classTimesMap) {
-    classTimesMap[day].sort((a, b) => a.start - b.start);
-  }
-  
-  return classTimesMap;
-}
-
-/**
- * Convert time string (HH:MM) to minutes since midnight
- */
-function timeStringToMinutes(timeStr) {
-  if (!timeStr) return 0;
-  
-  // Handle different time formats
-  const match = timeStr.match(/(\d{1,2}):(\d{2})/);
-  if (match) {
-    const hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    return hours * 60 + minutes;
-  }
-  
-  return 0;
+  console.log(`Generated ${studySessions.length} study sessions and ${breakSessions.length} break sessions`);
+  return allSessions;
 }
 
 /**
@@ -1265,18 +1238,23 @@ function findAvailableTimeSlot(
     // Get class times for this day
     const classTimes = classTimesMap[dayName] || [];
     
-    // Get already scheduled study sessions for this day
+    // Get already scheduled study sessions and breaks for this day
     const dayStudySessions = existingSessions.filter(session => {
       const sessionDate = session.start.toISOString().split('T')[0];
       return sessionDate === dateString;
     });
     
     // Calculate total study minutes already scheduled for this day
+    // Only count study sessions, not breaks
     const existingStudyMinutes = dayStudySessions.reduce((total, session) => {
-      const sessionStart = session.start;
-      const sessionEnd = session.end;
-      const sessionMinutes = (sessionEnd.getTime() - sessionStart.getTime()) / (60 * 1000);
-      return total + sessionMinutes;
+      // Only add to total if it's a study session or reminder (not a break)
+      if (session.category !== 'break') {
+        const sessionStart = session.start;
+        const sessionEnd = session.end;
+        const sessionMinutes = (sessionEnd.getTime() - sessionStart.getTime()) / (60 * 1000);
+        return total + sessionMinutes;
+      }
+      return total;
     }, 0);
     
     // Skip this day if it already has the maximum study time
@@ -1292,7 +1270,7 @@ function findAvailableTimeSlot(
       continue;
     }
     
-    // Determine optimal time range based on productive time of day
+    // Use narrower time windows based on productive time of day preference
     let optimalStartMinute, optimalEndMinute;
     
     if (productiveTimeOfDay === 'morning') {
@@ -1320,7 +1298,7 @@ function findAvailableTimeSlot(
     // Create busy time blocks from classes
     const busyBlocks = [...classTimes];
     
-    // Add existing study sessions as busy blocks
+    // Add existing study sessions and breaks as busy blocks
     for (const session of dayStudySessions) {
       const sessionStartTime = session.start.getHours() * 60 + session.start.getMinutes();
       const sessionEndTime = session.end.getHours() * 60 + session.end.getMinutes();
@@ -1328,7 +1306,8 @@ function findAvailableTimeSlot(
       busyBlocks.push({
         start: sessionStartTime,
         end: sessionEndTime,
-        name: session.title
+        name: session.title,
+        type: session.type || session.category
       });
     }
     
@@ -1405,6 +1384,77 @@ function findAvailableTimeSlot(
   
   // If no slot found after trying all days
   return null;
+}
+
+/**
+ * Creates a map of all class times to avoid scheduling conflicts
+ * @param {Array} classSchedule - Array of class schedule objects
+ * @returns {Object} Map of busy times by date
+ */
+function createClassTimesMap(classSchedule) {
+  const classTimesMap = {};
+  
+  if (!Array.isArray(classSchedule) || classSchedule.length === 0) {
+    return classTimesMap;
+  }
+  
+  // Process class schedule to create a map of busy times
+  for (const classItem of classSchedule) {
+    if (!classItem.day) continue;
+    
+    // Extract the day name
+    const day = String(classItem.day).trim();
+    
+    if (!classTimesMap[day]) {
+      classTimesMap[day] = [];
+    }
+    
+    // Extract start and end times in minutes
+    let startMinute = 0;
+    let endMinute = 0;
+    
+    if (classItem.startTime && classItem.endTime) {
+      startMinute = timeStringToMinutes(classItem.startTime);
+      endMinute = timeStringToMinutes(classItem.endTime);
+    }
+    
+    // Add buffer before and after class
+    const bufferMinutes = 15;
+    startMinute = Math.max(0, startMinute - bufferMinutes);
+    endMinute = Math.min(24 * 60, endMinute + bufferMinutes);
+    
+    // Add to the map
+    classTimesMap[day].push({
+      start: startMinute,
+      end: endMinute,
+      courseCode: classItem.courseCode || '',
+      name: classItem.courseName || 'Class'
+    });
+  }
+  
+  // Sort busy times in each day
+  for (const day in classTimesMap) {
+    classTimesMap[day].sort((a, b) => a.start - b.start);
+  }
+  
+  return classTimesMap;
+}
+
+/**
+ * Convert time string (HH:MM) to minutes since midnight
+ */
+function timeStringToMinutes(timeStr) {
+  if (!timeStr) return 0;
+  
+  // Handle different time formats
+  const match = timeStr.match(/(\d{1,2}):(\d{2})/);
+  if (match) {
+    const hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    return hours * 60 + minutes;
+  }
+  
+  return 0;
 }
 
 /**

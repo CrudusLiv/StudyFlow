@@ -254,8 +254,24 @@ router.post('/process-pdfs', upload.array('files', 10), async (req, res) => {
     };
     
     console.log(`Starting processDocuments with ${filePaths.length} files, semester dates set: ${!!getCurrentSemesterDates()}`);
+    
+    // FIXED: Removed duplicate call to processDocuments and invalid try/catch block
+    // Only process documents once with proper error handling
+    if (!filePaths || filePaths.length === 0) {
+      return res.status(400).json({ 
+        error: 'No valid files to process' 
+      });
+    }
+    
     const studySchedule = await processDocuments(filePaths, userId, options);
-    console.log(`processDocuments completed - generated ${studySchedule.length} schedule items`);
+    console.log(`processDocuments completed - generated ${studySchedule ? studySchedule.length : 0} schedule items`);
+    
+    // Check if we got a valid response
+    if (!studySchedule || !Array.isArray(studySchedule)) {
+      return res.status(500).json({ 
+        error: 'Failed to generate study schedule' 
+      });
+    }
     
     // Get the schedule ID that was generated during processing
     const scheduleId = studySchedule.length > 0 ? studySchedule[0].scheduleId : null;
