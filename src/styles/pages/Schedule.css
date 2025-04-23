@@ -188,7 +188,7 @@
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border);
   margin: 1.5rem 0 2.5rem;
-  height: 750px;
+  height: 850px; /* Increased from 750px to 850px for taller slots */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -224,6 +224,7 @@
   border-top: 1px solid var(--border);
   overflow-y: auto;
   position: relative;
+  max-height: calc(100% - 80px); /* Adjusted to account for larger slots */
 }
 
 /* Fix the time gutter to stay in place when scrolling */
@@ -233,6 +234,7 @@
   background-color: var(--card-bg);
   z-index: 5;
   border-right: 1px solid var(--border);
+  width: 90px; /* Increased from 75px to 90px to accommodate minutes */
 }
 
 .rbc-time-view .rbc-time-gutter {
@@ -241,6 +243,7 @@
   padding-right: 10px;
   width: 75px;
   font-weight: 500;
+  font-size: 0.85rem; /* Ensure consistent font size */
 }
 
 /* Ensure overlapping events are properly sized and positioned */
@@ -715,7 +718,7 @@
   background-color: var(--card-bg);
   z-index: 5;
   border-right: 1px solid var(--border);
-  width: 75px;
+  width: 90px; /* Increased from 75px to 90px to accommodate minutes */
 }
 
 .rbc-time-view .rbc-time-gutter {
@@ -724,11 +727,12 @@
   padding-right: 10px;
   font-weight: 500;
   color: var(--muted-foreground);
+  font-size: 0.85rem; /* Ensure consistent font size */
 }
 
 .rbc-timeslot-group {
   border-bottom: 1px solid var(--border);
-  min-height: 50px;
+  min-height: 80px; /* Increased from 50px to 80px */
 }
 
 /* Enhanced current time indicator */
@@ -828,7 +832,7 @@
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ensure responsive columns */
   gap: 1rem;
   overflow-x: auto;
   padding-bottom: 1rem;
@@ -842,7 +846,7 @@
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  height: 600px;
+  height: auto; /* Adjust height dynamically */
   transition: all 0.2s ease;
 }
 
@@ -2008,14 +2012,14 @@
   white-space: nowrap;
   text-align: right;
   padding-right: 10px;
-  width: 75px;
+  width: 90px; /* Ensure enough space for minutes */
   font-weight: 500;
-  color: var(--foreground);
+  font-size: 0.85rem; /* Consistent font size */
 }
 
 .rbc-timeslot-group {
   border-bottom: 1px solid var(--border);
-  min-height: 50px;
+  min-height: 80px; /* Increased from 50px to 80px */
 }
 
 /* Enhanced current time indicator */
@@ -2087,7 +2091,7 @@
 /* Enhanced responsive styles */
 @media (max-width: 1024px) {
   .calendar-container {
-    height: 650px;
+    height: 750px; /* Adjusted for smaller screens */
     margin: 1rem 0 2rem;
     padding-bottom: 15px; /* Adjusted padding for smaller screens */
   }
@@ -2100,11 +2104,15 @@
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
   }
+  
+  .rbc-timeslot-group {
+    min-height: 70px; /* Slightly reduced for smaller screens */
+  }
 }
 
 @media (max-width: 768px) {
   .calendar-container {
-    height: 550px;
+    height: 650px; /* Adjusted for mobile screens */
     border-radius: 1rem;
     padding-bottom: 10px; 
   }
@@ -2173,6 +2181,10 @@
   .header-button {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
+  }
+  
+  .rbc-timeslot-group {
+    min-height: 60px; /* Further reduced for mobile screens */
   }
 }
 
@@ -2434,17 +2446,6 @@
 
 }
 
-.ai-badge-container {
-  border-radius: 1rem;
-  padding: 0.5rem 1rem;
-/* Break block styling */
-.break-event {
-  background: linear-gradient(135deg, rgba(240, 253, 250, 0.9), rgba(204, 251, 241, 0.9)) !important;
-  border-left: 3px solid #14b8a6 !important;
-  color: #0f766e !important;
-  transform: scale(0.98);
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
-}
 
 .break-event .rbc-event-content {
   display: flex !important;
@@ -2476,9 +2477,10 @@
 /* Improved event rendering */
 .rbc-event {
   position: relative !important;
-  margin: 3px !important;
+  margin: 3px 4px !important;
   padding: 8px 10px !important;
   min-height: 30px !important;
+  max-height: calc(100% - 6px) !important; 
   border-radius: 10px !important;
   background: var(--card) !important;
   border: 1px solid var(--border) !important;
@@ -2649,7 +2651,7 @@
   background-color: var(--card-bg);
   z-index: 5;
   border-right: 1px solid var(--border);
-  width: 75px;
+  width: 90px; /* Increased from 75px to 90px to accommodate minutes */
 }
 
 .rbc-time-view .rbc-time-gutter {
@@ -2658,11 +2660,12 @@
   padding-right: 10px;
   font-weight: 500;
   color: var(--muted-foreground);
+  font-size: 0.85rem; /* Ensure consistent font size */
 }
 
 .rbc-timeslot-group {
   border-bottom: 1px solid var(--border);
-  min-height: 50px;
+  min-height: 80px; /* Increased from 50px to 80px */
 }
 
 /* Enhanced current time indicator */
@@ -2808,10 +2811,6 @@
 .dark .rbc-event {
   background-color: var(--card-bg, #1f2937) !important;
   border-color: var(--border, #374151) !important;
-}
-
-.dark .rbc-event-content {
-  color: var(--foreground, #f9fafb) !important;
 }
 
 /* Empty calendar message styling */

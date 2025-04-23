@@ -1,0 +1,654 @@
+{
+  "id": "7018dfb7-8ff4-45f1-b5b9-91fac25810ff",
+  "userId": "67fe4a91cbdb853d147d9423",
+  "schedule": [
+    {
+      "title": "DIP102 - Understanding requirements (Session 1/7)",
+      "start": "2025-04-30T01:00:00.000Z",
+      "end": "2025-04-30T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Understanding requirements",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 1,
+        "totalSessions": 7,
+        "stage": "Understanding requirements",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-04-30T02:00:00.000Z",
+      "end": "2025-04-30T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Understanding requirements (Session 1/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Research (Session 2/7)",
+      "start": "2025-05-08T01:00:00.000Z",
+      "end": "2025-05-08T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Research",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 2,
+        "totalSessions": 7,
+        "stage": "Research",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-08T02:00:00.000Z",
+      "end": "2025-05-08T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Research (Session 2/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - First draft (Session 3/7)",
+      "start": "2025-05-19T04:15:00.000Z",
+      "end": "2025-05-19T05:15:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: First draft",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 3,
+        "totalSessions": 7,
+        "stage": "First draft",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-19T05:15:00.000Z",
+      "end": "2025-05-19T05:30:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - First draft (Session 3/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Review and refine (Session 4/7)",
+      "start": "2025-05-26T04:15:00.000Z",
+      "end": "2025-05-26T05:15:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Review and refine",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 4,
+        "totalSessions": 7,
+        "stage": "Review and refine",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-05-26T05:15:00.000Z",
+      "end": "2025-05-26T05:30:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Review and refine (Session 4/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Final review (Session 5/7)",
+      "start": "2025-06-04T01:00:00.000Z",
+      "end": "2025-06-04T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Final review",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 5,
+        "totalSessions": 7,
+        "stage": "Final review",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-06-04T02:00:00.000Z",
+      "end": "2025-06-04T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Final review (Session 5/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Final review (Session 6/7)",
+      "start": "2025-06-13T01:00:00.000Z",
+      "end": "2025-06-13T02:00:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Final review",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 6,
+        "totalSessions": 7,
+        "stage": "Final review",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-06-13T02:00:00.000Z",
+      "end": "2025-06-13T02:15:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Final review (Session 6/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Final review (Session 7/7)",
+      "start": "2025-06-23T04:15:00.000Z",
+      "end": "2025-06-23T05:15:00.000Z",
+      "allDay": false,
+      "category": "study",
+      "courseCode": "DIP102",
+      "type": "study-session",
+      "priority": "high",
+      "description": "Study session for Untitled Assignment: Final review",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 7,
+        "totalSessions": 7,
+        "stage": "Final review",
+        "type": "study-session",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    },
+    {
+      "title": "Break (15 min)",
+      "start": "2025-06-23T05:15:00.000Z",
+      "end": "2025-06-23T05:30:00.000Z",
+      "allDay": false,
+      "category": "break",
+      "type": "break",
+      "description": "Short break after studying DIP102",
+      "resource": {
+        "type": "break",
+        "isLongBreak": false,
+        "duration": 15,
+        "afterSession": {
+          "title": "DIP102 - Final review (Session 7/7)",
+          "courseCode": "DIP102"
+        }
+      }
+    },
+    {
+      "title": "DIP102 - Final Review Before Deadline",
+      "start": "2025-07-01T01:00:00.000Z",
+      "end": "2025-07-01T02:00:00.000Z",
+      "allDay": false,
+      "category": "reminder",
+      "courseCode": "DIP102",
+      "type": "reminder",
+      "priority": "high",
+      "description": "Final review session before the deadline for Untitled Assignment",
+      "resource": {
+        "title": "Untitled Assignment",
+        "description": "You must provide an appropriate context for the speech. (approximately 1000 words) The grading scheme for this assessment is as follow: a.Content: 25% b.",
+        "dueDate": "2025-07-02",
+        "weight": 30,
+        "complexity": 1,
+        "estimatedHours": 1,
+        "objectives": [],
+        "topics": [],
+        "courseCode": "DIP102",
+        "assignmentNumber": 1,
+        "source": "pdf",
+        "documentType": "assignment",
+        "sourceFile": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "details": {
+          "totalHours": 6.5,
+          "numberOfSessions": 7,
+          "complexity": 5,
+          "learningStages": [
+            "Understanding requirements",
+            "Research",
+            "First draft",
+            "Review and refine",
+            "Final review",
+            "Final review",
+            "Final review"
+          ]
+        },
+        "sessionNumber": 8,
+        "totalSessions": 7,
+        "stage": "Final Review",
+        "type": "reminder",
+        "taskDetails": {
+          "tasks": [],
+          "deliverables": []
+        },
+        "sourceDetails": {
+          "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+          "courseCode": "DIP102"
+        }
+      },
+      "pdfDetails": {
+        "fileName": "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf",
+        "courseCode": "DIP102",
+        "extractedText": "\n\nDIP1ENG01 / DIP102\nEnglish in IT\nSemester 2, 2025\nAssignment No : 2\nRelease Date : 02/06/2025\nDue Date : 02/07/2025\nValue : 30% of final total\nAssessment Type : Individual Assignment\nSECTION A (50 MARKS)\nRecommended completion: 30\nth\n July 2025\nYou are required to write an original speech themed ‘Good things come to those who wait’. You must provide an\nappropriate context for the speech. (approximately 1000 words)\nThe grading scheme for this assessment is as follow:\na.Content: 25%\nb.Language (grammar and pronunciation): 25%\nc.Intonation: 25%\nd.Delivery Skills (inclusive of your attire): 25%\nSECTION B (30 MARKS)\nRecommended completion: 30\nth\n July 2025\nAdopted from: https://newsnetwork.mayoclinic.org/discussion/covid-19-how-much-protection-do-face-masks-offer-2/\nWrite a formal email to your employer in response to the issue above. (approximately 200 words)"
+      }
+    }
+  ],
+  "metadata": {
+    "title": "Schedule from 1 files",
+    "courseCode": "DIP102",
+    "fileCount": 1,
+    "fileNames": [
+      "D:\\GitHub\\studyflow\\uploads\\1745382945595-DIP102_Assignment_2.pdf"
+    ],
+    "preferences": {
+      "studyHoursPerDay": 4,
+      "preferredStudyTimes": [
+        "evening",
+        "night"
+      ],
+      "breakDuration": 15,
+      "longBreakDuration": 30,
+      "sessionsBeforeLongBreak": 4,
+      "weekendStudy": true,
+      "preferredSessionLength": 2,
+      "wakeUpTime": "10:00",
+      "sleepTime": "12:00",
+      "preferredStudyDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "minimumDaysBetweenSessions": 1,
+      "preferSpacedRepetition": true,
+      "semesterDates": {
+        "startDate": "2025-04-30T00:00:00.000Z",
+        "endDate": "2025-08-31T00:00:00.000Z"
+      },
+      "studySessionLength": 60,
+      "breakLength": 15,
+      "maxDailyStudyHours": 4,
+      "preferredStudyTimeStart": "09:00",
+      "preferredStudyTimeEnd": "18:00",
+      "spacingPreference": "moderate",
+      "productiveTimeOfDay": "morning",
+      "procrastinationProfile": "moderate",
+      "cognitiveLoadFactors": {
+        "exam": 1.5,
+        "project": 1.3,
+        "assignment": 1,
+        "reading": 0.8,
+        "homework": 1.1,
+        "presentation": 1.3,
+        "lab": 1.2
+      },
+      "maxDailyCognitiveLoad": 5,
+      "learningStyle": "balanced",
+      "weekendPreference": "minimal",
+      "subjectFamiliarity": {},
+      "breaksBetweenSessions": true,
+      "_id": "6800a6b705ad6cabeee6a75f",
+      "userId": "67fe4a91cbdb853d147d9423",
+      "__v": 0,
+      "createdAt": "2025-04-17T07:02:41.265Z",
+      "updatedAt": "2025-04-17T07:05:40.625Z",
+      "enableCognitiveOptimization": true
+    },
+    "createdAt": "2025-04-23T04:35:45.774Z",
+    "assignmentCount": 7,
+    "classCount": 0
+  }
+}

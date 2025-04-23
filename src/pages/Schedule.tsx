@@ -2320,47 +2320,6 @@ const savePreferences = async () => {
     }
   };
 
-  // Add this function to the Schedule component
-  const handleGenerateScheduleFromSavedPDF = async (documentId: string) => {
-    try {
-      setParsedDocuments(prev => prev.map(doc => {
-        // Find the document and update its status
-        if (doc._id === documentId) {
-          return { ...doc, status: 'generating' };
-        }
-        return doc;
-      }));
-      
-      // Call the service to generate a schedule from the stored PDF
-      const response = await pdfService.generateScheduleFromStoredPDF(documentId);
-      
-      if (response.success && response.schedule) {
-        // Convert the schedule to calendar events
-        const scheduleEvents = pdfService.convertScheduleToEvents(response.schedule);
-        
-        // Get current class events
-        const currentClassEvents = events.filter(event => event.category === 'class');
-        
-        // Combine class events with new schedule events
-        setEvents([...currentClassEvents, ...scheduleEvents]);
-        
-        toast.success(`Generated ${scheduleEvents.length} study events successfully!`);
-      } else {
-        toast.error(response.error || 'Failed to generate schedule');
-      }
-    } catch (error) {
-      console.error('Error generating schedule from saved PDF:', error);
-      toast.error('Failed to generate schedule. Please try again.');
-    } finally {
-      setParsedDocuments(prev => prev.map(doc => {
-        if (doc._id === documentId) {
-          return { ...doc, status: 'done' };
-        }
-        return doc;
-      }));
-    }
-  };
-
   const handleScheduleSelected = async (scheduleId: string) => {
     try {
       setLoading(true);

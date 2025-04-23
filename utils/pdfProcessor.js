@@ -1238,4 +1238,3 @@ function extractTopics(text) {
   
   return topics.slice(0, 10); // Limit to 10 topics
 }
-
