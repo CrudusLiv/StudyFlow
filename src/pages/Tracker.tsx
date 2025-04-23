@@ -195,6 +195,23 @@ const Tracker: React.FC = () => {
     });
   };
 
+  // Get enhanced title for assignment display
+  const getEnhancedAssignmentTitle = (assignment) => {
+    // Use extractSimpleAssignmentTitle from scheduleService if courseCode is available
+    if (assignment.courseCode) {
+      // Create a mock event object for the function
+      const mockEvent = {
+        title: assignment.title,
+        courseCode: assignment.courseCode,
+        resource: assignment.resource || {}
+      };
+      
+      return scheduleService.extractSimpleAssignmentTitle(mockEvent, assignment.courseCode);
+    }
+    
+    return assignment.title || 'Untitled Assignment';
+  };
+
   // Check if assignment is due soon (within 3 days)
   const isDueSoon = (dueDate: string) => {
     const now = new Date().getTime();
@@ -544,7 +561,7 @@ const Tracker: React.FC = () => {
                   </div>
                   
                   <div className="assignment-header">
-                    <h4 className="assignment-title">{assignment.title}</h4>
+                    <h4 className="assignment-title">{getEnhancedAssignmentTitle(assignment)}</h4>
                     <div className="assignment-meta">
                       {assignment.courseCode && (
                         <span className="course-code">{assignment.courseCode}</span>

@@ -653,63 +653,89 @@ export const scheduleService = {
       
       // Try other filename patterns if the specific pattern didn't match
       const fileNameMatch = fileName?.match(/assignment[_\s]*(\d+)/i) ||
-                           fileName?.match(/a(\d+)[_\.]/i) ||
+                           fileName?.match(/a(\d+)[_\.]?/i) ||
                            fileName?.match(/hw(\d+)/i) ||
                            fileName?.match(/(\d+)[_\s]*assignment/i);
       
       if (fileNameMatch && fileNameMatch[1]) {
         const assignmentNumber = fileNameMatch[1];
-        return bestCourseCode 
-          ? `${bestCourseCode} - Assignment ${assignmentNumber}` 
-          : `Assignment ${assignmentNumber}`;
+        
+        if (bestCourseCode) {
+          return `${bestCourseCode} - Assignment ${assignmentNumber}`;
+        } else {
+          return `Assignment ${assignmentNumber}`;
+        }
       }
     }
     
-    // If we reach here, try to get assignment info from title or resource data
-    const title = event.title || '';
-    
-    // Try to extract assignment number from title
-    const titleAssignmentMatch = title.match(/assignment[_\s]*(\d+)/i) ||
-                                title.match(/a(\d+)[_\.]/i) ||
-                                title.match(/(\d+)[_\s]*assignment/i);
-    
-    if (titleAssignmentMatch && titleAssignmentMatch[1]) {
-      const assignmentNumber = titleAssignmentMatch[1];
-      const bestCourseCode = courseCode || 
-                            event.courseCode || 
-                            event.resource?.courseCode || '';
-      
-      return bestCourseCode 
-        ? `${bestCourseCode} - Assignment ${assignmentNumber}` 
-        : `Assignment ${assignmentNumber}`;
-    }
-    
-    // If we have resource.assignmentNumber, use that
+    // If no match from filename, check if assignment number is directly in resource
     if (event.resource?.assignmentNumber) {
-      const bestCourseCode = courseCode || 
-                            event.courseCode || 
-                            event.resource?.courseCode || '';
-      
-      return bestCourseCode 
-        ? `${bestCourseCode} - Assignment ${event.resource.assignmentNumber}` 
-        : `Assignment ${event.resource.assignmentNumber}`;
+      const eventCourseCode = courseCode || event.courseCode || event.resource?.courseCode;
+      if (eventCourseCode) {
+        return `${eventCourseCode} - Assignment ${event.resource.assignmentNumber}`;
+      } else {
+        return `Assignment ${event.resource.assignmentNumber}`;
+      }
     }
     
-    // No assignment number found, but we have a title and course code
-    if (title && (courseCode || event.courseCode || event.resource?.courseCode)) {
-      const bestCourseCode = courseCode || event.courseCode || event.resource?.courseCode;
-      
-      // If title already contains course code, return it as is
-      if (title.includes(bestCourseCode)) {
-        return title;
+    // Extract from extracted text if available
+    if (event.resource?.extractedText) {
+      const assignmentNoMatch = event.resource.extractedText.match(/Assignment\s*No\s*:\s*(\d+)/i);
+      if (assignmentNoMatch && assignmentNoMatch[1]) {
+        const eventCourseCode = courseCode || event.courseCode || event.resource?.courseCode;
+        if (eventCourseCode) {
+          return `${eventCourseCode} - Assignment ${assignmentNoMatch[1]}`;
+        } else {
+          return `Assignment ${assignmentNoMatch[1]}`;
+        }
+      }
+    }
+    
+    // Fall back to extracting from title
+    let assignmentNumber = '';
+    let title = event.title || '';
+    
+    // Enhanced pattern matching for assignment numbers in titles
+    const numberMatch = title.match(/assignment\s*(?:number|num|#)?\s*(\d+)/i) || 
+                        title.match(/\bassignment\s*(\d+)/i) ||
+                        title.match(/\ba(\d+)\b/i) ||  // Match patterns like "A2"
+                        title.match(/\bhw\s*(\d+)\b/i); // Match patterns like "HW 2"
+    
+    if (numberMatch && numberMatch[1]) {
+      assignmentNumber = numberMatch[1];
+    }
+    
+    // If we found an assignment number, format title consistently
+    if (assignmentNumber) {
+      if (courseCode) {
+        return `${courseCode} - Assignment ${assignmentNumber}`;
+      } else {
+        return `Assignment ${assignmentNumber}`;
+      }
+    }
+    
+    // If no assignment number but we have course code, still use simplified format
+    if (courseCode && !title.includes(courseCode)) {
+      // If title is too long, truncate it
+      const maxLength = 30;
+      if (title.length > maxLength) {
+        // Clean up the title first
+        title = title
+          .replace(/\s*\(Session \d+\/\d+\)\s*/, '')
+          .replace(/\s*-\s*[A-Za-z\s]+(draft|review|research|requirements|final).*$/, '');
+        
+        // Use course code with shortened title
+        return `${courseCode} - ${title.substring(0, maxLength)}...`;
       }
       
-      // Otherwise, add course code prefix if not already in the title
-      return `${bestCourseCode} - ${title}`;
+      return `${courseCode} - ${title}`;
     }
     
-    // If everything else fails, return original title or default
-    return title || 'Assignment';
+    // Clean up the title as fallback
+    return title
+      .replace(/\s*\(Session \d+\/\d+\)\s*/, '')
+      .replace(/\s*-\s*[A-Za-z\s]+(draft|review|research|requirements|final).*$/, '')
+      .trim();
   },
 
   /**

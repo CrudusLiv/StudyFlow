@@ -3,7 +3,7 @@ import axios from 'axios';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import { motion } from 'framer-motion';
 import '../styles/pages/Admin.css';
-import { FaChartLine, FaChartPie, FaUsers, FaUserClock, FaClock, FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+import { FaChartLine, FaChartPie, FaUsers, FaUserClock, FaClock, FaSort, FaSortUp, FaSortDown, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
 import { BiError } from 'react-icons/bi';
 import { processUserData, extractAnalytics, directServerResponseHandler } from '../utils/adminUtils';
 
@@ -34,6 +34,12 @@ interface Analytics {
   userActivity: UserActivity[];
 }
 
+// Add interface for editing user state
+interface EditingUser {
+  _id: string;
+  role: string;  // Only keeping role, removing name and email
+}
+
 // Colors for the pie chart
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c', '#d0ed57'];
 
@@ -46,6 +52,11 @@ const Admin: React.FC = () => {
     key: '',
     direction: null
   });
+  
+  // Add state for user editing
+  const [editingUser, setEditingUser] = useState<EditingUser | null>(null);
+  const [updateSuccess, setUpdateSuccess] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -77,6 +88,64 @@ const Admin: React.FC = () => {
     fetchAnalytics();
   }, []);
 
+  // Function to start editing a user
+  const handleEditUser = (user: UserActivity) => {
+    setEditingUser({
+      _id: user._id,
+      role: user.role
+    });
+    // Clear any previous messages
+    setUpdateSuccess(null);
+    setUpdateError(null);
+  };
+
+  // Function to cancel editing
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setUpdateSuccess(null);
+    setUpdateError(null);
+  };
+
+  // Function to save user changes
+  const handleSaveUser = async () => {
+    if (!editingUser) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `http://localhost:5000/api/admin/users/${editingUser._id}`,
+        {
+          role: editingUser.role  // Only sending role for update
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
+      
+      // Update the local data to reflect changes
+      if (analytics) {
+        const updatedUsers = analytics.userActivity.map(user => 
+          user._id === editingUser._id ? { ...user, role: editingUser.role } : user
+        );
+        
+        setAnalytics({
+          ...analytics,
+          userActivity: updatedUsers
+        });
+      }
+      
+      setUpdateSuccess(`User role updated successfully!`);
+      setTimeout(() => {
+        setEditingUser(null);
+        setUpdateSuccess(null);
+      }, 2000);
+      
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      setUpdateError(error.response?.data?.error || 'Failed to update user');
+    }
+  };
+  
   // Responsive design helpers
   const getResponsiveMargin = () => {
     const width = window.innerWidth;
@@ -229,16 +298,16 @@ const Admin: React.FC = () => {
       exit="exit"
       variants={pageVariants}
     >
-
-      
       <motion.header 
         className="admin-header"
         variants={containerVariants}
       >
         <h1 className="admin-title">Admin Dashboard</h1>
+        {updateSuccess && <div className="success-message">{updateSuccess}</div>}
+        {updateError && <div className="error-message">{updateError}</div>}
       </motion.header>
       
-      {/* Stats Overview Cards */}
+      {/* Stats Overview Cards - Removed Active Today card */}
       <motion.div 
         className="overview-grid"
         variants={staggeredGrid}
@@ -257,34 +326,7 @@ const Admin: React.FC = () => {
           <p className="stat-description">Active accounts on the platform</p>
           <p className="stat-value">{analytics.totalUsers || 0}</p>
         </motion.div>
-
-        <motion.div 
-          className="stat-card"
-          variants={gridItemVariants}
-          whileHover="hover"
-        >
-          <div className="stat-header">
-            <FaUserClock className="stat-icon" />
-            <h2 className="stat-title">Active Today</h2>
-          </div>
-          <p className="stat-description">Users active in the last 24 hours</p>
-          <p className="stat-value">{analytics.activeToday}</p>
-        </motion.div>
-
-        {/* <motion.div 
-          className="stat-card"
-          variants={gridItemVariants}
-          whileHover="hover"
-        >
-          <div className="stat-header">
-            <FaClock className="stat-icon" />
-            <h2 className="stat-title">Avg. Session Duration</h2>
-          </div>
-          <p className="stat-description">In minutes per user</p>
-          <p className="stat-value">{Math.round(analytics.averageSessionDuration)}m</p>
-        </motion.div> */}
       </motion.div>
-
       
       {/* User Roles Distribution Chart */}
       <motion.div 
@@ -345,7 +387,7 @@ const Admin: React.FC = () => {
       >
         <div className="table-header">
           <h3 className="section-title">User Details</h3>
-          <p className="chart-description">Detailed view of user activity</p>
+          <p className="chart-description">Manage user accounts and permissions</p>
           
           <div className="search-container">
             <input
@@ -377,12 +419,7 @@ const Admin: React.FC = () => {
                 <th onClick={() => requestSort('lastLogin')}>
                   Last Active {getSortIcon('lastLogin')}
                 </th>
-                {/* <th onClick={() => requestSort('totalSessions')}>
-                  Total Sessions {getSortIcon('totalSessions')}
-                </th>
-                <th onClick={() => requestSort('averageSessionDuration')}>
-                  Avg. Duration {getSortIcon('averageSessionDuration')}
-                </th> */}
+                <th>Actions</th>
               </tr>
             </thead>
             <motion.tbody
@@ -395,31 +432,68 @@ const Admin: React.FC = () => {
                 filteredAndSortedUsers.map((user, index) => {
                   // Add a unique key with fallback to index
                   const key = user._id || `user-${index}`;
+                  const isEditing = editingUser && editingUser._id === user._id;
                   
                   return (
                     <motion.tr 
                       key={key}
                       variants={listItemVariants}
                       whileHover={{ backgroundColor: 'rgba(249, 250, 251, 0.5)' }}
-                      className="table-row"
+                      className={`table-row ${isEditing ? 'editing' : ''}`}
                     >
                       <td>{user.name || 'N/A'}</td>
                       <td>{user.email || 'N/A'}</td>
                       <td>
-                        <span className={`role-badge role-${(user.role || 'user').toLowerCase()}`}>
-                          {user.role || 'User'}
-                        </span>
+                        {isEditing ? (
+                          <select
+                            value={editingUser.role}
+                            onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                            className="edit-select"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        ) : (
+                          <span className={`role-badge role-${(user.role || 'user').toLowerCase()}`}>
+                            {user.role || 'User'}
+                          </span>
+                        )}
                       </td>
                       <td>{user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('en-GB') : 'Never'}</td>
-                      {/* <td>{user.totalSessions !== undefined ? user.totalSessions : 0}</td>
-                      <td>{user.averageSessionDuration !== undefined ? 
-                        `${Math.round(user.averageSessionDuration)}m` : '0m'}</td> */}
+                      <td className="actions-cell">
+                        {isEditing ? (
+                          <>
+                            <button 
+                              onClick={handleSaveUser} 
+                              className="action-button save-button"
+                              title="Save changes"
+                            >
+                              <FaSave />
+                            </button>
+                            <button 
+                              onClick={handleCancelEdit} 
+                              className="action-button cancel-button"
+                              title="Cancel editing"
+                            >
+                              <FaTimes />
+                            </button>
+                          </>
+                        ) : (
+                          <button 
+                            onClick={() => handleEditUser(user)}
+                            className="action-button edit-button"
+                            title="Edit user role"
+                          >
+                            <FaEdit />
+                          </button>
+                        )}
+                      </td>
                     </motion.tr>
                   );
                 })
               ) : (
                 <tr className="empty-row">
-                  <td colSpan={6}>
+                  <td colSpan={5}>
                     <div className="no-results">
                       <p>No users match your search criteria</p>
                     </div>
