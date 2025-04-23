@@ -34,6 +34,16 @@
   display: flex;
   align-items: center;
   gap: 1rem;
+  justify-content: space-between; /* Ensure items are spaced apart */
+  width: 100%; /* Take full width */
+}
+
+.header-left .schedule-title {
+  flex-grow: 1; /* Push the title to the left */
+}
+
+.header-left .ai-badge-container {
+  margin-left: auto; /* Push the AI badge to the far right */
 }
 
 .title-group {
@@ -65,11 +75,7 @@
   gap: 1rem;
 }
 
-.header-actions {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-}
+
 
 .header-button {
   display: inline-flex;
@@ -109,6 +115,7 @@
 /* View selector buttons */
 .view-selector {
   display: flex;
+  flex-direction: row;
   gap: 0.5rem;
   background: var(--card-bg);
   padding: 0.5rem;
@@ -116,10 +123,29 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   overflow-x: auto;
   scrollbar-width: none;
+  margin-left: auto; /* Push the view-selector and AIBadge to the far right */
+}
+
+/* View selector buttons */
+.view-selector-settings {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  background: var(--card-bg);
+  padding: 0.5rem;
+  border-radius: 0.75rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: auto;
+  /* Push the view-selector and AIBadge to the far right */
 }
 
 .view-selector::-webkit-scrollbar {
   display: none;
+}
+
+.view-selector .ai-badge-container {
+  margin-left: auto; /* Ensure AIBadge is at the far right */
 }
 
 .view-button {
@@ -1118,32 +1144,217 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0, 0.85); /* Darker overlay for better focus */
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(5px); /* Increased blur for a more polished look */
+}
+.modal-header{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: var(--card-bg);
+  color: var(--foreground);
+  margin: 0;
+  font-style: bold;
+  font-family: 'Arial', sans-serif;
+}
+.modal-header-addclass{
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: transparent;
+  color: black;
+  margin: 0;
+  margin-bottom: 2rem;
+  font-style: bold;
+  font-family: 'Arial', sans-serif;
+}
+  /* Enhanced Form group half styling */
+  .form-group-half {
+    display: flex;
+    justify-content: space-between; /* Align left and right */
+    gap: 2rem; /* Increased gap for better spacing */
+  }
+  
+  .form-group-half .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .form-group-half .form-group label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--foreground);
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-group-half .form-group input,
+  .form-group-half .form-group select {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background-color: var(--card-bg);
+    color: var(--foreground);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .form-group-half .form-group input:focus,
+  .form-group-half .form-group select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+    outline: none;
+  }
+
+  .form-group-startTime, .form-group-endTime {
+
+    width: 50%;
+  }
+
+.settings-button, .savedSchedule-button, tracker-link-button {
+  background: var(--card-bg);
+  color: var(--foreground);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  width: auto; /* Adjusted width for better fit */
+}
+.modal-actions {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  margin-top: 1.5rem;
+  align-items: center;
+  flex-direction: wrap; /* Allow wrapping for smaller screens */
 }
 
+.primary-button, .secondary-button {
+  background: var(--card-bg);
+  background: var(--primary, #4f46e5);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  width: 100%;
+  height: auto;
+}
 .pdf-upload-modal,
 .modal-content {
   background-color: var(--card);
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: 16px; /* Slightly more rounded corners */
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3); /* Enhanced shadow for depth */
   max-width: 90%;
   max-height: 90vh;
   width: 600px;
   overflow-y: auto;
   position: relative;
   z-index: 1001;
+  padding: 2rem; /* Added padding for better spacing */
+  border: 1px solid var(--border); /* Subtle border for definition */
 }
 
-/* Add better styling for buttons to ensure visibility */
-.generate-button,
-.add-button {
-  z-index: 10;
-  position: relative;
+.pdf-upload-modal h2,
+.modal-content h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--heading);
+  margin-bottom: 1rem;
+  text-align: center; /* Centered title for better focus */
+}
+
+.pdf-upload-modal p,
+.modal-content p {
+  font-size: 1rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  margin-bottom: 1.5rem;
+  text-align: center; /* Centered text for consistency */
+}
+
+.pdf-upload-modal .close-button,
+.modal-content .close-button {
+
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  font-size: 1.5rem;
+  z-index: 2;
+  transition: color 0.2s ease;
+  align-items: center;
+}
+
+.pdf-upload-modal .close-button:hover,
+.modal-content .close-button:hover {
+  color: var(--foreground);
+}
+
+.pdf-upload-modal .action-buttons,
+.modal-content .action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.pdf-upload-modal .action-buttons button,
+.modal-content .action-buttons button {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.pdf-upload-modal .action-buttons .confirm-button,
+.modal-content .action-buttons .confirm-button {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+}
+
+.pdf-upload-modal .action-buttons .confirm-button:hover,
+.modal-content .action-buttons .confirm-button:hover {
+  background: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+}
+
+.pdf-upload-modal .action-buttons .cancel-button,
+.modal-content .action-buttons .cancel-button {
+  background: var(--card-bg);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
+}
+
+.pdf-upload-modal .action-buttons .cancel-button:hover,
+.modal-content .action-buttons .cancel-button:hover {
+  background: var(--hover-bg);
+  color: var(--foreground);
+  transform: translateY(-2px);
 }
 
 /* React Big Calendar Overrides - Enhanced */
@@ -1414,6 +1625,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center; /* Center all content */
+  border: #cbd5e1 2px dashed;
+  height:fit-content;
+  align-content: center;
+  justify-content: center;
 }
 
 /* Enhanced responsive styles */
@@ -1571,7 +1787,6 @@
     justify-content: center;
     gap: 0.5rem;
     align-items: flex-end;
-    width: 100%;
   }
   
 }
@@ -1765,4 +1980,9 @@
     color: #e5e7eb;
   }
 
+}
+
+.ai-badge-container {
+  border-radius: 1rem;
+  padding: 0.5rem 1rem;
 }

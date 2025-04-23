@@ -9,7 +9,6 @@ import Footer from './Footer';
 import Navigation from './Navigation';
 import MobileNavigation from './MobileNavigation';
 import SessionExpirationModal from './SessionExpirationModal';
-import { AIBadge } from './AIBadge';
 import Home from '../pages/Home';
 import Access from '../pages/Access';
 import Schedule from '../pages/Schedule';
@@ -115,13 +114,13 @@ const AppContent: React.FC = () => {
         </Routes>
           </div>
         </main>
-        
+       
         {/* Footer only visible on desktop */}
         {!isMobile && <Footer />}
         
         {/* Mobile Navigation */}
         {isMobile && isAuthenticated && <MobileNavigation />}
-        <AIBadge position="bottom-right" variant="solid" />
+        
       </div>
     </>
   );

@@ -1,6 +1,4 @@
 .ai-badge {
-  position: fixed;
-  z-index: 1000;
   display: flex;
   align-items: center;
   padding: 6px 12px;
@@ -9,7 +7,7 @@
   font-weight: 600;
   pointer-events: none;
   transition: all 0.3s ease;
-  bottom: 20px;
+  bottom: 20px;a
   right: 20px;
   user-select: none;
 }

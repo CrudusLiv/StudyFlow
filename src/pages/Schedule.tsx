@@ -17,14 +17,13 @@ import {
   FiAlertCircle,
   FiInfo,  
   FiCheck,
-  FiPlus,
-  FiUser,
   FiDatabase,
-  FiBarChart2
+  FiBarChart2,
 } from 'react-icons/fi';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { Link } from 'react-router-dom';
+import { AIBadge } from '../components/AIBadge';
 
 import { WeeklySchedule, DaySchedule, CalendarEvent, ClassData } from '../types/types';
 import '../styles/pages/Schedule.css';
@@ -955,11 +954,11 @@ const Schedule: React.FC = () => {
   const renderAddClassModal = () => (
     <div className="modal-overlay" onClick={() => setShowAddClassModal(false)}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h2>Add New Class</h2>
+        <h1 className='modal-header-addclass'>Add New Class</h1>
         {error && <div className="error-message">{error}</div>}
 
         <div className="form-group">
-          <label className="form-label">Day</label>
+          <label className="form-label"><FiCalendar className='input-icon'/>Day</label>
           <select
             value={newClass.day}
             onChange={(e) => setNewClass({ ...newClass, day: e.target.value })}
@@ -973,9 +972,8 @@ const Schedule: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Course Code</label>
+          <label className="form-label"><FiCode className="input-icon" /> Course Code</label>
           <div className="input-group">
-            <FiCode className="input-icon" />
             <input
               type="text"
               placeholder="e.g. CS101"
@@ -987,9 +985,8 @@ const Schedule: React.FC = () => {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Course Name</label>
+          <label className="form-label"><FiBook className="input-icon" /> Course Name</label>
           <div className="input-group">
-            <FiBook className="input-icon" />
             <input
               type="text"
               placeholder="e.g. Introduction to Computer Science"
@@ -1001,37 +998,36 @@ const Schedule: React.FC = () => {
         </div>
 
         <div className="form-row">
-          <div className="form-group half">
-            <label className="form-label">Start Time</label>
-            <div className="input-group">
-              <FiClock className="input-icon" />
-              <input
-                type="time"
-                value={newClass.startTime}
-                onChange={(e) => setNewClass({ ...newClass, startTime: e.target.value })}
-                className="form-input"
-              />
+          <div className="form-group-half">
+            <div className='form-group-startTime'>
+              <label className="form-label"><FiClock className='input-icon'/>Start Time</label>
+              <div className="input-group">
+                <input
+                  type="time"
+                  value={newClass.startTime}
+                  onChange={(e) => setNewClass({ ...newClass, startTime: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
-          </div>
+            <div className='form-group-endTime'>
+              <label className="form-label"><FiClock className='input-icon'/>End Time</label>
+              <div className="input-group">
 
-          <div className="form-group half">
-            <label className="form-label">End Time</label>
-            <div className="input-group">
-              <FiClock className="input-icon" />
-              <input
-                type="time"
-                value={newClass.endTime}
-                onChange={(e) => setNewClass({ ...newClass, endTime: e.target.value })}
-                className="form-input"
-              />
+                <input
+                  type="time"
+                  value={newClass.endTime}
+                  onChange={(e) => setNewClass({ ...newClass, endTime: e.target.value })}
+                  className="form-input"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Location</label>
+          <label className="form-label"><FiMapPin className="input-icon" /> Location</label>
           <div className="input-group">
-            <FiMapPin className="input-icon" />
             <input
               type="text"
               placeholder="e.g. Room 101, Building A"
@@ -2544,10 +2540,10 @@ const savePreferences = async () => {
 
         <div className="header-actions">
           <motion.div 
-            className="view-selector"
+            className="view-selector-settings"
             variants={containerVariants}
           >
-          </motion.div>
+          
           <motion.button
             className="settings-button"
             onClick={() => setShowPreferences(true)}
@@ -2558,7 +2554,7 @@ const savePreferences = async () => {
             Preferences
           </motion.button>
           <button 
-            className="action-button"
+            className="savedSchedule-button"
             onClick={() => setShowSavedSchedules(!showSavedSchedules)}
           >
             <FiDatabase className="button-icon" />
@@ -2567,7 +2563,8 @@ const savePreferences = async () => {
           <Link to="/tracker" className="tracker-link-button">
             <FiBarChart2 className="icon" />
             <span>View Tracker</span>
-          </Link>
+            </Link>
+          </motion.div>
         </div>
       </motion.header>
 
@@ -2596,6 +2593,9 @@ const savePreferences = async () => {
           <FiList className="button-icon" />
           <span>List</span>
         </button>
+        <div className='ai-badge-container'>
+          <AIBadge />
+        </div>
       </div>
 
       {/* Animated view switching */}
