@@ -197,7 +197,7 @@ action-button {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--border);
   margin: 1.5rem 0 2.5rem;
-  height: 750px;
+  height: 850px; /* Increased from 750px to 850px for taller slots */
   position: relative;
   display: flex;
   flex-direction: column;
@@ -236,6 +236,7 @@ action-button {
   border-top: 1px solid var(--border);
   overflow-y: auto;
   position: relative;
+  max-height: calc(100% - 80px); /* Adjusted to account for larger slots */
 }
 
 /* Fix the time gutter to stay in place when scrolling */
@@ -245,6 +246,7 @@ action-button {
   background-color: var(--card-bg);
   z-index: 5;
   border-right: 1px solid var(--border);
+  width: 90px; /* Increased from 75px to 90px to accommodate minutes */
 }
 
 .rbc-time-view .rbc-time-gutter {
@@ -253,6 +255,7 @@ action-button {
   padding-right: 10px;
   width: 75px;
   font-weight: 500;
+  font-size: 0.85rem; /* Ensure consistent font size */
 }
 
 /* Ensure overlapping events are properly sized and positioned */
@@ -390,7 +393,7 @@ action-button {
 
 .schedule-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Ensure responsive columns */
   gap: 1rem;
   overflow-x: auto;
   padding-bottom: 1rem;
@@ -404,7 +407,7 @@ action-button {
   border: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  height: 600px;
+  height: auto; /* Adjust height dynamically */
   transition: all 0.2s ease;
 }
 
@@ -1604,14 +1607,14 @@ action-button {
   white-space: nowrap;
   text-align: right;
   padding-right: 10px;
-  width: 75px;
+  width: 90px; /* Ensure enough space for minutes */
   font-weight: 500;
-  color: var(--foreground);
+  font-size: 0.85rem; /* Consistent font size */
 }
 
 .rbc-timeslot-group {
   border-bottom: 1px solid var(--border);
-  min-height: 50px;
+  min-height: 80px; /* Increased from 50px to 80px */
 }
 
 /* Enhanced current time indicator */
@@ -1684,7 +1687,7 @@ action-button {
 /* Enhanced responsive styles */
 @media (max-width: 1024px) {
   .calendar-container {
-    height: 650px;
+    height: 750px; /* Adjusted for smaller screens */
     margin: 1rem 0 2rem;
     padding-bottom: 15px;
     /* Adjusted padding for smaller screens */
@@ -1698,11 +1701,15 @@ action-button {
     padding: 0.5rem 0.75rem;
     font-size: 0.875rem;
   }
+  
+  .rbc-timeslot-group {
+    min-height: 70px; /* Slightly reduced for smaller screens */
+  }
 }
 
 @media (max-width: 768px) {
   .calendar-container {
-    height: 550px;
+    height: 650px; /* Adjusted for mobile screens */
     border-radius: 1rem;
     padding-bottom: 10px;
   }
@@ -1771,6 +1778,10 @@ action-button {
   .header-button {
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
+  }
+  
+  .rbc-timeslot-group {
+    min-height: 60px; /* Further reduced for mobile screens */
   }
 }
 
