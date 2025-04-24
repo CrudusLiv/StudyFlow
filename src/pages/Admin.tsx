@@ -465,7 +465,7 @@ const Admin: React.FC = () => {
                           <>
                             <button 
                               onClick={handleSaveUser} 
-                              className="action-button save-button"
+                              className="action-button action-save-button"
                               title="Save changes"
                             >
                               <FaSave />

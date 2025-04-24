@@ -19,7 +19,7 @@
 
 .auth-content {
   display: grid;
-  grid-template-columns: 1.2fr 0.8fr;
+  grid-template-columns: 1fr 0.8fr;
   min-height: 600px;
 }
 
@@ -28,6 +28,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  width:100%;
+  justify-items: center;
 }
 
 .form-title {
@@ -92,11 +94,12 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  width: 100%;
 }
 
 .info-title {
   color: white;
-  font-size: 2rem;
+  font-size: 2.5rem;
   margin-bottom: 2rem;
 }
 
@@ -109,6 +112,7 @@
   margin-bottom: 1rem;
   padding-left: 2rem;
   position: relative;
+  font: 500 1rem "Inter", sans-serif;
 }
 
 .feature-list li::before {
@@ -340,12 +344,13 @@ p {
   border-radius: 0.5rem;
   margin-bottom: 1rem;
 }
+.dark .access-container {
+  background: #0f172a;
+}
 
 /* Dark mode support */
 @media (prefers-color-scheme: dark) {
-  .access-container {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-  }
+
 
   .access-card {
     background: #1e293b;

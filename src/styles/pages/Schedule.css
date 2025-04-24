@@ -260,9 +260,8 @@ action-button {
 
 /* Ensure overlapping events are properly sized and positioned */
 .rbc-day-slot .rbc-events-container {
-  margin-right: 0 !important;
+  margin-right: 0;
 }
-
 .rbc-day-slot .rbc-event {
   position: absolute !important;
   border-left-width: 4px !important;
@@ -341,8 +340,8 @@ action-button {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  margin-bottom: 3px !important;
-    opacity: 0.8;
+  opacity: 0.8;
+  color: #111827;
 }
 
 /* Add hover effect that brings event to front */
@@ -480,6 +479,16 @@ action-button {
   border-left-color: var(--warning, #f59e0b);
 }
 
+.task-event-title{
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--heading);
+  margin: 0 0 0.5rem 0;
+}
+.rbc-event priority-high category-study{
+  padding: 0%;
+  margin:0;
+}
 .grid-event-time {
   display: flex;
   align-items: center;
@@ -1179,6 +1188,7 @@ action-button {
 .modal-header {
   display: flex;
   justify-content: space-between;
+  justify-items: center;
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid var(--border);
@@ -1330,7 +1340,6 @@ action-button {
   /* Centered title for better focus */
 }
 
-.pdf-upload-modal p,
 .modal-content p {
   font-size: 1rem;
   color: var(--muted-foreground);
@@ -1340,15 +1349,21 @@ action-button {
   /* Centered text for consistency */
 }
 
+.pdf-upload-modal p{
+  font-size: 1rem;
+  color: var(--muted-foreground);
+  line-height: 1.6;
+  text-align: center;
+  margin: 0%;
+  /* Centered text for consistency */
+}
+
+
 .pdf-upload-modal .close-button,
 .modal-content .close-button {
-
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
   background: transparent;
   border: none;
-  color: var(--muted-foreground);
+  color: #ffffff;
   cursor: pointer;
   font-size: 1.5rem;
   z-index: 2;
@@ -1444,9 +1459,21 @@ action-button {
   background: var(--primary, #4f46e5);
   border-radius: 2px 0 0 2px;
 }
+.rbc-day-slot .rbc-event,
+.rbc-day-slot .rbc-background-event{
+  position: absolute ;
+  border-left-width: 4px;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.rbc-event priority-high category-study{
+  padding: 0%;
+  margin: 0;
+}
 
 .rbc-event-content {
-  font-size: 14px !important;
+  font-size:small;
   line-height: 1.5 !important;
   font-weight: 500 !important;
   color: var(--card-foreground) !important;
@@ -1667,11 +1694,21 @@ action-button {
   padding: 1rem 3rem;
   margin: 0;
   color: var(--muted-foreground);
+  margin-bottom: 2rem;
+}
+
+.constraints-list li {
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
 }
 
 .upload-area {
   list-style: none;
-  padding: 1rem;
+  padding: 3rem;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -1859,9 +1896,10 @@ action-button {
   .dark .rbc-day-slot .rbc-event {
     position: absolute !important;
     border-left-width: 4px !important;
-
+    display: flex;
+    flex-direction: column ;
+    flex-wrap: nowrap;
   }
-  
   .dark .schedule-container {
     background: linear-gradient(to bottom right, #111827, #1f2937);
   }
