@@ -295,7 +295,7 @@ const PreferencesPanel: React.FC<PreferencesPanelProps> = ({
 
       <div className="preferences-footer">
         <button 
-          className={`save-button ${loading ? 'loading' : ''}`} 
+          className={`save-preference-button ${loading ? 'loading' : ''}`} 
           onClick={onSave}
           disabled={loading}
         >

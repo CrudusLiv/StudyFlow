@@ -102,9 +102,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.settings-button,
-semester-date-button,
-action-button {
+.settings-button,.savedSchedule-button, .tracker-link-button, .action-button {
   padding: 0.6rem;
   background: var(--accent);
   color: white;
@@ -1264,6 +1262,8 @@ action-button {
 .settings-button,
 .savedSchedule-button,
 .tracker-link-button {
+  display: flex;
+  flex-direction: column;
   background: var(--card-bg);
   color: var(--foreground);
   padding: 0.75rem 1.5rem;
@@ -1274,7 +1274,9 @@ action-button {
   transition: all 0.2s ease;
   border: none;
   width: auto;
-  /* Adjusted width for better fit */
+  justify-content: center;
+  align-items: center;
+  gap:0;
 }
 .settings-button:hover,
 .savedSchedule-button:hover,
@@ -2095,4 +2097,197 @@ action-button {
 .ai-badge-container {
   border-radius: 1rem;
   padding: 0.5rem 1rem;
+}
+
+/* Preferences Panel - Light Mode */
+.preferences-panel {
+  background: white;
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
+  transition: all 0.3s ease;
+}
+
+.preferences-panel:hover {
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.preferences-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.preferences-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--heading);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preferences-icon {
+  color: var(--primary);
+}
+
+.preferences-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.preference-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background-color: var(--card-alt-bg);
+  border-radius: 0.75rem;
+  transition: background-color 0.2s ease;
+}
+
+.preference-item:hover {
+  background-color: var(--hover-bg);
+}
+
+.preference-label {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: var(--foreground);
+}
+
+.preference-description {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  margin-top: 0.25rem;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e2e8f0;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input:checked+.toggle-slider {
+  background-color: var(--primary);
+}
+
+input:focus+.toggle-slider {
+  box-shadow: 0 0 1px var(--primary);
+}
+
+input:checked+.toggle-slider:before {
+  transform: translateX(24px);
+}
+
+/* Select dropdown */
+.preference-select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: white;
+  color: var(--foreground);
+  font-size: 0.875rem;
+  min-width: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preference-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Save preferences button */
+.save-preferences {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background-color: var(--primary);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  margin-top: 1.5rem;
+  align-self: flex-end;
+}
+
+.save-preferences:hover {
+  background-color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .preferences-panel {
+    padding: 1.25rem;
+  }
+
+  .preference-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .preference-label {
+    width: 100%;
+  }
+
+  .toggle-switch,
+  .preference-select {
+    align-self: flex-end;
+  }
+
+  .save-preferences {
+    width: 100%;
+  }
 }

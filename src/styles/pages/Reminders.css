@@ -691,7 +691,6 @@
       padding: 0.75rem 1rem;
       border: 1px solid var(--border);
       border-radius: 0.5rem;
-      background-color: var(--input-bg);
       color: var(--foreground);
       font-size: 1rem;
       transition: all 0.2s ease;
@@ -764,3 +763,4 @@
   justify-content: flex-end; /* Align buttons to the right */
   margin-top: 0.5rem; /* Added spacing from the content above */
 }
+

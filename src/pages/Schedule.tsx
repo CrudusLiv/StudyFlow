@@ -2476,12 +2476,12 @@ const savePreferences = async () => {
           <button 
             className="savedSchedule-button"
             onClick={() => setShowSavedSchedules(!showSavedSchedules)}
-          >
+            >
             <FiDatabase className="button-icon" />
             Saved Schedules
           </button>
           <Link to="/tracker" className="tracker-link-button">
-            <FiBarChart2 className="icon" />
+            <FiBarChart2 className="button-icon" />
             <span>View Tracker</span>
             </Link>
           </motion.div>
