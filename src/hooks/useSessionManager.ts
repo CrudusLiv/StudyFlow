@@ -5,8 +5,8 @@ export const useSessionManager = () => {
   const { logout } = useAuth();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Default session duration - 1 hour
-  const DEFAULT_SESSION_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+  // Default session duration - 3 hours
+  const DEFAULT_SESSION_DURATION = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
   // Threshold to show warning before logout (5 minutes)
   const WARNING_THRESHOLD = 5 * 60 * 1000; // 5 minutes in milliseconds
 
@@ -22,7 +22,7 @@ export const useSessionManager = () => {
       // Get token expiry time
       const tokenExpiry = localStorage.getItem('tokenExpiry');
       if (!tokenExpiry) {
-        // If no expiry is set, set it now (1 hour)
+        // If no expiry is set, set it now (3 hours)
         const newExpiryTime = new Date().getTime() + DEFAULT_SESSION_DURATION;
         localStorage.setItem('tokenExpiry', newExpiryTime.toString());
         return;
