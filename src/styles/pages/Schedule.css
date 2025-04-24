@@ -266,19 +266,9 @@
 }
 
 /* Make sure overlapping events have distinct borders */
-.rbc-day-slot .rbc-event:nth-child(2n) {
+.rbc-event .break-event .priority-medium .category-break {
   border-left-color: #10b981 !important;
   /* Different color for alternating events */
-}
-
-.rbc-day-slot .rbc-event:nth-child(3n) {
-  border-left-color: #f59e0b !important;
-  /* Third color for more variety */
-}
-
-.rbc-day-slot .rbc-event:nth-child(4n) {
-  border-left-color: #ef4444 !important;
-  /* Fourth color */
 }
 
 
@@ -1468,6 +1458,7 @@
   display: flex;
   flex-direction: column;
   flex-wrap: nowrap;
+  
 }
 .rbc-event priority-high category-study{
   padding: 0%;

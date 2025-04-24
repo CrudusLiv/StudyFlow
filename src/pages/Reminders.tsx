@@ -492,7 +492,7 @@ const Reminders: React.FC = () => {
           onClick={() => setShowAddForm(true)}
         >
           <FiPlus />
-          Add Assignment
+          Add Reminders
         </button>
       </header>
 
