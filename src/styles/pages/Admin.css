@@ -305,6 +305,11 @@
   color: #6b7280;
   transition: all 0.2s ease;
   margin: 0 0.25rem;
+  width: fit-content;
+}
+
+.edit-button svg{
+  color: #4f46e5;
 }
 
 .edit-button:hover {
@@ -312,9 +317,28 @@
   background-color: rgba(79, 70, 229, 0.1);
 }
 
+.save-button {
+  background: #10b981;
+  color: white;
+  border-radius: 0.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: fit-content;
+
+}
+
 .save-button:hover {
-  color: #10b981;
+  color: white;
   background-color: rgba(16, 185, 129, 0.1);
+}
+.cancel-button {
+  background: #ef4444;
+  color: white;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  height: fit-content;
 }
 
 .cancel-button:hover {
@@ -326,6 +350,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  justify-items: center;
 }
 
 .table-row.editing {

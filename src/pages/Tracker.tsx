@@ -535,30 +535,7 @@ const Tracker: React.FC = () => {
                   variants={listItemVariants}
                   whileHover={{ y: -4, boxShadow: '0 8px 16px rgba(0, 0, 0, 0.1)' }}
                 >
-                  <div className="assignment-status">
-                    {assignment.completed && (
-                      <div className="status-indicator completed">
-                        <FaCheckCircle style={{ color: '#10b981' }} />
-                      </div>
-                    )}
-                    {!assignment.completed && isDueSoon(assignment.dueDate) && (
-                      <div className="status-indicator due-soon">
-                        <FaExclamationTriangle style={{ color: '#f59e0b' }} />
-                      </div>
-                    )}
-                    {!assignment.completed && isOverdue(assignment.dueDate) && (
-                      <div className="status-indicator overdue">
-                        <FaExclamationTriangle style={{ color: '#ef4444' }} />
-                      </div>
-                    )}
-                    
-                    {/* Add priority indicator */}
-                    {assignment.priority && (
-                      <div className={`priority-badge ${assignment.priority}`}>
-                        {assignment.priority}
-                      </div>
-                    )}
-                  </div>
+
                   
                   <div className="assignment-header">
                     <h4 className="assignment-title">{getEnhancedAssignmentTitle(assignment)}</h4>

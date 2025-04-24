@@ -1031,7 +1031,7 @@ const eventStyleGetter = (event, start, end, isSelected) => {
               className="generate-button"
               onClick={() => setShowUploadModal(true)} // Add onClick handler here
             >
-              Generate Schedule
+              Upload Materials
             </button>
           )}
         </div>
